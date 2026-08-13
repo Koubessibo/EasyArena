@@ -1,0 +1,63 @@
+services:
+  - type: web
+    name: easyarena-api
+    env: docker
+    dockerfilePath: ./api/Dockerfile
+    dockerContext: ./api
+    region: frankfurt
+    plan: free
+    healthCheckPath: /api/v1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: APP_PORT
+        value: 3000
+      - key: DB_HOST
+        fromDatabase:
+          name: easyarena-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: easyarena-db
+          property: port
+      - key: DB_USERNAME
+        fromDatabase:
+          name: easyarena-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: easyarena-db
+          property: password
+      - key: DB_NAME
+        fromDatabase:
+          name: easyarena-db
+          property: database
+      - key: JWT_ACCESS_SECRET
+        sync: false
+      - key: JWT_REFRESH_SECRET
+        sync: false
+      - key: JWT_ACCESS_EXPIRES_IN
+        value: 15m
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: 7d
+      - key: OTP_EXPIRES_IN_SECONDS
+        value: 300
+      - key: OTP_LENGTH
+        value: 6
+      - key: PAYMENT_PROVIDER_NAME
+        value: mock
+      - key: SMS_PROVIDER_NAME
+        value: mock
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_BUCKET_NAME
+        sync: false
+
+databases:
+  - name: easyarena-db
+    plan: free
+    region: frankfurt
+    databaseName: easyarena
+    user: easyarena_user
