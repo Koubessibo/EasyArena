@@ -13,25 +13,15 @@ services:
       - key: APP_PORT
         value: 3000
       - key: DB_HOST
-        fromDatabase:
-          name: easyarena-db
-          property: host
+        sync: false
       - key: DB_PORT
-        fromDatabase:
-          name: easyarena-db
-          property: port
+        value: 5432
       - key: DB_USERNAME
-        fromDatabase:
-          name: easyarena-db
-          property: user
+        sync: false
       - key: DB_PASSWORD
-        fromDatabase:
-          name: easyarena-db
-          property: password
+        sync: false
       - key: DB_NAME
-        fromDatabase:
-          name: easyarena-db
-          property: database
+        sync: false
       - key: JWT_ACCESS_SECRET
         sync: false
       - key: JWT_REFRESH_SECRET
@@ -55,9 +45,3 @@ services:
       - key: SUPABASE_BUCKET_NAME
         sync: false
 
-databases:
-  - name: easyarena-db
-    plan: free
-    region: frankfurt
-    databaseName: easyarena
-    user: easyarena_user
