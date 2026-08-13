@@ -34,7 +34,13 @@ services:
       - key: OTP_LENGTH
         value: 6
       - key: PAYMENT_PROVIDER_NAME
-        value: mock
+        value: samirpay
+      - key: SAMIRPAY_API_KEY
+        sync: false
+      - key: SAMIRPAY_SECRET_KEY
+        sync: false
+      - key: SAMIRPAY_WEBHOOK_SECRET
+        sync: false
       - key: SMS_PROVIDER_NAME
         value: mock
       - key: SUPABASE_URL
