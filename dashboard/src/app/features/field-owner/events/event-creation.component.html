@@ -1,0 +1,139 @@
+<div class="event-creation">
+  <button class="btn-back" (click)="location.back()">
+    <span class="material-symbols-outlined">arrow_back</span>
+    Retour
+  </button>
+  <div class="event-creation__header">
+    <h1 class="event-creation__title">{{ editingEventId() ? 'Modifier l\'Événement' : 'Créer un Nouvel Événement Sportif' }}</h1>
+    <p class="event-creation__subtitle">Organisez des tournois ou des événements sur vos terrains, vendez des billets et gérez votre catalogue.</p>
+  </div>
+
+  <div class="alert alert--success" *ngIf="successMessage()">
+    <span class="material-symbols-outlined">check_circle</span>
+    {{ successMessage() }}
+  </div>
+
+  <div class="alert alert--error" *ngIf="errorMessage()">
+    <span class="material-symbols-outlined">error</span>
+    {{ errorMessage() }}
+  </div>
+
+  <form class="event-form" [formGroup]="eventForm" (ngSubmit)="onSubmit()">
+    <!-- Informations Principales -->
+    <section class="event-form__section">
+      <h2 class="event-form__section-title">Informations Principales</h2>
+      
+      <div class="form-group">
+        <label class="form-label" for="name">Nom de l'événement *</label>
+        <input class="form-control" type="text" id="name" formControlName="name" placeholder="Ex: Tournoi d'été 5v5" />
+        <span class="form-error" *ngIf="eventForm.get('name')?.invalid && eventForm.get('name')?.touched">Le nom est requis (min 3 caractères).</span>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="date">Date de l'événement *</label>
+          <input class="form-control" type="date" id="date" formControlName="date" />
+          <span class="form-error" *ngIf="eventForm.get('date')?.invalid && eventForm.get('date')?.touched">La date est requise.</span>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label" for="time">Heure de début *</label>
+          <input class="form-control" type="time" id="time" formControlName="time" />
+          <span class="form-error" *ngIf="eventForm.get('time')?.invalid && eventForm.get('time')?.touched">L'heure est requise.</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="location">Emplacement (Terrain) *</label>
+        <input class="form-control" type="text" id="location" formControlName="location" placeholder="Ex: Terrain Principal (Nord)" />
+        <span class="form-error" *ngIf="eventForm.get('location')?.invalid && eventForm.get('location')?.touched">L'emplacement est requis.</span>
+      </div>
+    </section>
+
+    <!-- Détails & Prix -->
+    <section class="event-form__section">
+      <h2 class="event-form__section-title">Détails & Tarification</h2>
+
+      <div class="form-group">
+        <label class="form-label" for="description">Description de l'événement *</label>
+        <textarea class="form-control" id="description" rows="4" formControlName="description" placeholder="Décrivez les règles, les lots à gagner, etc."></textarea>
+        <span class="form-error" *ngIf="eventForm.get('description')?.invalid && eventForm.get('description')?.touched">La description est requise (min 10 caractères).</span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="ticket_price">Prix du Billet (CFA) *</label>
+        <input class="form-control" type="number" id="ticket_price" formControlName="ticket_price" min="0" />
+        <span class="form-help">Mettez 0 si l'événement est gratuit.</span>
+        <span class="form-error" *ngIf="eventForm.get('ticket_price')?.invalid && eventForm.get('ticket_price')?.touched">Le prix est invalide.</span>
+      </div>
+    </section>
+
+    <!-- Affiche de l'événement (Upload Visuel) -->
+    <section class="event-form__section">
+      <h2 class="event-form__section-title">Affiche de l'événement</h2>
+      
+      <div class="upload-zone" [class.upload-zone--has-file]="coverImageBase64()">
+        <input type="file" class="upload-zone__input" id="cover_image" accept="image/*" (change)="onFileSelected($event)" />
+        <div class="upload-zone__content" *ngIf="!coverImageBase64()">
+          <span class="material-symbols-outlined upload-zone__icon">cloud_upload</span>
+          <p class="upload-zone__text">Glissez-déposez une image ici ou cliquez pour parcourir</p>
+          <span class="upload-zone__hint">Formats supportés : JPG, PNG (Max 5Mo)</span>
+        </div>
+        
+        <div class="upload-zone__preview" *ngIf="coverImageBase64()">
+          <img [src]="coverImageBase64()" alt="Aperçu de l'affiche" class="upload-zone__image" />
+          <p class="upload-zone__filename">{{ fileName() }}</p>
+          <p class="upload-zone__text">Cliquez pour remplacer l'image</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="event-form__actions" style="display:flex;gap:0.75rem">
+      <button class="btn btn--primary" type="submit" [disabled]="isSubmitting()">
+        <span *ngIf="!isSubmitting()">{{ editingEventId() ? 'Enregistrer les modifications' : 'Créer l\'événement' }}</span>
+        <span *ngIf="isSubmitting()" class="spinner"></span>
+      </button>
+
+      <button *ngIf="editingEventId()" class="btn btn--secondary" type="button" (click)="cancelEdit()">
+        Annuler
+      </button>
+    </div>
+  </form>
+
+  <!-- LISTE DES ÉVÉNEMENTS EXISTANTS -->
+  <section class="event-form__section" style="margin-top:2.5rem" *ngIf="myEvents().length > 0">
+    <h2 class="event-form__section-title">Mes Événements Sportifs Actifs ({{ myEvents().length }})</h2>
+    
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Nom</th>
+            <th>Date & Heure</th>
+            <th>Emplacement</th>
+            <th>Prix du billet</th>
+            <th class="text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let ev of myEvents()">
+            <td><strong>{{ ev.name }}</strong></td>
+            <td>{{ ev.date }} à {{ ev.time }}</td>
+            <td>{{ ev.location }}</td>
+            <td>{{ ev.ticket_price > 0 ? (ev.ticket_price | number:'1.0-0') + ' FCFA' : 'GRATUIT' }}</td>
+            <td class="text-right">
+              <div style="display:inline-flex;gap:0.4rem">
+                <button class="btn btn--outline btn--icon" (click)="openEditEvent(ev)" title="Modifier" aria-label="Modifier l'événement">
+                  <span class="material-symbols-outlined">edit</span>
+                </button>
+                <button class="btn btn--danger btn--icon" (click)="deleteEvent(ev.id)" title="Supprimer" aria-label="Supprimer l'événement">
+                  <span class="material-symbols-outlined">delete</span>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>

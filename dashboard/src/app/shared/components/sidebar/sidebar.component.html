@@ -1,0 +1,41 @@
+<aside class="sidebar" [class.collapsed]="collapsed" [class.mobile-open]="mobileOpen">
+  <!-- Logo -->
+  <div class="sidebar__logo">
+    <img src="/logo-long.png" alt="EasyArena" class="sidebar__logo-img--full">
+    <img src="/logo-short.png" alt="EA" class="sidebar__logo-img--icon">
+    <button class="sidebar__collapse-btn" (click)="toggleCollapse.emit()">
+      <span class="material-symbols-outlined">{{ collapsed ? 'chevron_right' : 'chevron_left' }}</span>
+    </button>
+  </div>
+
+  <!-- Nav -->
+  <nav class="sidebar__nav">
+    <a
+      *ngFor="let item of navItems()"
+      [routerLink]="item.path"
+      routerLinkActive="active"
+      class="sidebar__nav-item"
+      [title]="collapsed ? item.label : ''"
+      (click)="closeMobile.emit()">
+      <span class="material-symbols-outlined sidebar__nav-icon">{{ item.icon }}</span>
+      <span class="sidebar__nav-label" *ngIf="!collapsed">{{ item.label }}</span>
+    </a>
+  </nav>
+
+  <!-- Bottom -->
+  <div class="sidebar__bottom">
+    <!-- User info -->
+    <div class="sidebar__user" *ngIf="!collapsed">
+      <img *ngIf="user()?.avatarUrl" [src]="user()?.avatarUrl" [alt]="user()?.name" class="sidebar__user-avatar">
+      <div *ngIf="!user()?.avatarUrl" class="sidebar__user-avatar sidebar__user-avatar--initials">{{ initials }}</div>
+      <div class="sidebar__user-info">
+        <p class="sidebar__user-name">{{ user()?.name }}</p>
+        <p class="sidebar__user-role">{{ user()?.email }}</p>
+      </div>
+    </div>
+    <button class="sidebar__nav-item sidebar__logout" (click)="logout()">
+      <span class="material-symbols-outlined sidebar__nav-icon">logout</span>
+      <span class="sidebar__nav-label" *ngIf="!collapsed">Déconnexion</span>
+    </button>
+  </div>
+</aside>

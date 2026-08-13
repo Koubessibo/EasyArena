@@ -1,0 +1,178 @@
+<div class="page-content">
+  <app-page-header title="Planning" subtitle="Gérez vos créneaux et réservations" [showBack]="true">
+  </app-page-header>
+
+  <!-- Page tabs -->
+  <div class="page-tabs">
+    <button class="page-tab" [class.page-tab--active]="pageTab() === 'calendar'" (click)="pageTab.set('calendar')">
+      <span class="material-symbols-outlined">calendar_month</span> Réservations
+    </button>
+    <button class="page-tab" [class.page-tab--active]="pageTab() === 'horaire'" (click)="pageTab.set('horaire')">
+      <span class="material-symbols-outlined">schedule</span> Horaires
+    </button>
+    <button class="page-tab" [class.page-tab--active]="pageTab() === 'blocages'" (click)="pageTab.set('blocages')">
+      <span class="material-symbols-outlined">event_busy</span> Blocages
+    </button>
+  </div>
+
+  <!-- Horaire tab -->
+  <ng-container *ngIf="pageTab() === 'horaire' && activeFieldId">
+    <app-schedule-editor [fieldId]="activeFieldId"></app-schedule-editor>
+  </ng-container>
+
+  <!-- Blocages tab -->
+  <ng-container *ngIf="pageTab() === 'blocages' && activeFieldId">
+    <app-day-blocker [fieldId]="activeFieldId"></app-day-blocker>
+    <div style="margin-top: 1rem;">
+      <app-slot-blocker [fieldId]="activeFieldId"></app-slot-blocker>
+    </div>
+  </ng-container>
+
+  <!-- Calendar tab -->
+  <ng-container *ngIf="pageTab() === 'calendar'">
+
+  <!-- View controls -->
+  <div class="schedule-controls card">
+    <div class="schedule-controls__nav">
+      <button class="btn btn--ghost btn--icon" (click)="navigate(-1)">
+        <span class="material-symbols-outlined">chevron_left</span>
+      </button>
+      <h3 class="schedule-controls__title">{{ formatHeader() }}</h3>
+      <button class="btn btn--ghost btn--icon" (click)="navigate(1)">
+        <span class="material-symbols-outlined">chevron_right</span>
+      </button>
+    </div>
+    <div class="view-toggle">
+      <button class="view-toggle__btn" [class.active]="viewMode() === 'month'" (click)="viewMode.set('month')">Mois</button>
+      <button class="view-toggle__btn" [class.active]="viewMode() === 'week'" (click)="viewMode.set('week')">Semaine</button>
+      <button class="view-toggle__btn" [class.active]="viewMode() === 'day'" (click)="viewMode.set('day')">Jour</button>
+      <button class="view-toggle__btn" [class.active]="viewMode() === 'list'" (click)="viewMode.set('list')">Tableau</button>
+    </div>
+    <div class="schedule-controls__filters">
+      <div class="form-group">
+        <label class="form-label">Du</label>
+        <input class="form-input" type="date" [ngModel]="filterStartDate()" (ngModelChange)="filterStartDate.set($event)">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Au</label>
+        <input class="form-input" type="date" [ngModel]="filterEndDate()" (ngModelChange)="filterEndDate.set($event)">
+      </div>
+      <button *ngIf="filterStartDate() || filterEndDate()" class="btn btn--ghost btn--sm" (click)="clearFilter()">Réinitialiser</button>
+    </div>
+    <div class="schedule-controls__export">
+      <button class="btn btn--outline btn--sm" (click)="exportPdf()">
+        <span class="material-symbols-outlined">picture_as_pdf</span> PDF
+      </button>
+      <button class="btn btn--outline btn--sm" (click)="exportExcel()">
+        <span class="material-symbols-outlined">table_chart</span> Excel
+      </button>
+    </div>
+  </div>
+
+  <!-- Month view -->
+  <div class="card calendar-card" *ngIf="viewMode() === 'month'">
+    <div class="month-grid">
+      <div class="month-grid__day-header" *ngFor="let d of dayNames">{{ d }}</div>
+      <div
+        *ngFor="let day of monthDays()"
+        class="month-grid__cell"
+        [class.empty]="!day"
+        [class.today]="day && dateStr(day) === dateStr(today)">
+        <span *ngIf="day" class="month-grid__date">{{ day.getDate() }}</span>
+        <div *ngIf="day" class="month-grid__dots">
+          <span *ngFor="let b of bookingsForDate(day).slice(0, 3)"
+            class="month-grid__dot"
+            [class.dot--confirmed]="b.status === 'confirmed'"
+            [class.dot--pending]="b.status === 'pending'"
+            [class.dot--maintenance]="b.status === 'maintenance'">
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Week view -->
+  <div class="card" *ngIf="viewMode() === 'week'">
+    <div class="week-grid">
+      <div class="week-grid__header"></div>
+      <div *ngFor="let day of weekDays()" class="week-grid__day-header"
+        [class.today]="dateStr(day) === '2026-03-09'">
+        <p class="week-grid__day-name">{{ dayNames[day.getDay() === 0 ? 6 : day.getDay() - 1] }}</p>
+        <p class="week-grid__day-num">{{ day.getDate() }}</p>
+      </div>
+      <ng-container *ngFor="let hour of hours()">
+        <div class="week-grid__hour-label">{{ hour }}:00</div>
+        <div *ngFor="let day of weekDays()" class="week-grid__cell">
+          <ng-container *ngFor="let b of bookingsForDate(day)">
+            <div *ngIf="+b.startTime.split(':')[0] === hour"
+              class="week-booking"
+              [class.week-booking--confirmed]="b.status === 'confirmed'"
+              [class.week-booking--pending]="b.status === 'pending'">
+              <p class="week-booking__name">{{ b.clientName }}</p>
+              <p class="week-booking__time">{{ b.startTime }} – {{ b.endTime }}</p>
+            </div>
+          </ng-container>
+        </div>
+      </ng-container>
+    </div>
+  </div>
+
+  <!-- Day view -->
+  <div class="card" *ngIf="viewMode() === 'day'">
+    <div class="day-timeline">
+      <div *ngFor="let hour of hours()" class="day-slot">
+        <div class="day-slot__label">{{ hour }}:00</div>
+        <div class="day-slot__content">
+          <div *ngFor="let b of bookingsForHour(hour)" class="day-booking"
+            [class.day-booking--confirmed]="b.status === 'confirmed'"
+            [class.day-booking--pending]="b.status === 'pending'"
+            [class.day-booking--maintenance]="b.status === 'maintenance'">
+            <div class="day-booking__header">
+              <p class="day-booking__client">{{ b.clientName }}</p>
+              <app-status-badge [status]="b.status"></app-status-badge>
+            </div>
+            <p class="day-booking__meta">{{ b.fieldName }} · {{ b.startTime }} – {{ b.endTime }} · {{ b.amount | fcfa }}</p>
+          </div>
+          <div *ngIf="bookingsForHour(hour).length === 0" class="day-slot__empty">Disponible</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- List / Table view -->
+  <div class="bookings-table-wrap card table-responsive" *ngIf="viewMode() === 'list'">
+    <table class="bookings-table">
+      <thead>
+        <tr>
+          <th>Terrain</th>
+          <th>Prénom</th>
+          <th>Nom</th>
+          <th>Téléphone</th>
+          <th>Date</th>
+          <th>Heure</th>
+          <th>Montant terrain</th>
+          <th>Montant payé</th>
+          <th>Statut</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let b of filteredBookings()">
+          <td>{{ b.fieldName }}</td>
+          <td>{{ b.firstName }}</td>
+          <td>{{ b.lastName }}</td>
+          <td>{{ b.clientPhone }}</td>
+          <td>{{ b.date }}</td>
+          <td>{{ b.startTime }} – {{ b.endTime }}</td>
+          <td>{{ b.amount | fcfa }}</td>
+          <td>{{ b.paidAmount | fcfa }}</td>
+          <td><app-status-badge [status]="b.status" /></td>
+        </tr>
+        <tr *ngIf="filteredBookings().length === 0">
+          <td colspan="9" class="bookings-table__empty">Aucune réservation confirmée pour cette période.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  </ng-container><!-- end calendar tab -->
+</div>

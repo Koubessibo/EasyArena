@@ -1,0 +1,119 @@
+<div class="confirmation-screen">
+  <div class="confirmation-screen__container">
+
+    <!-- Payment failed state -->
+    <ng-container *ngIf="paymentFailed()">
+      <div class="confirmation-check confirmation-check--failed">
+        <div class="confirmation-check__circle confirmation-check__circle--failed">
+          <span class="material-symbols-outlined confirmation-check__icon">close</span>
+        </div>
+      </div>
+      <h1 class="confirmation-screen__title confirmation-screen__title--failed">Paiement échoué</h1>
+      <p class="confirmation-screen__subtitle">Votre réservation a été annulée. Veuillez réessayer.</p>
+      <div class="confirmation-actions">
+        <button class="btn btn--primary btn--full" (click)="retryPayment()" type="button">
+          Réessayer le paiement
+        </button>
+        <button class="btn btn--ghost btn--full" (click)="goHome()" type="button">
+          Retour à l'accueil
+        </button>
+      </div>
+    </ng-container>
+
+    <ng-container *ngIf="!paymentFailed()">
+
+    <!-- Animated checkmark -->
+    <div class="confirmation-check">
+      <div class="confirmation-check__circle">
+        <span class="material-symbols-outlined confirmation-check__icon">check</span>
+      </div>
+    </div>
+
+    <!-- Title -->
+    <h1 class="confirmation-screen__title">Réservation confirmée !</h1>
+
+    <!-- Booking details card -->
+    <div class="confirmation-card">
+
+      <!-- Field name -->
+      <div class="confirmation-card__field-name">
+        {{ booking() ? booking()!.fieldName : mockBooking.fieldName }}
+      </div>
+
+      <!-- Sport badge -->
+      <div class="confirmation-card__sport">
+        <span class="material-symbols-outlined confirmation-card__sport-icon">
+          {{ booking() ? 'sports_soccer' : mockBooking.sportIcon }}
+        </span>
+        <span class="confirmation-card__sport-label">
+          {{ booking() ? 'Football' : mockBooking.sport }}
+        </span>
+      </div>
+
+      <div class="confirmation-card__divider"></div>
+
+      <!-- Details grid -->
+      <div class="confirmation-card__details">
+        <div class="confirmation-card__detail-row">
+          <span class="material-symbols-outlined confirmation-card__detail-icon">calendar_today</span>
+          <div class="confirmation-card__detail-content">
+            <span class="confirmation-card__detail-label">Date</span>
+            <span class="confirmation-card__detail-value">
+              {{ booking() ? formatDate(booking()!.date) : mockBooking.date }}
+            </span>
+          </div>
+        </div>
+        <div class="confirmation-card__detail-row">
+          <span class="material-symbols-outlined confirmation-card__detail-icon">schedule</span>
+          <div class="confirmation-card__detail-content">
+            <span class="confirmation-card__detail-label">Heure</span>
+            <span class="confirmation-card__detail-value">
+              {{ booking() ? booking()!.startTime : mockBooking.startTime }}
+              &mdash;
+              {{ booking() ? booking()!.endTime : mockBooking.endTime }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="confirmation-card__divider"></div>
+
+      <!-- Reference chip -->
+      <div class="confirmation-card__reference-row">
+        <span class="confirmation-card__reference-label">Référence</span>
+        <span class="confirmation-card__reference-chip">
+          {{ mockBooking.reference }}
+        </span>
+      </div>
+
+      <!-- Total -->
+      <div class="confirmation-card__total-row">
+        <span class="confirmation-card__total-label">Total payé</span>
+        <span class="confirmation-card__total-amount">
+          {{ (booking() ? booking()!.pricing.total : mockBooking.total) | fcfa }}
+        </span>
+      </div>
+
+    </div>
+
+    <!-- Actions -->
+    <div class="confirmation-actions">
+      <button class="btn btn--ghost btn--full" (click)="downloadTicket()" type="button">
+        <span class="material-symbols-outlined">download</span>
+        Télécharger le ticket
+      </button>
+      <button class="btn btn--outline btn--full" (click)="shareWhatsApp()" type="button">
+        Partager via WhatsApp
+      </button>
+      <button class="btn btn--primary btn--full" (click)="goHome()" type="button">
+        Retour à l'accueil
+      </button>
+      <a routerLink="/booking/history" class="confirmation-actions__link">
+        Voir mes réservations
+      </a>
+    </div>
+
+    </ng-container>
+
+  </div>
+</div>

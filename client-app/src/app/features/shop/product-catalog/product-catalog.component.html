@@ -1,0 +1,86 @@
+<div class="catalog-page">
+
+  <!-- Hero Header Banner -->
+  <section class="shop-hero">
+    <div class="shop-hero__content">
+      <span class="hero-badge">
+        <span class="material-symbols-outlined">storefront</span>
+        Boutique Officielle EasyArena
+      </span>
+      <h1 class="hero-title">Équipements & Rafraîchissements Sportifs</h1>
+      <p class="hero-subtitle">
+        Commandez vos bouteilles d'eau, boissons énergisantes et équipements sportifs. Retrait direct sur le terrain à votre arrivée !
+      </p>
+
+      <!-- Search Bar -->
+      <div class="shop-search-bar">
+        <span class="material-symbols-outlined search-icon">search</span>
+        <input
+          type="text"
+          class="search-input"
+          placeholder="Rechercher une eau, boisson, maillot..."
+          [value]="searchQuery()"
+          (input)="onSearch($any($event.target).value)">
+        <button class="clear-btn" *ngIf="searchQuery()" (click)="onSearch('')">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <div class="catalog-container">
+    <!-- Category Filter Tabs -->
+    <div class="category-filters-row">
+      <button
+        *ngFor="let cat of categories"
+        class="cat-chip"
+        [class.cat-chip--active]="activeCategory() === cat.value"
+        (click)="selectCategory(cat.value)">
+        <span class="material-symbols-outlined cat-icon">{{ cat.icon }}</span>
+        <span>{{ cat.label }}</span>
+      </button>
+    </div>
+
+    <!-- Catalog Meta Header -->
+    <div class="catalog-meta">
+      <p class="count-text">Affichage de <strong>{{ products().length }}</strong> produit(s)</p>
+      <div class="sort-box">
+        <span class="material-symbols-outlined">tune</span>
+        <span>Catalogue Certifié</span>
+      </div>
+    </div>
+
+    <!-- Loading Skeleton -->
+    <div *ngIf="loading()" class="products-loading-grid">
+      <div *ngFor="let i of [1,2,3,4,5,6,7,8]" class="product-skeleton-card">
+        <div class="skeleton skeleton--image"></div>
+        <div class="skeleton-body">
+          <div class="skeleton skeleton--text" style="width: 40%; height: 0.75rem;"></div>
+          <div class="skeleton skeleton--text" style="width: 80%; height: 1.1rem;"></div>
+          <div class="skeleton skeleton--text" style="width: 50%; height: 1rem;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Products Grid -->
+    <div *ngIf="!loading() && products().length > 0" class="products-grid">
+      <app-product-card
+        *ngFor="let product of products()"
+        [product]="product">
+      </app-product-card>
+    </div>
+
+    <!-- Empty State -->
+    <div *ngIf="!loading() && products().length === 0" class="catalog-empty">
+      <div class="empty-icon-box">
+        <span class="material-symbols-outlined">search_off</span>
+      </div>
+      <h2>Aucun produit trouvé</h2>
+      <p>Aucun produit ne correspond à votre recherche ou catégorie sélectionnée.</p>
+      <button class="btn btn--primary" (click)="onSearch(''); selectCategory('all')">
+        Voir tous les produits
+      </button>
+    </div>
+  </div>
+
+</div>

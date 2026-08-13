@@ -1,0 +1,71 @@
+<div class="failure-screen">
+  <div class="failure-screen__container">
+
+    <!-- Error icon -->
+    <div class="failure-icon">
+      <div class="failure-icon__circle">
+        <span class="material-symbols-outlined">cancel</span>
+      </div>
+    </div>
+
+    <!-- Title -->
+    <h1 class="failure-screen__title">Paiement échoué</h1>
+    <p class="failure-screen__subtitle">{{ errorMessage() }}</p>
+
+    <!-- Error detail card -->
+    <div class="failure-card">
+      <div class="failure-card__row">
+        <span class="material-symbols-outlined failure-card__icon">info</span>
+        <div>
+          <p class="failure-card__label">Code d'erreur</p>
+          <p class="failure-card__value">{{ errorCode().toUpperCase().replace('_', '-') }}</p>
+        </div>
+      </div>
+      <div class="failure-card__divider"></div>
+      <div class="failure-card__row">
+        <span class="material-symbols-outlined failure-card__icon">security</span>
+        <div>
+          <p class="failure-card__label">Sécurité</p>
+          <p class="failure-card__value">Aucun montant n'a été débité</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Suggestions -->
+    <div class="failure-tips">
+      <p class="failure-tips__title">Que faire ?</p>
+      <ul class="failure-tips__list">
+        <li>
+          <span class="material-symbols-outlined">check_circle</span>
+          Vérifiez votre solde ou connexion internet
+        </li>
+        <li>
+          <span class="material-symbols-outlined">check_circle</span>
+          Essayez un autre mode de paiement
+        </li>
+        <li>
+          <span class="material-symbols-outlined">check_circle</span>
+          Contactez votre opérateur si le problème persiste
+        </li>
+      </ul>
+    </div>
+
+    <!-- Actions -->
+    <div class="failure-screen__actions">
+      <button type="button" class="btn btn--primary btn--full" (click)="retry()">
+        <span class="material-symbols-outlined">refresh</span>
+        Réessayer le paiement
+      </button>
+      <button type="button" class="btn btn--outline btn--full" (click)="goHome()">
+        Retour à l'accueil
+      </button>
+    </div>
+
+    <!-- Support -->
+    <p class="failure-screen__support">
+      Besoin d'aide ?
+      <a routerLink="/notifications" class="failure-screen__support-link">Contacter le support</a>
+    </p>
+
+  </div>
+</div>

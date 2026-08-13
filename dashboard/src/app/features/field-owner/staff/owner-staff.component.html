@@ -1,0 +1,178 @@
+<div class="staff-container">
+
+  <button class="btn-back" (click)="location.back()">
+    <span class="material-symbols-outlined">arrow_back</span>
+    Retour
+  </button>
+
+  <!-- Header -->
+  <div class="header">
+    <div>
+      <h1 class="title">Gestion de l'Équipe & Contrôleurs</h1>
+      <p class="subtitle">Gérez vos administrateurs de terrain et contrôleurs de billets à l'entrée.</p>
+    </div>
+
+    <button class="btn btn--primary" (click)="toggleForm()">
+      <span class="material-symbols-outlined">{{ showForm() ? 'close' : 'person_add' }}</span>
+      {{ showForm() ? 'Fermer le formulaire' : 'Ajouter un collaborateur' }}
+    </button>
+  </div>
+
+  <!-- Global Alerts -->
+  <div *ngIf="feedback()" class="alert"
+    [class.alert--success]="feedback()!.type === 'success'"
+    [class.alert--error]="feedback()!.type === 'error'">
+    <span class="material-symbols-outlined">{{ feedback()!.type === 'success' ? 'check_circle' : 'error' }}</span>
+    <span>{{ feedback()!.message }}</span>
+  </div>
+
+  <!-- Form Card -->
+  <div *ngIf="showForm()" class="card form-card">
+    <div class="card__header">
+      <div class="card__header-title">
+        <span class="material-symbols-outlined">badge</span>
+        <h3>Nouveau Collaborateur</h3>
+      </div>
+      <button class="btn-icon-close" (click)="toggleForm()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <div class="card__body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Prénom *</label>
+          <input class="form-control" type="text" placeholder="Ex: Moussa"
+            [ngModel]="formFirstName()" (ngModelChange)="formFirstName.set($event)">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Nom *</label>
+          <input class="form-control" type="text" placeholder="Ex: Diallo"
+            [ngModel]="formLastName()" (ngModelChange)="formLastName.set($event)">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Téléphone (Identifiant) *</label>
+          <app-phone-input [ngModel]="formPhone()" (ngModelChange)="formPhone.set($event)"></app-phone-input>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Rôle & Permissions *</label>
+          <select class="form-control" [ngModel]="formRole()" (ngModelChange)="formRole.set($event)">
+            <option value="field_admin">Administrateur Terrain</option>
+            <option value="controller">Contrôleur de Billets (Scanner)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-error-banner" *ngIf="formError()">
+        <span class="material-symbols-outlined">error</span>
+        <span>{{ formError() }}</span>
+      </div>
+
+      <div class="form-hint">
+        <span class="material-symbols-outlined">info</span>
+        <span>Le collaborateur recevra le code PIN par défaut <strong>1234</strong> qu'il pourra personnaliser lors de sa première connexion.</span>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn btn--ghost" (click)="toggleForm()">Annuler</button>
+        <button class="btn btn--primary" (click)="addStaff()" [disabled]="submitting()">
+          <span class="spinner spinner--sm" *ngIf="submitting()"></span>
+          <ng-container *ngIf="!submitting()">
+            <span class="material-symbols-outlined">save</span>
+            Créer le compte collaborateur
+          </ng-container>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Staff List Table -->
+  <div class="card">
+    <div class="card__header">
+      <div class="card__header-title">
+        <span class="material-symbols-outlined">groups</span>
+        <h3>Liste de l'Équipe ({{ staffList().length }})</h3>
+      </div>
+    </div>
+
+    <div class="data-table-wrapper table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Nom & Prénom</th>
+            <th>Rôle</th>
+            <th>Numéro de Téléphone</th>
+            <th>Date d'ajout</th>
+            <th>Autorisation Retraits</th>
+            <th class="text-right">Actions</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr *ngIf="loading()">
+            <td colspan="6" class="loading-td">
+              <div class="spinner spinner--sm"></div>
+              <span>Chargement des collaborateurs...</span>
+            </td>
+          </tr>
+
+          <tr *ngIf="!loading() && staffList().length === 0">
+            <td colspan="6" class="empty-row">
+              <span class="material-symbols-outlined">groups</span>
+              <p>Aucun collaborateur enregistré. Cliquez sur "Ajouter un collaborateur" pour commencer.</p>
+            </td>
+          </tr>
+
+          <tr *ngFor="let s of staffList()">
+            <td>
+              <div class="user-cell">
+                <div class="user-avatar">
+                  {{ s.firstName ? s.firstName[0].toUpperCase() : 'U' }}
+                </div>
+                <div class="user-info">
+                  <strong class="user-name">{{ s.firstName }} {{ s.lastName }}</strong>
+                </div>
+              </div>
+            </td>
+
+            <td>
+              <span class="role-badge" [ngClass]="'role-badge--' + s.role">
+                {{ roleLabel(s.role) }}
+              </span>
+            </td>
+
+            <td class="font-mono">{{ s.phone }}</td>
+
+            <td>{{ s.createdAt | date:'dd/MM/yyyy' }}</td>
+
+            <td>
+              <button *ngIf="s.role === 'controller'"
+                class="btn-toggle-perm"
+                [class.btn-toggle-perm--active]="s.can_withdraw"
+                (click)="toggleCanWithdraw(s)"
+                title="{{ s.can_withdraw ? 'Désactiver la permission' : 'Autoriser la permission' }}">
+                <span class="material-symbols-outlined">{{ s.can_withdraw ? 'check_circle' : 'cancel' }}</span>
+                <span>{{ s.can_withdraw ? 'Autorisé' : 'Non autorisé' }}</span>
+              </button>
+
+              <span *ngIf="s.role !== 'controller'" class="text-muted">—</span>
+            </td>
+
+            <td class="text-right">
+              <button class="btn-icon btn-icon--danger"
+                (click)="deleteStaff(s.id)"
+                [disabled]="deleting() === s.id"
+                title="Supprimer ce membre">
+                <span class="material-symbols-outlined">delete</span>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>

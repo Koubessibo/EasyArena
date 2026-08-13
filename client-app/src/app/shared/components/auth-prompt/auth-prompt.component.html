@@ -1,0 +1,25 @@
+<div class="auth-prompt-backdrop" (click)="dismiss()"></div>
+
+<div class="auth-prompt-card">
+  <button class="auth-prompt-card__close" type="button" (click)="dismiss()" aria-label="Fermer">
+    <span class="material-symbols-outlined">close</span>
+  </button>
+
+  <div class="auth-prompt-card__icon-wrap">
+    <span class="material-symbols-outlined auth-prompt-card__icon">lock</span>
+  </div>
+
+  <h3 class="auth-prompt-card__title">Connectez-vous</h3>
+  <p class="auth-prompt-card__subtitle">
+    Créez un compte ou connectez-vous {{ message }}.
+  </p>
+
+  <div class="auth-prompt-card__actions">
+    <a routerLink="/login" class="btn btn--primary btn--full" (click)="dismiss()">
+      Se connecter
+    </a>
+    <a routerLink="/register" class="btn btn--ghost btn--full" (click)="dismiss()">
+      Créer un compte
+    </a>
+  </div>
+</div>

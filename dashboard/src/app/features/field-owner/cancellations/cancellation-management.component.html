@@ -1,0 +1,83 @@
+<div class="cancellation-mgmt">
+  <button class="btn-back" (click)="location.back()">
+    <span class="material-symbols-outlined">arrow_back</span>
+    Retour
+  </button>
+  <div class="cancellation-mgmt__header">
+    <h1 class="cancellation-mgmt__title">Demandes d'annulation</h1>
+    <p class="cancellation-mgmt__subtitle">Gérez les demandes d'annulation de vos clients en attente de validation.</p>
+  </div>
+
+  <div class="alert alert--error" *ngIf="errorMessage()">
+    <span class="material-symbols-outlined">error</span>
+    {{ errorMessage() }}
+  </div>
+
+  <div class="alert alert--success" *ngIf="successMessage()">
+    <span class="material-symbols-outlined">check_circle</span>
+    {{ successMessage() }}
+  </div>
+
+  <!-- Skeleton / Loader -->
+  <div class="loader" *ngIf="isLoading()">
+    <div class="spinner spinner--lg"></div>
+    <p>Chargement des demandes...</p>
+  </div>
+
+  <!-- Contenu Principal -->
+  <div class="cancellation-mgmt__content" *ngIf="!isLoading()">
+    
+    <!-- Empty State -->
+    <div class="empty-state" *ngIf="pendingRequests().length === 0">
+      <span class="material-symbols-outlined">inbox</span>
+      <p>Aucune demande d'annulation en attente.</p>
+    </div>
+
+    <!-- Table Responsive (Grid Cards) -->
+    <div class="request-grid" *ngIf="pendingRequests().length > 0">
+      
+      <div class="request-card" *ngFor="let request of pendingRequests()">
+        <div class="request-card__body">
+          <div class="request-card__info">
+            <h3 class="request-card__client">
+              <span class="material-symbols-outlined">person</span>
+              {{ request.client?.first_name }} {{ request.client?.last_name }}
+            </h3>
+            <p class="request-card__detail">
+              <span class="material-symbols-outlined">stadium</span>
+              Terrain : <strong>{{ request.field?.name }}</strong>
+            </p>
+            <p class="request-card__detail">
+              <span class="material-symbols-outlined">event</span>
+              Date : {{ request.booking_date | date:'dd/MM/yyyy' }} ({{ request.slot_start }} - {{ request.slot_end }})
+            </p>
+          </div>
+          
+          <div class="request-card__amount">
+            <span class="request-card__amount-label">Montant de la réservation</span>
+            <span class="request-card__amount-value">{{ request.total_amount | number:'1.0-0' }} CFA</span>
+          </div>
+        </div>
+
+        <div class="request-card__actions">
+          <button 
+            class="btn btn--danger" 
+            [disabled]="processingId() !== null"
+            (click)="processRequest(request.id, false)">
+            <span *ngIf="processingId() !== request.id">Refuser</span>
+            <span *ngIf="processingId() === request.id" class="spinner"></span>
+          </button>
+          
+          <button 
+            class="btn btn--success" 
+            [disabled]="processingId() !== null"
+            (click)="processRequest(request.id, true)">
+            <span *ngIf="processingId() !== request.id">Accepter</span>
+            <span *ngIf="processingId() === request.id" class="spinner"></span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>

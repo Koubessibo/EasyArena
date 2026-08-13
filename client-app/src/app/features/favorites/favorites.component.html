@@ -1,0 +1,59 @@
+<div class="favorites-screen">
+
+  <!-- Header -->
+  <header class="favorites-header">
+    <div class="favorites-header__inner">
+      <a routerLink="/home" class="favorites-header__back" title="Retour">
+        <span class="material-symbols-outlined">arrow_back</span>
+      </a>
+      <div class="header-titles">
+        <h1 class="favorites-header__title">Mes Terrains Favoris</h1>
+        <p class="header-subtitle">Retrouvez vos complexes sportifs préférés et réservez rapidement vos créneaux</p>
+      </div>
+      <span class="favorites-header__count" *ngIf="!loading() && favoriteFields().length > 0">
+        {{ favoriteFields().length }} {{ favoriteFields().length > 1 ? 'terrains' : 'terrain' }}
+      </span>
+    </div>
+  </header>
+
+  <!-- Container -->
+  <div class="favorites-container">
+    <!-- Loading Skeletons -->
+    <div *ngIf="loading()" class="favorites-loading">
+      <div class="skeleton-card" *ngFor="let i of [1,2,3,4]">
+        <div class="skeleton skeleton--image"></div>
+        <div class="skeleton-card__body">
+          <div class="skeleton skeleton--title"></div>
+          <div class="skeleton skeleton--text"></div>
+          <div class="skeleton skeleton--text short"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty state -->
+    <div *ngIf="!loading() && favoriteFields().length === 0" class="favorites-empty">
+      <div class="favorites-empty__icon">
+        <span class="material-symbols-outlined">favorite_border</span>
+      </div>
+      <h2 class="favorites-empty__title">Aucun terrain favori</h2>
+      <p class="favorites-empty__subtitle">
+        Ajoutez vos terrains coup de cœur à vos favoris en appuyant sur l'icône cœur 🤍 lors de vos recherches.
+      </p>
+      <a routerLink="/home" class="btn btn--primary">
+        <span class="material-symbols-outlined">search</span>
+        Explorer les terrains
+      </a>
+    </div>
+
+    <!-- Favorites list -->
+    <div *ngIf="!loading() && favoriteFields().length > 0" class="favorites-list">
+      <app-field-card
+        *ngFor="let field of favoriteFields()"
+        [field]="field"
+        [isFavorite]="true"
+        (favoriteToggled)="toggleFavorite($event)">
+      </app-field-card>
+    </div>
+  </div>
+
+</div>

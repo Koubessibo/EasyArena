@@ -1,0 +1,23 @@
+.filter-chips { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+.filter-chip {
+  padding: 0.375rem 1rem;
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-full);
+  background: transparent;
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  &:hover { border-color: var(--primary-green); color: var(--primary-green); }
+  &.active { background: var(--primary-green); border-color: var(--primary-green); color: #fff; }
+}
+
+.order-ref { font-family: monospace; font-size: var(--font-size-xs); font-weight: var(--font-weight-semibold); color: var(--primary-blue); }
+.client-name { font-weight: var(--font-weight-medium); color: var(--text-primary); }
+.client-phone { font-size: var(--font-size-xs); color: var(--text-muted); margin-top: 0.1rem; }
+.products-cell { font-size: var(--font-size-xs); color: var(--text-secondary); max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.amount-cell { font-weight: var(--font-weight-semibold); color: var(--primary-green); }
+.empty-row { text-align: center; color: var(--text-muted); padding: 2rem !important; font-style: italic; }

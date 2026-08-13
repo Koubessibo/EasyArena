@@ -1,0 +1,43 @@
+<div class="schedule-editor card">
+  <h3 class="schedule-editor__title">
+    <span class="material-symbols-outlined">schedule</span>
+    Horaires d'ouverture
+  </h3>
+  <p class="schedule-editor__hint">Ces horaires s'appliquent tous les jours. Une valeur de fermeture inférieure à l'ouverture (ex: 03:00) signifie 3h du matin le lendemain.</p>
+
+  <div class="schedule-editor__grid">
+    <div class="form-group">
+      <label class="form-label">Ouverture</label>
+      <input class="form-input" type="time" [ngModel]="openAt()" (ngModelChange)="openAt.set($event)">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Fermeture</label>
+      <input class="form-input" type="time" [ngModel]="closeAt()" (ngModelChange)="closeAt.set($event)">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Durée d'un créneau</label>
+      <select class="form-input" [ngModel]="slotDuration()" (ngModelChange)="slotDuration.set(+$event)">
+        <option *ngFor="let d of durations" [value]="d">{{ d }} min</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Prix par créneau (FCFA)</label>
+      <input class="form-input" type="number" min="0" [ngModel]="pricePerSlot()" (ngModelChange)="pricePerSlot.set(+$event)">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Acompte par créneau (FCFA, optionnel)</label>
+      <input class="form-input" type="number" min="0" [ngModel]="depositPerSlot()" (ngModelChange)="depositPerSlot.set($event ? +$event : null)" placeholder="Aucun">
+    </div>
+  </div>
+
+  <div class="schedule-editor__actions">
+    <button class="btn btn--primary" (click)="save()" [disabled]="loading()">
+      <span *ngIf="loading()" class="loading-spinner"></span>
+      <span *ngIf="!loading()">Sauvegarder</span>
+    </button>
+    <span *ngIf="success()" class="schedule-editor__success">
+      <span class="material-symbols-outlined">check_circle</span> Horaires mis à jour
+    </span>
+    <span *ngIf="error()" class="schedule-editor__error">{{ error() }}</span>
+  </div>
+</div>

@@ -1,0 +1,244 @@
+<div class="page-content">
+  <div class="earnings-header">
+    <app-page-header title="Revenus" subtitle="Suivi de vos gains et retraits" [showBack]="true"></app-page-header>
+    
+    <div class="earnings-actions">
+      <button class="btn btn--outline" (click)="exportPdf()">
+        <span class="material-symbols-outlined">picture_as_pdf</span>
+        Exporter PDF
+      </button>
+      <button class="btn btn--primary" (click)="exportExcel()">
+        <span class="material-symbols-outlined">table_view</span>
+        Exporter Excel
+      </button>
+    </div>
+  </div>
+
+  <!-- ── 3 KPI CARDS ────────────────────────────────────────────────────────── -->
+  <div class="kpi-grid">
+    <!-- Card 1: Solde disponible -->
+    <div class="kpi-card kpi-card--primary">
+      <div class="kpi-card__top">
+        <span class="kpi-card__icon material-symbols-outlined">account_balance_wallet</span>
+        <span class="kpi-card__badge">Mis à jour</span>
+      </div>
+      <p class="kpi-card__label">Solde disponible</p>
+      <h3 class="kpi-card__value">{{ balance() | fcfa }}</h3>
+      <div class="kpi-card__footer" *ngIf="canWithdraw()">
+        <button class="btn btn--white btn--sm" (click)="openWithdrawModal()">
+          <span class="material-symbols-outlined">payments</span>
+          Retirer les fonds
+        </button>
+      </div>
+    </div>
+
+    <!-- Card 2: Revenus Brut -->
+    <div class="kpi-card">
+      <div class="kpi-card__top">
+        <span class="kpi-card__icon kpi-card__icon--green material-symbols-outlined">trending_up</span>
+        <span class="kpi-card__badge kpi-card__badge--success">Actif</span>
+      </div>
+      <p class="kpi-card__label">Chiffre d'Affaires Brut</p>
+      <h3 class="kpi-card__value">{{ totalGrossRevenue() | fcfa }}</h3>
+      <p class="kpi-card__sub">Total cumulé des crédits</p>
+    </div>
+
+    <!-- Card 3: Total Retraits -->
+    <div class="kpi-card">
+      <div class="kpi-card__top">
+        <span class="kpi-card__icon kpi-card__icon--orange material-symbols-outlined">account_balance</span>
+        <span class="kpi-card__badge kpi-card__badge--info">{{ withdrawals().length }} demande(s)</span>
+      </div>
+      <p class="kpi-card__label">Total Retraits Débités</p>
+      <h3 class="kpi-card__value">{{ totalWithdrawals() | fcfa }}</h3>
+      <p class="kpi-card__sub">Fonds décaissés avec succès</p>
+    </div>
+  </div>
+
+  <!-- ── CHART & STATS ──────────────────────────────────────────────────────── -->
+  <div class="card margin-top">
+    <div class="card__header">
+      <div>
+        <h3 class="card__title">Revenus hebdomadaires</h3>
+        <p class="card__subtitle">Aperçu dynamique de votre activité sur les 7 derniers jours</p>
+      </div>
+    </div>
+    <div class="card__body">
+      <div class="bar-chart">
+        <div *ngFor="let item of weeklyEarnings()" class="bar-chart__item">
+          <div class="bar-chart__bar-wrap">
+            <div class="bar-chart__bar" [style.height.%]="getBarHeight(item.value)">
+              <span class="bar-chart__tooltip">{{ item.value | fcfa }}</span>
+            </div>
+          </div>
+          <span class="bar-chart__label">{{ item.day }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TABLE TRANSACTIONS ─────────────────────────────────────────────────── -->
+  <div class="card margin-top">
+    <div class="card__header card__header--split">
+      <div>
+        <h3 class="card__title">Historique des Opérations</h3>
+        <p class="card__subtitle">Journal détaillé des entrées et sorties de fonds</p>
+      </div>
+      <span class="tx-count-badge">{{ transactions().length }} opération(s)</span>
+    </div>
+    
+    <div class="table-container table-responsive">
+      <table class="data-table" *ngIf="transactions().length > 0">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Montant</th>
+            <th>Statut</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let tx of transactions()">
+            <td>{{ tx.createdAt ? (tx.createdAt | date:'dd/MM/yyyy HH:mm') : '-' }}</td>
+            <td>
+              <span class="tx-type-badge" [ngClass]="'tx-type-badge--' + tx.type">
+                {{ tx.type }}
+              </span>
+            </td>
+            <td>{{ tx.description || 'Opération financière' }}</td>
+            <td [class.amount--positive]="tx.amount > 0" [class.amount--negative]="tx.amount < 0" class="font-bold">
+              {{ tx.amount > 0 ? '+' : '' }}{{ tx.amount | fcfa }}
+            </td>
+            <td>
+              <span class="status-badge status-badge--success">Complété</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div *ngIf="transactions().length === 0" class="empty-transactions">
+        <span class="material-symbols-outlined">receipt_long</span>
+        <p>Aucune transaction enregistrée pour le moment.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── WITHDRAW MODAL ─────────────────────────────────────────────────────── -->
+  <div class="modal-overlay" *ngIf="showWithdrawModal()" (click)="closeWithdrawModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal__header">
+        <h3 class="modal__title">Demande de retrait</h3>
+        <button class="btn btn--ghost btn--icon" (click)="closeWithdrawModal()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div class="modal__body">
+
+        <!-- STEP 1: Form -->
+        <ng-container *ngIf="withdrawStep() === 'form'">
+          <p class="modal__balance">Solde disponible: <strong>{{ balance() | fcfa }}</strong></p>
+
+          <!-- Method selection -->
+          <div class="form-group">
+            <label class="form-label">Méthode de retrait</label>
+            <div class="operator-group">
+              <label class="operator-option">
+                <input type="radio" name="method" value="mobile_money"
+                  [checked]="withdrawMethod() === 'mobile_money'"
+                  (change)="withdrawMethod.set('mobile_money')"> Mobile Money
+              </label>
+              <label class="operator-option">
+                <input type="radio" name="method" value="bank_transfer"
+                  [checked]="withdrawMethod() === 'bank_transfer'"
+                  (change)="withdrawMethod.set('bank_transfer')"> Virement bancaire
+              </label>
+            </div>
+          </div>
+
+          <!-- Mobile Money fields -->
+          <ng-container *ngIf="withdrawMethod() === 'mobile_money'">
+            <div class="form-group">
+              <label class="form-label">Opérateur</label>
+              <div class="operator-group">
+                <label class="operator-option">
+                  <input type="radio" name="operator" value="WAVE"
+                    [checked]="withdrawOperator() === 'WAVE'"
+                    (change)="withdrawOperator.set('WAVE')"> Wave
+                </label>
+                <label class="operator-option">
+                  <input type="radio" name="operator" value="ORANGE_MONEY"
+                    [checked]="withdrawOperator() === 'ORANGE_MONEY'"
+                    (change)="withdrawOperator.set('ORANGE_MONEY')"> Orange Money
+                </label>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Numéro de téléphone</label>
+              <app-phone-input [ngModel]="withdrawPhone()" (ngModelChange)="withdrawPhone.set($event)"></app-phone-input>
+            </div>
+          </ng-container>
+
+          <!-- Bank Transfer fields -->
+          <ng-container *ngIf="withdrawMethod() === 'bank_transfer'">
+            <div class="form-group">
+              <label class="form-label">Coordonnées bancaires (Nom banque / N° compte)</label>
+              <input class="form-input" type="text"
+                placeholder="Ex: CBAO - SN012 0001 0000 1234 5678"
+                [value]="withdrawDestination()"
+                (input)="withdrawDestination.set($any($event.target).value)">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Joindre le RIB (PDF ou image)</label>
+              <input class="form-input" type="file" accept=".pdf,.jpg,.jpeg,.png"
+                (change)="onRibFileSelect($event)">
+              <p *ngIf="ribUploading()" class="form-hint">Upload en cours...</p>
+              <p *ngIf="ribFile() && !ribUploading() && ribUrl()" class="form-hint form-hint--success">RIB uploadé</p>
+            </div>
+          </ng-container>
+
+          <!-- Amount -->
+          <div class="form-group">
+            <label class="form-label">Montant à retirer (FCFA)</label>
+            <input class="form-input" type="number" [placeholder]="balance().toString()"
+              [value]="withdrawAmount()" (input)="withdrawAmount.set(+$any($event.target).value)">
+          </div>
+
+          <p *ngIf="withdrawError()" class="form-error">{{ withdrawError() }}</p>
+          <div class="modal__actions">
+            <button class="btn btn--outline" (click)="closeWithdrawModal()">Annuler</button>
+            <button class="btn btn--primary" (click)="sendOtp()" [disabled]="otpSending() || ribUploading()">
+              {{ otpSending() ? 'Envoi OTP...' : 'Continuer' }}
+            </button>
+          </div>
+        </ng-container>
+
+        <!-- STEP 2: OTP verification -->
+        <ng-container *ngIf="withdrawStep() === 'otp'">
+          <p class="modal__info">Un code OTP a été envoyé à votre numéro de téléphone. Veuillez le saisir ci-dessous.</p>
+          <div class="form-group">
+            <label class="form-label">Code OTP (6 chiffres)</label>
+            <input class="form-input form-input--otp" type="text" maxlength="6"
+              placeholder="000000"
+              [value]="otpCode()"
+              (input)="otpCode.set($any($event.target).value)">
+          </div>
+          <p class="modal__resend">
+            <button class="btn btn--ghost btn--sm" (click)="resendOtp()" [disabled]="otpSending()">
+              {{ otpSending() ? 'Envoi...' : 'Renvoyer le code' }}
+            </button>
+          </p>
+          <p *ngIf="withdrawError()" class="form-error">{{ withdrawError() }}</p>
+          <div class="modal__actions">
+            <button class="btn btn--outline" (click)="withdrawStep.set('form')">Retour</button>
+            <button class="btn btn--primary" (click)="requestWithdraw()" [disabled]="withdrawLoading()">
+              {{ withdrawLoading() ? 'Traitement...' : 'Confirmer le retrait' }}
+            </button>
+          </div>
+        </ng-container>
+
+      </div>
+    </div>
+  </div>
+
+</div>

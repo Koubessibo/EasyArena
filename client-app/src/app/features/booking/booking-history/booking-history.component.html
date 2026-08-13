@@ -1,0 +1,156 @@
+<div class="history-page">
+
+  <!-- Header -->
+  <header class="history-header">
+    <div class="history-header__inner">
+      <div class="header-title-box">
+        <span class="header-badge">
+          <span class="material-symbols-outlined">sports_soccer</span>
+          Réservations de Terrains
+        </span>
+        <h1 class="history-header__title">Mes Réservations</h1>
+        <p class="header-subtitle">Consultez le calendrier de vos matchs et gérez vos créneaux réservés</p>
+      </div>
+
+      <!-- Pill Tabs -->
+      <div class="history-tabs">
+        <button
+          class="history-tab"
+          [class.history-tab--active]="activeTab() === 'upcoming'"
+          (click)="switchTab('upcoming')">
+          <span class="material-symbols-outlined">schedule</span>
+          Matchs à venir
+          <span *ngIf="upcomingBookings().length" class="history-tab__badge">
+            {{ upcomingBookings().length }}
+          </span>
+        </button>
+
+        <button
+          class="history-tab"
+          [class.history-tab--active]="activeTab() === 'past'"
+          (click)="switchTab('past')">
+          <span class="material-symbols-outlined">history</span>
+          Matchs passés
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Content -->
+  <div class="history-content">
+
+    <!-- Loading -->
+    <div *ngIf="loading()" class="history-loading">
+      <div *ngFor="let i of [1,2,3]" class="booking-skeleton">
+        <div class="skeleton skeleton--image booking-skeleton__image"></div>
+        <div class="booking-skeleton__body">
+          <div class="skeleton skeleton--text" style="width: 70%; height: 1rem;"></div>
+          <div class="skeleton skeleton--text" style="width: 50%; height: 0.875rem;"></div>
+          <div class="skeleton skeleton--text" style="width: 40%; height: 0.875rem;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Booking cards -->
+    <div *ngIf="!loading()">
+      <div *ngIf="currentBookings.length > 0" class="bookings-list">
+        <div *ngFor="let booking of currentBookings" class="booking-card">
+
+          <!-- Image Cover -->
+          <div class="booking-card__cover">
+            <img
+              *ngIf="booking.fieldImageUrl && !brokenImages.has(booking.id)"
+              [src]="booking.fieldImageUrl"
+              [alt]="booking.fieldName"
+              class="booking-card__image"
+              (error)="onImageError(booking.id)">
+            <div
+              *ngIf="!booking.fieldImageUrl || brokenImages.has(booking.id)"
+              class="booking-card__image booking-card__image--placeholder">
+              <span class="material-symbols-outlined">stadium</span>
+            </div>
+
+            <span class="status-badge" [ngClass]="getStatusClass(booking.status)">
+              <span class="badge-dot"></span>
+              {{ getStatusLabel(booking.status) }}
+            </span>
+          </div>
+
+          <!-- Body -->
+          <div class="booking-card__body">
+            <h3 class="booking-card__name">{{ booking.fieldName }}</h3>
+
+            <!-- Address -->
+            <p class="booking-card__address">
+              <span class="material-symbols-outlined">location_on</span>
+              {{ booking.fieldAddress }}
+            </p>
+
+            <!-- Date & Time Box -->
+            <div class="datetime-box">
+              <div class="datetime-item">
+                <span class="material-symbols-outlined">calendar_today</span>
+                <span>{{ formatDate(booking.date) }}</span>
+              </div>
+              <div class="datetime-item">
+                <span class="material-symbols-outlined">schedule</span>
+                <span>{{ booking.startTime }} – {{ booking.endTime }}</span>
+              </div>
+            </div>
+
+            <!-- Price Footer -->
+            <div class="booking-card__footer">
+              <div class="price-info">
+                <span class="price-label">Prix du créneau</span>
+                <span class="price-amount">{{ booking.pricing.total | fcfa }}</span>
+              </div>
+
+              <!-- Actions -->
+              <div class="booking-card__actions" *ngIf="activeTab() === 'upcoming'">
+                <button
+                  class="btn btn--cancel"
+                  (click)="cancelBooking(booking)">
+                  Annuler
+                </button>
+                <a
+                  [routerLink]="['/fields', booking.fieldId]"
+                  class="btn btn--primary">
+                  Voir le terrain
+                </a>
+              </div>
+
+              <div class="booking-card__actions" *ngIf="activeTab() === 'past'">
+                <a [routerLink]="['/fields', booking.fieldId]"
+                   class="btn btn--primary">
+                  Réserver à nouveau
+                </a>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty state -->
+      <div *ngIf="currentBookings.length === 0" class="history-empty">
+        <div class="empty-icon-box">
+          <span class="material-symbols-outlined">
+            {{ activeTab() === 'upcoming' ? 'calendar_today' : 'history' }}
+          </span>
+        </div>
+        <h2 class="history-empty__title">
+          {{ activeTab() === 'upcoming' ? 'Aucune réservation à venir' : 'Aucune réservation passée' }}
+        </h2>
+        <p class="history-empty__text">
+          {{ activeTab() === 'upcoming'
+            ? 'Réservez un terrain dès maintenant pour votre prochain match entre amis.'
+            : 'Vos réservations passées apparaîtront ici.' }}
+        </p>
+        <a routerLink="/home" class="btn btn--primary" *ngIf="activeTab() === 'upcoming'">
+          <span class="material-symbols-outlined">search</span>
+          Trouver un terrain
+        </a>
+      </div>
+    </div>
+  </div>
+</div>

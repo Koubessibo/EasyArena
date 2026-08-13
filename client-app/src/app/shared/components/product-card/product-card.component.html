@@ -1,0 +1,58 @@
+<a [routerLink]="['/shop', product.id]" class="product-card">
+  <!-- Image Container -->
+  <div class="product-card__image-wrap">
+    <img [src]="product.imageUrl"
+         [alt]="product.name"
+         class="product-card__image"
+         loading="lazy">
+
+    <!-- Wishlist Pill -->
+    <button class="product-card__wishlist"
+            [class.product-card__wishlist--active]="isWishlisted"
+            (click)="toggleWishlist($event)"
+            [attr.aria-label]="isWishlisted ? 'Retirer des favoris' : 'Ajouter aux favoris'">
+      <span class="material-symbols-outlined" [class.filled]="isWishlisted">favorite</span>
+    </button>
+
+    <!-- Discount Badge -->
+    <div *ngIf="discountPercent" class="product-card__discount-badge">
+      -{{ discountPercent }}%
+    </div>
+
+    <!-- Stock Tag -->
+    <div class="product-card__stock-tag" [class.out-of-stock]="product.stock === 0">
+      {{ product.stock > 0 ? 'En stock' : 'Rupture' }}
+    </div>
+  </div>
+
+  <!-- Body Content -->
+  <div class="product-card__body">
+    <span class="product-card__brand" *ngIf="product.brand">{{ product.brand }}</span>
+    <h3 class="product-card__name">{{ product.name }}</h3>
+
+    <!-- Vendor Meta -->
+    <div class="product-card__vendor" *ngIf="product.vendor">
+      <span class="material-symbols-outlined">storefront</span>
+      <span>{{ product.vendor.name }}</span>
+    </div>
+
+    <!-- Footer Row: Price + Add to Cart Quick Button -->
+    <div class="product-card__footer">
+      <div class="price-box">
+        <span class="product-card__price">{{ product.price | fcfa }}</span>
+        <span *ngIf="product.originalPrice" class="product-card__original-price">
+          {{ product.originalPrice | fcfa }}
+        </span>
+      </div>
+
+      <button 
+        type="button" 
+        class="quick-add-btn" 
+        [disabled]="product.stock === 0"
+        (click)="addToCart($event)"
+        title="Ajouter au panier">
+        <span class="material-symbols-outlined">add_shopping_cart</span>
+      </button>
+    </div>
+  </div>
+</a>

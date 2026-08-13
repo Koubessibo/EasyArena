@@ -1,0 +1,85 @@
+<div class="client-subs">
+  <div class="client-subs__header">
+    <h1 class="client-subs__title">Nos Formules d'Abonnement</h1>
+    <p class="client-subs__subtitle">Choisissez l'offre qui correspond le mieux à votre rythme de jeu.</p>
+  </div>
+
+  <!-- Messages globaux -->
+  <div class="alert alert--error" *ngIf="errorMessage()">
+    <span class="material-symbols-outlined">error</span>
+    {{ errorMessage() }}
+  </div>
+  
+  <div class="alert alert--success" *ngIf="successMessage()">
+    <span class="material-symbols-outlined">check_circle</span>
+    {{ successMessage() }}
+  </div>
+
+  <!-- Loader Initial -->
+  <div class="client-subs__loader" *ngIf="isLoading()">
+    <div class="spinner spinner--lg"></div>
+    <p>Chargement des offres en cours...</p>
+  </div>
+
+  <!-- Grille des offres -->
+  <div class="plans-grid" *ngIf="!isLoading()">
+    
+    <div class="empty-state" *ngIf="plans().length === 0">
+      <span class="material-symbols-outlined">sentiment_dissatisfied</span>
+      <p>Aucune formule n'est disponible pour le moment.</p>
+    </div>
+
+    <!-- Carte Plan -->
+    <div class="plan-card" *ngFor="let plan of plans()">
+      <!-- Badge Moratoire si applicable -->
+      <div class="plan-card__badge" *ngIf="plan.allows_moratorium">
+        <span class="material-symbols-outlined">payments</span>
+        Paiement en plusieurs fois disponible
+      </div>
+
+      <div class="plan-card__content">
+        <h2 class="plan-card__name">{{ plan.name }}</h2>
+        
+        <div class="plan-card__price-wrap">
+          <span class="plan-card__price">{{ plan.price | number:'1.0-0' }} CFA</span>
+        </div>
+
+        <ul class="plan-card__features">
+          <li>
+            <span class="material-symbols-outlined">sports_soccer</span>
+            {{ plan.reservations_count }} réservations incluses
+          </li>
+          <li *ngIf="!plan.allows_moratorium">
+            <span class="material-symbols-outlined">event_available</span>
+            Paiement unique
+          </li>
+        </ul>
+
+        <!-- Détail de l'échéancier si moratoire -->
+        <div class="plan-card__moratorium" *ngIf="plan.allows_moratorium && plan.moratorium_config">
+          <h4 class="plan-card__moratorium-title">Échéancier :</h4>
+          <ul class="plan-card__moratorium-list">
+            <li *ngFor="let step of plan.moratorium_config">
+              {{ step.percentage }}% 
+              <ng-container *ngIf="step.daysAfter === 0">aujourd'hui</ng-container>
+              <ng-container *ngIf="step.daysAfter > 0">dans {{ step.daysAfter }} jours</ng-container>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="plan-card__action">
+        <button 
+          class="btn btn--primary btn--full" 
+          [disabled]="submittingPlanId() !== null || subscribedPlanIds().includes(plan.id)"
+          (click)="subscribeToPlan(plan)">
+          
+          <span *ngIf="submittingPlanId() !== plan.id && !subscribedPlanIds().includes(plan.id)">Choisir cette formule</span>
+          <span *ngIf="subscribedPlanIds().includes(plan.id)">Souscrit ✓</span>
+          <span *ngIf="submittingPlanId() === plan.id" class="spinner"></span>
+        </button>
+      </div>
+    </div>
+    
+  </div>
+</div>

@@ -1,0 +1,137 @@
+<div class="client-events">
+  <div class="client-events__header">
+    <h1 class="client-events__title">Événements Sportifs</h1>
+    <p class="client-events__subtitle">Découvrez les tournois et matchs à venir et réservez votre place.</p>
+  </div>
+
+  <div class="alert alert--error" *ngIf="errorMessage()">
+    <span class="material-symbols-outlined">error</span>
+    {{ errorMessage() }}
+  </div>
+
+  <div class="loader" *ngIf="isLoading()">
+    <div class="spinner spinner--lg"></div>
+    <p>Recherche des événements...</p>
+  </div>
+
+  <div class="empty-state" *ngIf="!isLoading() && events().length === 0">
+    <span class="material-symbols-outlined">event_busy</span>
+    <p>Aucun événement sportif n'est prévu pour le moment.</p>
+  </div>
+
+  <!-- Grille des événements -->
+  <div class="event-grid" *ngIf="!isLoading() && events().length > 0">
+    <article class="event-card" *ngFor="let event of events()">
+      <div class="event-card__cover" 
+           [style.backgroundImage]="event.cover_image_url ? 'url(' + event.cover_image_url + ')' : 'url(assets/images/default-event.jpg)'">
+        <div class="event-card__price-badge">
+          {{ event.ticket_price > 0 ? (event.ticket_price | number:'1.0-0') + ' CFA' : 'GRATUIT' }}
+        </div>
+      </div>
+      
+      <div class="event-card__body">
+        <h2 class="event-card__name">{{ event.name }}</h2>
+        
+        <div class="event-card__info-list">
+          <div class="event-card__info-item">
+            <span class="material-symbols-outlined">calendar_today</span>
+            <span>{{ event.date | date:'longDate' }} à {{ event.time }}</span>
+          </div>
+          <div class="event-card__info-item">
+            <span class="material-symbols-outlined">location_on</span>
+            <span>{{ event.location }}</span>
+          </div>
+        </div>
+
+        <p class="event-card__desc">{{ event.description }}</p>
+      </div>
+      
+      <div class="event-card__footer">
+        <button 
+          class="btn btn--primary btn--full"
+          [disabled]="processingEventId() !== null"
+          (click)="openPaymentModal(event)">
+          <span *ngIf="processingEventId() !== event.id">Acheter mon ticket</span>
+          <span *ngIf="processingEventId() === event.id" class="spinner"></span>
+        </button>
+      </div>
+    </article>
+  </div>
+</div>
+
+<!-- Modal de Paiement Samir Money -->
+<div class="modal-overlay" *ngIf="selectedEventForPayment()">
+  <div class="modal-content">
+    <button class="modal-close" (click)="closePaymentModal()">
+      <span class="material-symbols-outlined">close</span>
+    </button>
+    
+    <div class="payment-modal">
+      <h2 class="payment-modal__title">Paiement Samir Money</h2>
+      <p class="payment-modal__desc">
+        Achetez votre ticket pour <strong>{{ selectedEventForPayment()?.name }}</strong> au prix de <strong>{{ selectedEventForPayment()?.ticket_price | number:'1.0-0' }} CFA</strong>.
+      </p>
+
+      <div class="form-group">
+        <label>Opérateur</label>
+        <select class="form-control" (change)="paymentForm.operator = $any($event.target).value" [value]="paymentForm.operator">
+          <option value="WAVE">Wave</option>
+          <option value="ORANGE_MONEY">Orange Money</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Numéro de Téléphone</label>
+        <input type="tel" class="form-control" (input)="paymentForm.phone = $any($event.target).value" [value]="paymentForm.phone" placeholder="Ex: 771234567">
+      </div>
+
+      <div class="payment-modal__actions" *ngIf="!isAwaitingPayment()">
+        <button 
+          class="btn btn--primary btn--full"
+          [disabled]="processingEventId() !== null || !paymentForm.phone"
+          (click)="confirmPayment()">
+          <span *ngIf="!processingEventId()">Payer {{ selectedEventForPayment()?.ticket_price | number:'1.0-0' }} CFA</span>
+          <span *ngIf="processingEventId()" class="spinner"></span>
+        </button>
+      </div>
+
+      <!-- Awaiting payment state -->
+      <div class="payment-modal__awaiting" *ngIf="isAwaitingPayment()">
+         <div class="spinner-large"></div>
+         <h3>En attente du paiement...</h3>
+         <p>Veuillez valider le paiement sur votre application <strong>{{ paymentForm.operator }}</strong>.</p>
+         <a *ngIf="paymentGatewayUrls()?.redirect_url" [href]="paymentGatewayUrls().redirect_url" target="_blank" class="btn btn--outline btn--full mt-4">
+           Ouvrir le lien de paiement
+         </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Succès (QR Code) -->
+<div class="modal-overlay" *ngIf="purchasedTicket()">
+  <div class="modal-content">
+    <button class="modal-close" (click)="closeModal()">
+      <span class="material-symbols-outlined">close</span>
+    </button>
+    
+    <div class="ticket-success">
+      <div class="ticket-success__icon">
+        <span class="material-symbols-outlined">check_circle</span>
+      </div>
+      <h2 class="ticket-success__title">Achat Réussi !</h2>
+      <p class="ticket-success__desc">
+        Votre ticket pour <strong>{{ purchasedTicket()?.event?.name }}</strong> est confirmé.
+      </p>
+
+      <div class="ticket-qrcode">
+        <canvas #qrCanvas class="ticket-qrcode__canvas"></canvas>
+        <p class="ticket-qrcode__hint">Présentez ce QR Code à l'entrée de l'événement.</p>
+      </div>
+      
+      <div class="ticket-success__actions">
+        <button class="btn btn--outline btn--full" (click)="closeModal()">Fermer</button>
+      </div>
+    </div>
+  </div>
+</div>

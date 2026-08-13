@@ -1,0 +1,271 @@
+<div class="fields-container">
+
+  <button class="btn-back" (click)="location.back()">
+    <span class="material-symbols-outlined">arrow_back</span>
+    Retour
+  </button>
+
+  <!-- Header -->
+  <div class="header">
+    <div>
+      <h1 class="title">Mes Terrains de Sport</h1>
+      <p class="subtitle">Gérez vos complexes sportifs, tarifs, photos et disponibilités.</p>
+    </div>
+
+    <button class="btn btn--primary" (click)="openAdd()" *ngIf="!showForm()">
+      <span class="material-symbols-outlined">add</span>
+      Ajouter un terrain
+    </button>
+  </div>
+
+  <!-- Error banner -->
+  <div class="alert alert--error" *ngIf="svc.error()">
+    <span class="material-symbols-outlined">error</span>
+    <span>{{ svc.error() }}</span>
+    <button class="alert-close" (click)="svc.error.set(null)">×</button>
+  </div>
+
+  <!-- Success feedback -->
+  <div class="alert alert--success" *ngIf="feedback()?.type === 'success'">
+    <span class="material-symbols-outlined">check_circle</span>
+    <span>{{ feedback()!.message }}</span>
+  </div>
+
+  <!-- Form Panel -->
+  <div class="card form-card" *ngIf="showForm()">
+    <div class="card__header">
+      <div class="card__header-title">
+        <span class="material-symbols-outlined">sports_soccer</span>
+        <h3>{{ editingField() ? 'Modifier le terrain' : 'Nouveau Terrain de Sport' }}</h3>
+      </div>
+      <button class="btn-icon-close" (click)="showForm.set(false)">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <div class="card__body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Nom du terrain *</label>
+          <input class="form-control" type="text" placeholder="Ex: Terrain Synthétique VIP Dakar"
+            [value]="form().name" (input)="updateForm('name', $any($event.target).value)">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Discipline / Sport *</label>
+          <select class="form-control" [value]="form().type" (change)="updateForm('type', $any($event.target).value)">
+            <option *ngFor="let t of fieldTypes" [value]="t.value">{{ t.label }}</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Localisation / Quartier *</label>
+          <input class="form-control" type="text" placeholder="Ex: Sacré-Cœur 3, Dakar"
+            [value]="form().location" (input)="updateForm('location', $any($event.target).value)">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Téléphone de contact / Réservations *</label>
+          <input class="form-control" type="text" placeholder="Ex: +221 77 123 45 67"
+            [value]="form().contactPhone" (input)="updateForm('contactPhone', $any($event.target).value)">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Email de contact (optionnel)</label>
+          <input class="form-control" type="email" placeholder="Ex: contact@complexedakar.sn"
+            [value]="form().contactEmail" (input)="updateForm('contactEmail', $any($event.target).value)">
+        </div>
+
+        <div class="form-group" style="grid-column: 1 / -1;">
+          <label class="form-label">Position exacte sur la Carte / Lien Google Maps *</label>
+          <input class="form-control" type="url" placeholder="Ex: https://maps.google.com/?q=14.7167,-17.4677 ou https://goo.gl/maps/..."
+            [value]="form().googleMapsUrl" (input)="updateForm('googleMapsUrl', $any($event.target).value)">
+          <small style="color:#64748b;font-size:0.775rem;margin-top:4px;display:block">
+            Copiez-collez le lien de votre terrain depuis Google Maps pour permettre aux clients de s'y rendre en 1 clic.
+          </small>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Type de Revêtement / Surface (Spécifique à la discipline) *</label>
+          <select class="form-control" [value]="form().surfaceType" (change)="updateForm('surfaceType', $any($event.target).value)">
+            <option *ngFor="let s of availableSurfaces()" [value]="s.value">{{ s.label }}</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Tarif de Location / heure (FCFA) *</label>
+          <input class="form-control" type="number" placeholder="15000"
+            [value]="form().pricePerHour" (input)="updateForm('pricePerHour', +$any($event.target).value)">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Acompte minimum / heure (FCFA)</label>
+          <input class="form-control" type="number" min="0" placeholder="0 (aucun acompte)"
+            [value]="form().depositPerHour" (input)="updateForm('depositPerHour', +$any($event.target).value)">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Capacité (Nb de Joueurs)</label>
+          <input class="form-control" type="number" placeholder="10 ou 14 joueurs"
+            [value]="form().capacity" (input)="updateForm('capacity', +$any($event.target).value)">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Statut du Terrain</label>
+          <select class="form-control" [value]="form().status" (change)="updateForm('status', $any($event.target).value)">
+            <option value="active">Actif / Disponible</option>
+            <option value="inactive">Inactif / Masqué</option>
+            <option value="maintenance">En Maintenance</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Amenities Section -->
+      <div class="form-section" style="margin-top: 1rem;">
+        <label class="form-label" style="font-size: 0.95rem; font-weight: 800; color: #0f172a; margin-bottom: 0.75rem;">
+          Équipements & Options pour les Clients
+        </label>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem; background: #f8fafc; padding: 1rem; border-radius: 12px; border: 1px solid #e2e8f0;">
+          <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; font-weight: 600; cursor: pointer; color: #334155;">
+            <input type="checkbox" [checked]="form().hasLighting" (change)="updateForm('hasLighting', $any($event.target).checked)">
+            💡 Éclairage Nocturne LED
+          </label>
+          <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; font-weight: 600; cursor: pointer; color: #334155;">
+            <input type="checkbox" [checked]="form().hasChangingRooms" (change)="updateForm('hasChangingRooms', $any($event.target).checked)">
+            🚿 Vestiaires & Douches
+          </label>
+          <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; font-weight: 600; cursor: pointer; color: #334155;">
+            <input type="checkbox" [checked]="form().hasParking" (change)="updateForm('hasParking', $any($event.target).checked)">
+            🅿️ Parking Sécurisé
+          </label>
+          <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; font-weight: 600; cursor: pointer; color: #334155;">
+            <input type="checkbox" [checked]="form().hasCafeteria" (change)="updateForm('hasCafeteria', $any($event.target).checked)">
+            ☕ Buvette / Cafétéria
+          </label>
+          <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; font-weight: 600; cursor: pointer; color: #334155;">
+            <input type="checkbox" [checked]="form().hasWifi" (change)="updateForm('hasWifi', $any($event.target).checked)">
+            📶 Wi-Fi Gratuit
+          </label>
+          <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; font-weight: 600; cursor: pointer; color: #334155;">
+            <input type="checkbox" [checked]="form().providesEquipment" (change)="updateForm('providesEquipment', $any($event.target).checked)">
+            ⚽ Ballon & Chasubles fournis
+          </label>
+        </div>
+      </div>
+
+      <!-- Photos section -->
+      <div class="form-section">
+        <label class="form-label">Photos & Galeries du Terrain</label>
+
+        <!-- Existing photos -->
+        <div class="photo-grid" *ngIf="editingField()?.photos?.length">
+          <div class="photo-thumb" *ngFor="let photo of editingField()!.photos">
+            <img [src]="photo.url" [alt]="editingField()!.name">
+            <span class="photo-cover-badge" *ngIf="photo.is_cover">Couverture</span>
+            <button class="photo-delete-btn" type="button" (click)="deleteExistingPhoto(photo)">
+              <span class="material-symbols-outlined">delete</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Pending file previews -->
+        <div class="photo-grid" *ngIf="previews().length">
+          <div class="photo-thumb photo-thumb--pending" *ngFor="let url of previews(); let i = index">
+            <img [src]="url" alt="aperçu">
+            <button class="photo-delete-btn" type="button" (click)="removePendingFile(i)">
+              <span class="material-symbols-outlined">close</span>
+            </button>
+          </div>
+        </div>
+
+        <input #fileInput type="file" accept="image/*" multiple hidden (change)="onFileSelected($event)">
+        <button type="button" class="btn btn--outline btn--sm" (click)="fileInput.click()">
+          <span class="material-symbols-outlined">add_photo_alternate</span>
+          Ajouter des photos du terrain
+        </button>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn btn--ghost" (click)="closeForm()">Annuler</button>
+        <button class="btn btn--primary" (click)="save()" [disabled]="saving()">
+          <span class="spinner spinner--sm" *ngIf="saving()"></span>
+          <ng-container *ngIf="!saving()">
+            <span class="material-symbols-outlined">save</span>
+            {{ editingField() ? 'Enregistrer les modifications' : 'Créer le terrain' }}
+          </ng-container>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Fields Table Card -->
+  <div class="card">
+    <div class="card__header">
+      <div class="card__header-title">
+        <span class="material-symbols-outlined">map</span>
+        <h3>Liste de vos Terrains ({{ fields().length }})</h3>
+      </div>
+    </div>
+
+    <div class="data-table-wrapper table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Terrain & Photo</th>
+            <th>Discipline</th>
+            <th>Localisation</th>
+            <th>Tarif / Heure</th>
+            <th>Capacité</th>
+            <th>Statut</th>
+            <th class="text-right">Actions</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr *ngFor="let field of fields()">
+            <td>
+              <div class="field-cell">
+                <div class="field-cell__thumb">
+                  <img *ngIf="field.imageUrl" [src]="field.imageUrl" [alt]="field.name">
+                  <div class="field-cell__icon" *ngIf="!field.imageUrl">
+                    <span class="material-symbols-outlined">sports_soccer</span>
+                  </div>
+                </div>
+                <p class="field-cell__name">{{ field.name }}</p>
+              </div>
+            </td>
+
+            <td><span class="sport-badge">{{ typeLabel(field.type) }}</span></td>
+
+            <td>{{ field.location }}</td>
+
+            <td class="amount-val">{{ field.pricePerHour | fcfa }}</td>
+
+            <td>{{ field.capacity }} joueurs</td>
+
+            <td><app-status-badge [status]="field.status"></app-status-badge></td>
+
+            <td class="text-right">
+              <div class="action-btns">
+                <button class="btn-icon" (click)="openEdit(field)" title="Modifier le terrain">
+                  <span class="material-symbols-outlined">edit</span>
+                </button>
+                <button class="btn-icon btn-icon--danger" (click)="delete(field.id)" title="Supprimer">
+                  <span class="material-symbols-outlined">delete</span>
+                </button>
+              </div>
+            </td>
+          </tr>
+
+          <tr *ngIf="fields().length === 0">
+            <td colspan="7" class="empty-row">
+              <span class="material-symbols-outlined">map</span>
+              <p>Vous n'avez pas encore ajouté de terrain. Cliquez sur "Ajouter un terrain" pour commencer.</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>

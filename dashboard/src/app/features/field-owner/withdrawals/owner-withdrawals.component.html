@@ -1,0 +1,119 @@
+<div class="owner-withdrawals">
+
+  <button class="btn-back" (click)="location.back()">
+    <span class="material-symbols-outlined">arrow_back</span>
+    Retour
+  </button>
+
+  <!-- Header -->
+  <div class="owner-withdrawals__header">
+    <div>
+      <h1 class="owner-withdrawals__title">Mes Retraits & Demandes Mobile Money</h1>
+      <p class="owner-withdrawals__subtitle">Suivez vos virements Wave, Orange Money et Free Money reçus sur votre compte récepteur.</p>
+    </div>
+  </div>
+
+  <!-- Filters & Exports -->
+  <div class="card filter-card">
+    <div class="filter-row">
+      <div class="form-group">
+        <label class="form-label">Du :</label>
+        <input class="form-control" type="date" [ngModel]="filterStartDate()" (ngModelChange)="filterStartDate.set($event)">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Au :</label>
+        <input class="form-control" type="date" [ngModel]="filterEndDate()" (ngModelChange)="filterEndDate.set($event)">
+      </div>
+
+      <div class="filter-actions">
+        <button class="btn btn--primary btn--sm" (click)="applyFilter()">
+          <span class="material-symbols-outlined">filter_alt</span>
+          Filtrer
+        </button>
+        <button class="btn btn--ghost btn--sm" (click)="clearFilter()">Réinitialiser</button>
+      </div>
+
+      <div class="export-actions">
+        <button class="btn btn--outline btn--sm" (click)="exportPdf()">
+          <span class="material-symbols-outlined">picture_as_pdf</span> PDF
+        </button>
+        <button class="btn btn--outline btn--sm" (click)="exportExcel()">
+          <span class="material-symbols-outlined">table_view</span> Excel
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="card">
+    <div class="card__header">
+      <div class="card__header-title">
+        <span class="material-symbols-outlined">history</span>
+        <h3>Journal des demandes de retrait</h3>
+      </div>
+      <span class="count-badge" *ngIf="total() > 0">{{ total() }} demandes</span>
+    </div>
+
+    <div class="data-table-wrapper table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Date & Heure</th>
+            <th>Méthode</th>
+            <th>Numéro Récepteur</th>
+            <th>Statut</th>
+            <th class="text-right">Montant (FCFA)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngIf="loading()">
+            <td colspan="5" class="loading-td">
+              <div class="spinner spinner--sm"></div>
+              <span>Chargement du journal...</span>
+            </td>
+          </tr>
+
+          <tr *ngIf="!loading() && data().length === 0">
+            <td colspan="5" class="empty-row">
+              <span class="material-symbols-outlined">account_balance_wallet</span>
+              <p>Aucune demande de retrait effectuée.</p>
+            </td>
+          </tr>
+
+          <tr *ngFor="let w of data()">
+            <td class="tx-date">
+              <span class="material-symbols-outlined">schedule</span>
+              {{ w.requestedAt | date:'dd/MM/yyyy HH:mm' }}
+            </td>
+
+            <td>
+              <span class="method-chip" [ngClass]="'method-chip--' + w.method">
+                <span class="material-symbols-outlined">smartphone</span>
+                {{ methodLabel(w.method) }}
+              </span>
+            </td>
+
+            <td class="font-mono">{{ w.destination || '-' }}</td>
+
+            <td><app-status-badge [status]="statusMap(w.status)"></app-status-badge></td>
+
+            <td class="text-right amount-val">{{ w.amount | fcfa }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination" *ngIf="totalPages > 1">
+      <button class="btn btn--ghost btn--sm" [disabled]="page() <= 1" (click)="goToPage(page() - 1)">
+        <span class="material-symbols-outlined">chevron_left</span>
+      </button>
+      <span class="pagination__info">Page {{ page() }} sur {{ totalPages }}</span>
+      <button class="btn btn--ghost btn--sm" [disabled]="page() >= totalPages" (click)="goToPage(page() + 1)">
+        <span class="material-symbols-outlined">chevron_right</span>
+      </button>
+    </div>
+  </div>
+
+</div>

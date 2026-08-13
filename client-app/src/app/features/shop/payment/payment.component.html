@@ -1,0 +1,155 @@
+<!-- STEP: FORM -->
+<div class="payment-page" *ngIf="step() === 'form'">
+  <div class="payment-card">
+    <div class="payment-card__header">
+      <a routerLink="/shop/cart" class="back-btn">
+        <span class="material-symbols-outlined">arrow_back</span>
+      </a>
+      <div class="samir-logo">
+        <span class="material-symbols-outlined">account_balance_wallet</span>
+        <span>Samir Money</span>
+      </div>
+    </div>
+
+    <div class="payment-card__body">
+      <h1>Paiement sécurisé</h1>
+      <p class="payment-subtitle">Choisissez votre moyen de paiement Mobile Money</p>
+
+      <div class="amount-display">
+        <span class="amount-label">Montant à payer</span>
+        <span class="amount-value">{{ cart.total() | number }} FCFA</span>
+      </div>
+
+      <div class="alert alert--error" *ngIf="errorMessage()">
+        <span class="material-symbols-outlined">error</span>
+        {{ errorMessage() }}
+      </div>
+
+      <!-- Mode de paiement (Wave / Orange Money) -->
+      <div class="form-group">
+        <label class="form-label">Opérateur Mobile Money</label>
+        <div class="operator-selector" style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+          <button
+            type="button"
+            class="btn"
+            [style.background]="operator() === 'WAVE' ? '#1dc4e9' : '#f1f5f9'"
+            [style.color]="operator() === 'WAVE' ? '#ffffff' : '#334155'"
+            [style.border]="operator() === 'WAVE' ? '2px solid #00a5c8' : '1px solid #cbd5e1'"
+            style="flex: 1; padding: 0.75rem; border-radius: 10px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem;"
+            (click)="operator.set('WAVE')">
+            <span class="material-symbols-outlined">account_balance_wallet</span>
+            Wave
+          </button>
+
+          <button
+            type="button"
+            class="btn"
+            [style.background]="operator() === 'OM' ? '#ff6600' : '#f1f5f9'"
+            [style.color]="operator() === 'OM' ? '#ffffff' : '#334155'"
+            [style.border]="operator() === 'OM' ? '2px solid #cc5200' : '1px solid #cbd5e1'"
+            style="flex: 1; padding: 0.75rem; border-radius: 10px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem;"
+            (click)="operator.set('OM')">
+            <span class="material-symbols-outlined">phone_android</span>
+            Orange Money
+          </button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Numéro de téléphone ({{ operator() === 'WAVE' ? 'Wave' : 'Orange Money' }})</label>
+        <div class="phone-input-wrap">
+          <span class="phone-prefix">+221</span>
+          <input
+            type="tel"
+            class="form-input phone-input"
+            placeholder="7X XXX XX XX"
+            maxlength="10"
+            [value]="phone()"
+            (input)="phone.set($any($event.target).value)"
+          >
+        </div>
+        <p class="form-hint">
+          <span class="material-symbols-outlined">info</span>
+          Une validation sera demandée sur votre téléphone
+        </p>
+      </div>
+
+      <div class="order-summary">
+        <h3>Récapitulatif</h3>
+        <div class="summary-item" *ngFor="let item of cart.items()">
+          <span>{{ item.product.name }} x{{ item.quantity }}</span>
+          <span>{{ (item.product.price * item.quantity) | number }} FCFA</span>
+        </div>
+        <div class="summary-total">
+          <span>Total</span>
+          <span>{{ cart.total() | number }} FCFA</span>
+        </div>
+      </div>
+
+      <button
+        class="btn btn--samir btn--full"
+        [disabled]="!phone() || phone().length < 9"
+        (click)="confirmPayment()">
+        <span class="material-symbols-outlined">lock</span>
+        Confirmer le paiement
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- STEP: PROCESSING -->
+<div class="payment-processing" *ngIf="step() === 'processing'">
+  <div class="processing-card">
+    <div class="processing-animation">
+      <div class="pulse-ring"></div>
+      <span class="material-symbols-outlined processing-icon">account_balance_wallet</span>
+    </div>
+    <h2>Traitement en cours...</h2>
+    <p>Connexion à Samir Money</p>
+    <p class="processing-phone">{{ phone() }}</p>
+    <div class="progress-bar">
+      <div class="progress-bar__fill"></div>
+    </div>
+  </div>
+</div>
+
+<!-- STEP: GATEWAY -->
+<div class="payment-gateway" *ngIf="step() === 'gateway'">
+  <div class="processing-card">
+    <div class="spinner-large" style="margin: 2rem auto;"></div>
+    <h2>En attente du paiement...</h2>
+    <p>Veuillez valider le paiement sur votre application <strong>WAVE/ORANGE MONEY</strong>.</p>
+    <a *ngIf="paymentGatewayUrls()?.redirect_url" [href]="paymentGatewayUrls().redirect_url" target="_blank" class="btn btn--outline mt-4" style="margin-top: 1rem;">
+      Ouvrir le lien de paiement
+    </a>
+  </div>
+</div>
+
+<!-- STEP: SUCCESS -->
+<div class="payment-success" *ngIf="step() === 'success'">
+  <div class="success-card">
+    <div class="success-icon-wrap">
+      <span class="material-symbols-outlined success-icon filled">check_circle</span>
+    </div>
+    <h1>Paiement réussi !</h1>
+    <p>Votre commande a été validée avec succès.</p>
+
+    <div class="reference-box">
+      <span class="reference-label">Référence de commande</span>
+      <span class="reference-value">{{ orderReference() }}</span>
+    </div>
+
+    <div class="amount-paid">
+      <span>{{ orderTotal() | number }} FCFA</span>
+      <span class="paid-via">payés via Samir Money</span>
+    </div>
+
+    <div class="success-actions">
+      <button class="btn btn--primary" (click)="goToOrders()">
+        <span class="material-symbols-outlined">receipt_long</span>
+        Suivre ma commande
+      </button>
+      <a routerLink="/shop" class="btn btn--outline">Continuer mes achats</a>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,93 @@
+<div class="cgu-page">
+
+  <div class="cgu-header">
+    <h1 class="cgu-title">Conditions Générales d'Utilisation (CGU)</h1>
+    <p class="cgu-subtitle">AXE DIGITAL SERVICES & Samir Money — Plateforme EasyArena</p>
+    <span class="cgu-version">Version 1.0 — En vigueur au 01 Juillet 2026</span>
+  </div>
+
+  <!-- Role Selector Tabs -->
+  <div class="cgu-tabs">
+    <button class="cgu-tab" [class.cgu-tab--active]="activeTab() === 'owner'" (click)="activeTab.set('owner')">
+      <span class="material-symbols-outlined">stadium</span>
+      CGU Propriétaire de Terrain
+    </button>
+    <button class="cgu-tab" [class.cgu-tab--active]="activeTab() === 'vendor'" (click)="activeTab.set('vendor')">
+      <span class="material-symbols-outlined">storefront</span>
+      CGU Vendeur d'Équipements
+    </button>
+    <button class="cgu-tab" [class.cgu-tab--active]="activeTab() === 'client'" (click)="activeTab.set('client')">
+      <span class="material-symbols-outlined">person</span>
+      CGU Client & Réservations
+    </button>
+  </div>
+
+  <!-- ── 1. CGU PROPRIÉTAIRE ────────────────────────────────────────────── -->
+  <div class="cgu-card card" *ngIf="activeTab() === 'owner'">
+    <h2 class="card-title">CONDITIONS GÉNÉRALES D'UTILISATION – PROPRIÉTAIRE DE TERRAIN</h2>
+
+    <article class="cgu-article">
+      <h3>ARTICLE 1 & 2 – OBJET ET RÔLE D'EASYARENA</h3>
+      <p>EasyArena assure la mise en relation entre Propriétaires et Clients, la gestion des réservations et du planning. Les opérations financières sont exécutées par <strong>Samir Money</strong> (agréé BCEAO).</p>
+    </article>
+
+    <article class="cgu-article highlight-box">
+      <h3>ARTICLE 7 – POLITIQUE DE RETRAIT</h3>
+      <p><strong>Retrait Mobile Money (Wave, Orange Money) :</strong></p>
+      <p>Les frais techniques de retrait de 1 % sont <strong>intégralement pris en charge par EasyArena (0 % pour le Propriétaire)</strong>.</p>
+      <p><strong>Retrait par Virement Bancaire :</strong></p>
+      <p>Traitement exécuté par Samir Money sous un délai maximum de quarante-huit (48) heures ouvrées. Les frais bancaires restent à la charge du Propriétaire.</p>
+    </article>
+
+    <article class="cgu-article">
+      <h3>ARTICLE 8 & 9 – ANNULATIONS & OBLIGATIONS</h3>
+      <p>Le Propriétaire s'engage à honorer toute réservation confirmée, à maintenir ses installations en bon état et à disposer des autorisations administratives applicables au Sénégal.</p>
+    </article>
+  </div>
+
+  <!-- ── 2. CGU VENDEUR ─────────────────────────────────────────────────── -->
+  <div class="cgu-card card" *ngIf="activeTab() === 'vendor'">
+    <h2 class="card-title">CONDITIONS GÉNÉRALES D'UTILISATION – VENDEUR D'ÉQUIPEMENTS</h2>
+
+    <article class="cgu-article">
+      <h3>ARTICLE 1 & 4 – PUBLICATION DES PRODUITS</h3>
+      <p>Le Vendeur est seul responsable de l'exactitude des descriptions, de la conformité, de la disponibilité et des prix de ses équipements sportifs sur la boutique EasyArena.</p>
+    </article>
+
+    <article class="cgu-article">
+      <h3>ARTICLE 5 & 6 – COMMANDES & TARIFICATION</h3>
+      <p>Les paiements sont traités par Samir Money. AXE DIGITAL SERVICES se réserve le droit de proposer des abonnements, des commissions sur ventes ou des options de mise en avant Premium.</p>
+    </article>
+
+    <article class="cgu-article">
+      <h3>ARTICLE 8 – PRODUITS INTERDITS</h3>
+      <p>La vente d'équipements illicites, contrefaits ou dangereux est strictly interdite et entraîne la suppression immédiate du compte et des annonces.</p>
+    </article>
+  </div>
+
+  <!-- ── 3. CGU CLIENT ─────────────────────────────────────────────────── -->
+  <div class="cgu-card card" *ngIf="activeTab() === 'client'">
+    <h2 class="card-title">CONDITIONS GÉNÉRALES D'UTILISATION – CLIENT</h2>
+
+    <article class="cgu-article">
+      <h3>ARTICLE 1 – PRÉSENTATION</h3>
+      <p>Les présentes Conditions Générales d'Utilisation régissent les conditions d'accès et d'utilisation de la plateforme EasyArena, propriété exclusive d'AXE DIGITAL SERVICES, société de droit sénégalais.</p>
+      <p>EasyArena permet d'effectuer la réservation de terrains de sport et l'achat d'équipements sportifs. Les paiements réalisés sur la plateforme sont traités par <strong>Samir Money</strong>, établissement de paiement agréé par la Banque Centrale des États de l'Afrique de l'Ouest (BCEAO).</p>
+    </article>
+
+    <article class="cgu-article highlight-box">
+      <h3>ARTICLE 6 – FRAIS DE SERVICE (5 %)</h3>
+      <p>Chaque réservation est soumise à des frais de service de <strong>cinq pour cent (5 %)</strong> du montant de la réservation. Ces frais rémunèrent le fonctionnement d'EasyArena et sont affichés avant la validation du paiement.</p>
+    </article>
+
+    <article class="cgu-article highlight-box">
+      <h3>ARTICLE 7 – ANNULATION ET REMBOURSEMENT</h3>
+      <p>En cas d'annulation :</p>
+      <ul>
+        <li>Les frais de service de 5 % restent définitivement acquis à EasyArena.</li>
+        <li>Lorsque le remboursement du montant principal est applicable, le Client supporte les frais de retrait de 1 % liés au reversement des fonds.</li>
+      </ul>
+    </article>
+  </div>
+
+</div>

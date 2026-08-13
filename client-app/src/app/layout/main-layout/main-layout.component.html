@@ -1,0 +1,393 @@
+<!-- Toast Notification when item added to cart -->
+<div class="cart-toast-banner" *ngIf="cartService.addedToast() as toast">
+  <div class="toast-content">
+    <div class="toast-img">
+      <img *ngIf="toast.imageUrl" [src]="toast.imageUrl" [alt]="toast.name">
+      <span *ngIf="!toast.imageUrl" class="material-symbols-outlined default-toast-icon">inventory_2</span>
+    </div>
+    <div class="toast-text">
+      <div class="toast-title">
+        <span class="material-symbols-outlined check-icon">check_circle</span>
+        Produit ajouté au panier !
+      </div>
+      <div class="toast-name">{{ toast.name }} ({{ toast.price | number }} FCFA)</div>
+    </div>
+    <a routerLink="/shop/cart" class="toast-btn" (click)="cartService.dismissToast()">
+      Voir le panier
+    </a>
+  </div>
+</div>
+
+<!-- Navigation progress bar -->
+<div class="nav-progress" [class.nav-progress--active]="isNavigating()">
+  <div class="nav-progress__bar"></div>
+</div>
+
+<!-- Top Navigation Bar (Mobile & Desktop) -->
+<header class="top-nav">
+  <div class="top-nav__inner">
+
+    <!-- Hamburger button (mobile only, <992px) -->
+    <button class="top-nav__hamburger" (click)="toggleMobileMenu()" aria-label="Ouvrir le menu">
+      <span class="material-symbols-outlined">menu</span>
+    </button>
+
+    <!-- Logo / Brand -->
+    <a routerLink="/home" class="top-nav__logo">
+      <img src="/logo-long.png" alt="EasyArena" class="top-nav__logo-img top-nav__logo--long"
+        onerror="this.style.display='none'">
+      <span class="top-nav__brand-text">EASY<span>ARENA</span></span>
+    </a>
+
+    <!-- Desktop Navigation Links (≥992px) -->
+    <nav class="top-nav__links">
+      <a routerLink="/home" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="top-nav__link">
+        <span class="material-symbols-outlined">home</span>
+        <span>Accueil</span>
+      </a>
+      <a routerLink="/booking/history" routerLinkActive="active" class="top-nav__link">
+        <span class="material-symbols-outlined">calendar_today</span>
+        <span>Réservations</span>
+      </a>
+      <a routerLink="/events" routerLinkActive="active" class="top-nav__link">
+        <span class="material-symbols-outlined">event</span>
+        <span>Événements</span>
+      </a>
+      <a routerLink="/shop" routerLinkActive="active" class="top-nav__link">
+        <span class="material-symbols-outlined">shopping_bag</span>
+        <span>Boutique</span>
+      </a>
+      <a routerLink="/favorites" routerLinkActive="active" class="top-nav__link">
+        <span class="material-symbols-outlined">favorite</span>
+        <span>Favoris</span>
+      </a>
+      <a routerLink="/orders" routerLinkActive="active" class="top-nav__link">
+        <span class="material-symbols-outlined">receipt_long</span>
+        <span>Commandes</span>
+      </a>
+      <a routerLink="/subscriptions" routerLinkActive="active" class="top-nav__link">
+        <span class="material-symbols-outlined">card_membership</span>
+        <span>Abonnements</span>
+      </a>
+    </nav>
+
+    <!-- Actions (Cart, Profile / Login) -->
+    <div class="top-nav__actions">
+
+      <!-- Cart Button with Counter Badge -->
+      <a routerLink="/shop/cart" class="top-nav__icon-btn cart-btn" [class.cart-bounce]="cartService.addedToast()"
+        aria-label="Panier">
+        <span class="material-symbols-outlined">shopping_cart</span>
+        <span class="cart-badge" *ngIf="cartService.count() > 0">{{ cartService.count() }}</span>
+      </a>
+
+      <!-- Authenticated User / Guest -->
+      <ng-container *ngIf="isAuthenticated(); else guestActions">
+        <a routerLink="/notifications" class="top-nav__icon-btn top-nav__notif-btn" aria-label="Notifications">
+          <span class="material-symbols-outlined">notifications</span>
+        </a>
+        <a routerLink="/profile" class="top-nav__avatar" aria-label="Profil">
+          <img *ngIf="currentUser()?.avatarUrl" [src]="currentUser()?.avatarUrl" [alt]="currentUser()?.fullName"
+            class="avatar-img">
+          <span *ngIf="!currentUser()?.avatarUrl" class="avatar-initials">
+            {{ (currentUser()?.fullName || 'U').charAt(0).toUpperCase() }}
+          </span>
+        </a>
+      </ng-container>
+      <ng-template #guestActions>
+        <a routerLink="/login" class="btn btn--primary btn--sm top-nav__login-btn">
+          Connexion
+        </a>
+      </ng-template>
+    </div>
+
+  </div>
+</header>
+
+<!-- Main content area -->
+<main class="layout-content">
+  <router-outlet />
+</main>
+
+<!-- Footer -->
+<footer class="app-footer">
+  <div class="app-footer__glow-bar"></div>
+
+  <div class="app-footer__inner">
+
+    <!-- Brand Column -->
+    <div class="app-footer__brand">
+      <a routerLink="/home" class="app-footer__logo-wrap">
+        <img src="/logo-long.png" alt="EasyArena" class="app-footer__logo" onerror="this.style.display='none'">
+        <span class="app-footer__brand-name">EASY<span>ARENA</span></span>
+      </a>
+      <p class="app-footer__tagline">
+        La plateforme N°1 de réservation de terrains sportifs en Afrique de l'Ouest. Réservez vos matchs, achetez vos
+        équipements et accédez aux événements sportifs en un clic.
+      </p>
+
+      <div class="app-footer__socials">
+        <a href="https://facebook.com" target="_blank" rel="noopener" class="app-footer__social" aria-label="Facebook"
+          title="Facebook">
+          <span class="material-symbols-outlined">public</span>
+        </a>
+        <a href="https://instagram.com" target="_blank" rel="noopener" class="app-footer__social" aria-label="Instagram"
+          title="Instagram">
+          <span class="material-symbols-outlined">photo_camera</span>
+        </a>
+        <a href="https://wa.me/221770000000" target="_blank" rel="noopener"
+          class="app-footer__social app-footer__social--wa" aria-label="WhatsApp" title="WhatsApp Direct">
+          <span class="material-symbols-outlined">chat</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Navigation Column -->
+    <div class="app-footer__col">
+      <h4 class="app-footer__col-title">Navigation</h4>
+      <a routerLink="/home" class="app-footer__link">Accueil</a>
+      <a routerLink="/booking/history" class="app-footer__link">Réservations</a>
+      <a routerLink="/events" class="app-footer__link">Événements</a>
+      <a routerLink="/shop" class="app-footer__link">Boutique Officielle</a>
+      <a routerLink="/favorites" class="app-footer__link">Terrains Favoris</a>
+      <a routerLink="/orders" class="app-footer__link">Commandes</a>
+      <a routerLink="/subscriptions" class="app-footer__link">Abonnements</a>
+    </div>
+
+    <!-- Informations Column -->
+    <div class="app-footer__col">
+      <h4 class="app-footer__col-title">Services &amp; Partenaires</h4>
+      <a routerLink="/profile" class="app-footer__link">Mon Espace Client</a>
+      <a routerLink="/terms" class="app-footer__link">Conditions d'utilisation (CGU)</a>
+      <a routerLink="/privacy" class="app-footer__link">Politique de confidentialité</a>
+      <a routerLink="/profile/help" class="app-footer__link">Centre d'aide &amp; FAQ</a>
+      <a routerLink="/install" class="app-footer__link app-footer__link--pwa">
+        <span class="material-symbols-outlined">download_for_offline</span>
+        Télécharger l'application
+        <span class="app-footer__pwa-badge">PWA · Gratuit</span>
+      </a>
+    </div>
+
+    <!-- Contact & Payment Methods Column -->
+    <div class="app-footer__col">
+      <h4 class="app-footer__col-title">Contact & Support</h4>
+      <p class="app-footer__contact-item">
+        <span class="material-symbols-outlined">mail</span>
+        contact&#64;easyarena221.com
+      </p>
+      <p class="app-footer__contact-item">
+        <span class="material-symbols-outlined">location_on</span>
+        Dakar, Sénégal
+      </p>
+      <p class="app-footer__contact-item">
+        <span class="material-symbols-outlined">schedule</span>
+        Support client 7j/7, 8h – 22h
+      </p>
+
+      <!-- Payment Partners Badges -->
+      <div class="app-footer__payments">
+        <span class="pay-chip pay-chip--wave">Wave</span>
+        <span class="pay-chip pay-chip--om">Orange Money</span>
+        <span class="pay-chip pay-chip--free">Free Money</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Bottom Bar -->
+  <div class="app-footer__bottom">
+    <p class="app-footer__copy">© 2026 EasyArena. Tous droits réservés.</p>
+    <div class="app-footer__badges">
+      <span class="app-footer__badge">
+        <span class="material-symbols-outlined">lock</span>
+        Paiement Sécurisé SSL
+      </span>
+      <span class="app-footer__badge">
+        <span class="material-symbols-outlined">bolt</span>
+        Confirmation en 30s
+      </span>
+    </div>
+  </div>
+</footer>
+
+<!-- ══ MOBILE NAV DRAWER ══════════════════════════════════════════════ -->
+<!-- Backdrop -->
+<div class="mob-nav-backdrop"
+     [class.mob-nav-backdrop--visible]="isMobileMenuOpen()"
+     (click)="closeMobileMenu()"
+     aria-hidden="true"></div>
+
+<!-- Drawer panel -->
+<aside class="mob-nav-drawer" [class.mob-nav-drawer--open]="isMobileMenuOpen()" role="dialog" aria-label="Menu navigation">
+
+  <!-- ── Header ── -->
+  <div class="mnd-header">
+    <a routerLink="/home" class="mnd-logo" (click)="closeMobileMenu()">
+      <span class="mnd-logo__text">EASY<span>ARENA</span></span>
+    </a>
+    <button class="mnd-close" (click)="closeMobileMenu()" aria-label="Fermer le menu">
+      <span class="material-symbols-outlined">close</span>
+    </button>
+  </div>
+
+  <!-- ── User Profile Mini (if logged in) ── -->
+  <div class="mnd-user" *ngIf="isAuthenticated()">
+    <div class="mnd-user__avatar">
+      <img *ngIf="currentUser()?.avatarUrl" [src]="currentUser()?.avatarUrl" [alt]="currentUser()?.fullName" class="mnd-user__avatar-img">
+      <span *ngIf="!currentUser()?.avatarUrl" class="mnd-user__avatar-init">
+        {{ (currentUser()?.fullName || 'U').charAt(0).toUpperCase() }}
+      </span>
+    </div>
+    <div class="mnd-user__info">
+      <span class="mnd-user__name">{{ currentUser()?.fullName || 'Mon compte' }}</span>
+      <span class="mnd-user__sub">{{ currentUser()?.phone || 'Profil joueur' }}</span>
+    </div>
+    <a routerLink="/profile" class="mnd-user__edit" (click)="closeMobileMenu()" aria-label="Voir le profil">
+      <span class="material-symbols-outlined">chevron_right</span>
+    </a>
+  </div>
+
+  <!-- ── Scroll wrapper ── -->
+  <div class="mnd-scroll">
+
+    <!-- Section: Navigation principale -->
+    <div class="mnd-section">
+      <p class="mnd-section__title">Navigation</p>
+      <a routerLink="/home" class="mnd-link" routerLinkActive="mnd-link--active" [routerLinkActiveOptions]="{exact:true}">
+        <div class="mnd-link__icon mnd-link__icon--gray">
+          <span class="material-symbols-outlined">home</span>
+        </div>
+        <span class="mnd-link__label">Accueil</span>
+        <span class="material-symbols-outlined mnd-link__arrow">chevron_right</span>
+      </a>
+      <a routerLink="/booking/history" class="mnd-link" routerLinkActive="mnd-link--active">
+        <div class="mnd-link__icon mnd-link__icon--blue">
+          <span class="material-symbols-outlined">calendar_today</span>
+        </div>
+        <span class="mnd-link__label">Réservations</span>
+        <span class="material-symbols-outlined mnd-link__arrow">chevron_right</span>
+      </a>
+    </div>
+
+    <!-- Section: Découvrir -->
+    <div class="mnd-section">
+      <p class="mnd-section__title">Découvrir</p>
+      <a routerLink="/events" class="mnd-link" routerLinkActive="mnd-link--active">
+        <div class="mnd-link__icon mnd-link__icon--purple">
+          <span class="material-symbols-outlined">event</span>
+        </div>
+        <span class="mnd-link__label">Événements</span>
+        <span class="mnd-link__badge">Nouveau</span>
+        <span class="material-symbols-outlined mnd-link__arrow">chevron_right</span>
+      </a>
+      <a routerLink="/shop" class="mnd-link" routerLinkActive="mnd-link--active">
+        <div class="mnd-link__icon mnd-link__icon--orange">
+          <span class="material-symbols-outlined">shopping_bag</span>
+        </div>
+        <span class="mnd-link__label">Boutique</span>
+        <span class="material-symbols-outlined mnd-link__arrow">chevron_right</span>
+      </a>
+      <a routerLink="/favorites" class="mnd-link" routerLinkActive="mnd-link--active">
+        <div class="mnd-link__icon mnd-link__icon--red">
+          <span class="material-symbols-outlined">favorite</span>
+        </div>
+        <span class="mnd-link__label">Terrains Favoris</span>
+        <span class="material-symbols-outlined mnd-link__arrow">chevron_right</span>
+      </a>
+    </div>
+
+    <!-- Section: Mon Compte -->
+    <div class="mnd-section">
+      <p class="mnd-section__title">Mon Compte</p>
+      <a routerLink="/orders" class="mnd-link" routerLinkActive="mnd-link--active">
+        <div class="mnd-link__icon mnd-link__icon--teal">
+          <span class="material-symbols-outlined">receipt_long</span>
+        </div>
+        <span class="mnd-link__label">Mes Commandes</span>
+        <span class="material-symbols-outlined mnd-link__arrow">chevron_right</span>
+      </a>
+      <a routerLink="/my-tickets" class="mnd-link" routerLinkActive="mnd-link--active">
+        <div class="mnd-link__icon mnd-link__icon--green">
+          <span class="material-symbols-outlined">confirmation_number</span>
+        </div>
+        <span class="mnd-link__label">Mes Billets</span>
+        <span class="material-symbols-outlined mnd-link__arrow">chevron_right</span>
+      </a>
+      <a routerLink="/subscriptions" class="mnd-link" routerLinkActive="mnd-link--active">
+        <div class="mnd-link__icon mnd-link__icon--indigo">
+          <span class="material-symbols-outlined">card_membership</span>
+        </div>
+        <span class="mnd-link__label">Abonnements</span>
+        <span class="material-symbols-outlined mnd-link__arrow">chevron_right</span>
+      </a>
+      <a routerLink="/notifications" class="mnd-link" routerLinkActive="mnd-link--active" *ngIf="isAuthenticated()">
+        <div class="mnd-link__icon mnd-link__icon--amber">
+          <span class="material-symbols-outlined">notifications</span>
+        </div>
+        <span class="mnd-link__label">Notifications</span>
+        <span class="material-symbols-outlined mnd-link__arrow">chevron_right</span>
+      </a>
+    </div>
+
+    <!-- Section: Support -->
+    <div class="mnd-section">
+      <p class="mnd-section__title">Support</p>
+      <a routerLink="/install" class="mnd-link" routerLinkActive="mnd-link--active">
+        <div class="mnd-link__icon mnd-link__icon--gray">
+          <span class="material-symbols-outlined">download_for_offline</span>
+        </div>
+        <span class="mnd-link__label">Installer l'application</span>
+        <span class="mnd-link__badge mnd-link__badge--green">Gratuit</span>
+        <span class="material-symbols-outlined mnd-link__arrow">chevron_right</span>
+      </a>
+      <a routerLink="/terms" class="mnd-link" routerLinkActive="mnd-link--active">
+        <div class="mnd-link__icon mnd-link__icon--gray">
+          <span class="material-symbols-outlined">description</span>
+        </div>
+        <span class="mnd-link__label">Conditions d'utilisation</span>
+        <span class="material-symbols-outlined mnd-link__arrow">chevron_right</span>
+      </a>
+    </div>
+
+  </div><!-- /mnd-scroll -->
+
+  <!-- ── Footer ── -->
+  <div class="mnd-footer">
+    <span class="mnd-footer__copy">© 2026 EasyArena · Dakar, Sénégal</span>
+  </div>
+
+</aside>
+<!-- /MOBILE NAV DRAWER -->
+
+<!-- Mobile bottom nav -->
+<app-bottom-nav />
+
+<!-- Native-style PWA Store App Sheet Prompt (Connected users only) -->
+<app-install-prompt *ngIf="authService.isAuthenticated()" />
+
+<!-- Logout Confirmation Modal -->
+<div class="logout-modal-backdrop" *ngIf="authService.showLogoutModal()" (click)="authService.cancelLogout()">
+  <div class="logout-modal-card" (click)="$event.stopPropagation()">
+    <div class="logout-modal-card__header">
+      <div class="logout-modal-card__icon-wrap">
+        <span class="material-symbols-outlined">logout</span>
+      </div>
+      <h3 class="logout-modal-card__title">Confirmer la Déconnexion</h3>
+      <p class="logout-modal-card__desc">
+        Êtes-vous sûr de vouloir vous déconnecter d'EasyArena ? Vos réservations et données restent sauvegardées en toute sécurité.
+      </p>
+    </div>
+    <div class="logout-modal-card__actions">
+      <button class="logout-btn logout-btn--ghost" (click)="authService.cancelLogout()" [disabled]="authService.isLoggingOut()">
+        Annuler
+      </button>
+      <button class="logout-btn logout-btn--danger" (click)="authService.confirmLogout()" [disabled]="authService.isLoggingOut()">
+        <span class="logout-spinner" *ngIf="authService.isLoggingOut()"></span>
+        <ng-container *ngIf="!authService.isLoggingOut()">
+          <span class="material-symbols-outlined">power_settings_new</span>
+          Oui, me déconnecter
+        </ng-container>
+      </button>
+    </div>
+  </div>
+</div>

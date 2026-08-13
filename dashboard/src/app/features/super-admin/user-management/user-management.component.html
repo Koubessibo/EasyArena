@@ -1,0 +1,358 @@
+<div class="user-management-container">
+
+  <button class="btn-back" (click)="location.back()">
+    <span class="material-symbols-outlined">arrow_back</span>
+    Retour
+  </button>
+
+  <!-- Header -->
+  <div class="header">
+    <div>
+      <h1 class="title">Gestion des Utilisateurs & Comptes</h1>
+      <p class="subtitle">Approbation des marchands, modération du contenu et gestion des rôles.</p>
+    </div>
+
+    <!-- Quick Action Bar -->
+    <div class="actions-bar">
+      <button class="btn btn--primary" (click)="openCreateForm()" *ngIf="!showCreateForm()">
+        <span class="material-symbols-outlined">person_add</span>
+        Créer un compte
+      </button>
+      <button class="btn btn--secondary" (click)="openInvitationModal()">
+        <span class="material-symbols-outlined">send</span>
+        Inviter par parrainage
+      </button>
+    </div>
+  </div>
+
+  <!-- Success Banner -->
+  <div class="alert alert--success" *ngIf="createSuccess()">
+    <span class="material-symbols-outlined">check_circle</span>
+    <span>{{ createSuccess() }}</span>
+    <button class="alert-close" (click)="createSuccess.set('')">×</button>
+  </div>
+
+  <!-- Create user form panel -->
+  <div class="card create-form-card" *ngIf="showCreateForm()">
+    <div class="card__header">
+      <div class="card__header-title">
+        <span class="material-symbols-outlined">person_add</span>
+        <h3>Nouveau compte d'exploitant</h3>
+      </div>
+      <button class="btn-icon-close" (click)="cancelCreate()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <div class="card__body">
+      <!-- Role selector tabs -->
+      <div class="role-tabs">
+        <button class="role-tab" [class.role-tab--active]="selectedRole() === 'owner'" (click)="setRole('owner')">
+          <span class="material-symbols-outlined">sports_soccer</span>
+          Propriétaire de terrain
+        </button>
+        <button class="role-tab" [class.role-tab--active]="selectedRole() === 'vendor'" (click)="setRole('vendor')">
+          <span class="material-symbols-outlined">storefront</span>
+          Vendeur Boutique
+        </button>
+      </div>
+
+      <!-- Owner fields -->
+      <div class="form-grid" *ngIf="selectedRole() === 'owner'">
+        <div class="form-group">
+          <label class="form-label">Prénom *</label>
+          <input class="form-control" type="text" placeholder="Prénom" [value]="ownerFirstName()" (input)="ownerFirstName.set($any($event.target).value)">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Nom *</label>
+          <input class="form-control" type="text" placeholder="Nom" [value]="ownerLastName()" (input)="ownerLastName.set($any($event.target).value)">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Téléphone de connexion *</label>
+          <input class="form-control" type="tel" placeholder="+221770000000" [value]="ownerPhone()" (input)="ownerPhone.set($any($event.target).value)">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Compte Mobile Money (Optionnel)</label>
+          <input class="form-control" type="tel" placeholder="N° Wave / OM" [value]="ownerMobileMoney()" (input)="ownerMobileMoney.set($any($event.target).value)">
+        </div>
+      </div>
+
+      <!-- Vendor fields -->
+      <div class="form-grid" *ngIf="selectedRole() === 'vendor'">
+        <div class="form-group">
+          <label class="form-label">Prénom du gérant *</label>
+          <input class="form-control" type="text" placeholder="Prénom" [value]="vendorFirstName()" (input)="vendorFirstName.set($any($event.target).value)">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Nom *</label>
+          <input class="form-control" type="text" placeholder="Nom" [value]="vendorLastName()" (input)="vendorLastName.set($any($event.target).value)">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Téléphone de connexion *</label>
+          <input class="form-control" type="tel" placeholder="+221770000000" [value]="vendorPhone()" (input)="vendorPhone.set($any($event.target).value)">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Nom de la boutique *</label>
+          <input class="form-control" type="text" placeholder="Ex: Dakar Sports Pro" [value]="vendorShopName()" (input)="vendorShopName.set($any($event.target).value)">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Téléphone de contact *</label>
+          <input class="form-control" type="tel" placeholder="+221770000001" [value]="vendorContactPhone()" (input)="vendorContactPhone.set($any($event.target).value)">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Localisation / Ville</label>
+          <input class="form-control" type="text" placeholder="Ex: Mermoz, Dakar" [value]="vendorLocation()" (input)="vendorLocation.set($any($event.target).value)">
+        </div>
+      </div>
+
+      <div class="cgu-checkbox-group" style="margin: 1rem 0;">
+        <label class="cgu-checkbox-label" style="display:flex; align-items:center; gap:0.5rem; font-size:0.85rem; color:#475569; cursor:pointer;">
+          <input type="checkbox" [checked]="acceptedCgu()" (change)="acceptedCgu.set($any($event.target).checked)">
+          <span>J'ai lu et j'accepte les <a routerLink="/cgu" target="_blank" style="color:#10b981; font-weight:700; text-decoration:underline;">Conditions Générales d'Utilisation (CGU)</a></span>
+        </label>
+      </div>
+
+      <p class="form-error" *ngIf="createError()">{{ createError() }}</p>
+
+      <div class="form-actions">
+        <button class="btn btn--primary" (click)="submitCreate()" [disabled]="!acceptedCgu() || createLoading()">
+          <span *ngIf="!createLoading()" class="material-symbols-outlined">check_circle</span>
+          <span>{{ createLoading() ? 'Création en cours...' : 'Confirmer la création' }}</span>
+        </button>
+        <button class="btn btn--ghost" (click)="cancelCreate()">Annuler</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Users table card -->
+  <div class="card main-table-card">
+
+    <!-- Filter tabs -->
+    <div class="tabs-wrap">
+      <button class="tab-btn" [class.tab-btn--active]="activeTab() === 'pending'" (click)="switchTab('pending')">
+        <span class="material-symbols-outlined">pending_actions</span>
+        <span>En attente</span>
+        <span class="tab-badge" *ngIf="pendingUsers().length > 0">{{ pendingUsers().length }}</span>
+      </button>
+
+      <button class="tab-btn" [class.tab-btn--active]="activeTab() === 'requests'" (click)="switchTab('requests')">
+        <span class="material-symbols-outlined">how_to_reg</span>
+        <span>Demandes d'inscription</span>
+        <span class="tab-badge tab-badge--danger" *ngIf="enrollmentRequests().length > 0">{{ enrollmentRequests().length }}</span>
+      </button>
+
+      <button class="tab-btn" [class.tab-btn--active]="activeTab() === 'active'" (click)="switchTab('active')">
+        <span class="material-symbols-outlined">verified_user</span>
+        <span>Comptes Actifs</span>
+      </button>
+
+      <button class="tab-btn" [class.tab-btn--active]="activeTab() === 'all'" (click)="switchTab('all')">
+        <span class="material-symbols-outlined">group</span>
+        <span>Tous les membres</span>
+      </button>
+    </div>
+
+    <div class="data-table-wrapper table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Utilisateur / Membre</th>
+            <th>Rôle</th>
+            <th>Contact</th>
+            <th>Date d'arrivée</th>
+            <th>Statut</th>
+            <th class="text-right">Actions</th>
+          </tr>
+        </thead>
+
+        <!-- Pending tab -->
+        <tbody *ngIf="activeTab() === 'pending'">
+          <tr *ngFor="let user of pendingUsers()">
+            <td>
+              <div class="user-cell">
+                <div class="user-cell__avatar">{{ (user.name || 'U').charAt(0).toUpperCase() }}</div>
+                <div>
+                  <p class="user-cell__name">{{ user.name }}</p>
+                  <p class="user-cell__email">{{ user.phone }}</p>
+                </div>
+              </div>
+            </td>
+            <td><span class="role-badge" [ngClass]="'role-badge--' + user.role">{{ roleLabel(user.role) }}</span></td>
+            <td class="font-mono">{{ user.phone }}</td>
+            <td>{{ user.createdAt }}</td>
+            <td><app-status-badge status="pending"></app-status-badge></td>
+            <td class="text-right">
+              <div class="action-btns">
+                <button class="btn btn--sm btn--primary" (click)="approve(user.id)">Approuver</button>
+                <button class="btn btn--sm btn--ghost" (click)="reject(user.id)">Rejeter</button>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="pendingUsers().length === 0">
+            <td colspan="6" class="empty-row">Aucun compte en attente d'approbation.</td>
+          </tr>
+        </tbody>
+
+        <!-- Enrollment requests tab -->
+        <tbody *ngIf="activeTab() === 'requests'">
+          <tr *ngFor="let req of enrollmentRequests()">
+            <td>
+              <div class="user-cell">
+                <div class="user-cell__avatar user-cell__avatar--purple">{{ (req.name || 'R').charAt(0).toUpperCase() }}</div>
+                <div>
+                  <p class="user-cell__name">{{ req.name }}</p>
+                  <p class="user-cell__email">{{ req.detail }}</p>
+                </div>
+              </div>
+            </td>
+            <td><span class="role-badge" [ngClass]="'role-badge--' + req.role">{{ enrollmentRoleLabel(req.role) }}</span></td>
+            <td class="font-mono">{{ req.phone }}</td>
+            <td>{{ req.createdAt }}</td>
+            <td><app-status-badge status="pending"></app-status-badge></td>
+            <td class="text-right">
+              <div class="action-btns">
+                <button class="btn btn--sm btn--primary" (click)="approveEnrollment(req)">Approuver</button>
+                <button class="btn btn--sm btn--ghost" (click)="rejectEnrollment(req)">Rejeter</button>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="enrollmentRequests().length === 0">
+            <td colspan="6" class="empty-row">Aucune nouvelle demande d'inscription d'exploitant.</td>
+          </tr>
+        </tbody>
+
+        <!-- Active / All tabs -->
+        <tbody *ngIf="activeTab() !== 'pending' && activeTab() !== 'requests'">
+          <tr *ngFor="let user of allUsers()">
+            <td>
+              <div class="user-cell">
+                <div class="user-cell__avatar">{{ (user.name || 'U').charAt(0).toUpperCase() }}</div>
+                <div>
+                  <p class="user-cell__name">{{ user.name }}</p>
+                  <p class="user-cell__email">{{ user.phone }}</p>
+                </div>
+              </div>
+            </td>
+            <td><span class="role-badge" [ngClass]="'role-badge--' + user.role">{{ roleLabel(user.role) }}</span></td>
+            <td class="font-mono">{{ user.phone }}</td>
+            <td>{{ user.createdAt }}</td>
+            <td><app-status-badge [status]="user.status"></app-status-badge></td>
+            <td class="text-right">
+              <div class="action-btns">
+                <button
+                  class="toggle-btn"
+                  [class.toggle-btn--active]="user.status === 'active'"
+                  (click)="toggleUserStatus(user)"
+                  [title]="user.status === 'active' ? 'Désactiver ce compte' : 'Activer ce compte'">
+                  <span class="toggle-btn__track">
+                    <span class="toggle-btn__thumb"></span>
+                  </span>
+                  <span class="toggle-btn__label">{{ user.status === 'active' ? 'Actif' : 'Inactif' }}</span>
+                </button>
+                <button class="btn btn--sm btn--danger-icon" (click)="confirmDeleteUser(user)" title="Supprimer">
+                  <span class="material-symbols-outlined">delete</span>
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="allUsers().length === 0">
+            <td colspan="6" class="empty-row">Aucun utilisateur trouvé.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Contenu Désactivé / Signalé -->
+  <div class="card">
+    <div class="card__header">
+      <div class="card__header-title">
+        <span class="material-symbols-outlined">shield</span>
+        <h3>Contenus & Terrains Suspendus</h3>
+      </div>
+      <span class="badge badge--error" *ngIf="contentItems().length > 0">{{ contentItems().length }} éléments</span>
+    </div>
+
+    <div class="reported-list card__body">
+      <div class="reported-item" *ngFor="let item of contentItems()">
+        <span class="type-tag" [class.type-tag--field]="item.type === 'field'" [class.type-tag--article]="item.type === 'article'">
+          {{ contentTypeLabel(item.type) }}
+        </span>
+        <div class="reported-item__content">
+          <p class="reported-item__title">{{ item.title }}</p>
+          <p class="reported-item__desc">Exploitant : <strong>{{ item.ownerName }}</strong> · Statut : {{ item.status }}</p>
+        </div>
+        <div class="action-btns">
+          <button class="btn btn--sm btn--primary" (click)="restoreContent(item)">Réactiver</button>
+        </div>
+      </div>
+
+      <div class="empty-state-sm" *ngIf="contentItems().length === 0">
+        <span class="material-symbols-outlined">check_circle</span>
+        <p>Aucun contenu ou terrain suspendu en ce moment.</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal d'invitation avec Parrainage -->
+<div class="modal-overlay" *ngIf="isInvitationModalOpen()">
+  <div class="modal">
+    <div class="modal__header">
+      <div class="modal__header-icon">
+        <span class="material-symbols-outlined">send</span>
+      </div>
+      <div>
+        <h2 class="modal__title">Inviter un Utilisateur par Parrainage</h2>
+        <p class="modal__subtitle">Envoi direct d'une invitation avec code parrain Super Admin</p>
+      </div>
+      <button class="modal__close" (click)="closeInvitationModal()">×</button>
+    </div>
+
+    <div class="modal__body" *ngIf="!inviteSuccess()">
+      <div class="modal__referrer-info">
+        <span class="material-symbols-outlined">info</span>
+        <p>Le compte sera rattaché à votre profil administrateur <strong>(EasyArena Parrainage)</strong>.</p>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Prénom *</label>
+          <input class="form-control" type="text" [(ngModel)]="inviteForm.firstName" placeholder="Ex: Moussa">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Nom *</label>
+          <input class="form-control" type="text" [(ngModel)]="inviteForm.lastName" placeholder="Ex: Ndiaye">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Téléphone *</label>
+          <input class="form-control" type="tel" [(ngModel)]="inviteForm.phone" placeholder="+221770000000">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Rôle attribué *</label>
+          <select class="form-control" [(ngModel)]="inviteForm.role">
+            <option value="client">Client</option>
+            <option value="owner">Propriétaire de terrain</option>
+            <option value="vendor">Vendeur Boutique</option>
+          </select>
+        </div>
+      </div>
+
+      <p class="form-error" *ngIf="inviteError()">{{ inviteError() }}</p>
+
+      <div class="modal__footer">
+        <button class="btn btn--ghost" (click)="closeInvitationModal()">Annuler</button>
+        <button class="btn btn--primary" [disabled]="inviteLoading()" (click)="inviteUser()">
+          <span *ngIf="!inviteLoading()">Envoyer l'invitation</span>
+          <span *ngIf="inviteLoading()" class="modal__spinner"></span>
+        </button>
+      </div>
+    </div>
+
+    <div class="modal__success" *ngIf="inviteSuccess()">
+      <span class="material-symbols-outlined">check_circle</span>
+      <p>{{ inviteSuccess() }}</p>
+    </div>
+  </div>
+</div>

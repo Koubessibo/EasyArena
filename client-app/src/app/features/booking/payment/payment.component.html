@@ -1,0 +1,151 @@
+<div class="page-container payment-page">
+
+  <!-- Header -->
+  <header class="page-header">
+    <button class="page-header__back" [routerLink]="viewState() === 'gateway' ? null : '/booking/summary'" (click)="viewState() === 'gateway' ? backToSelection() : null">
+      <span class="material-symbols-outlined">arrow_back</span>
+    </button>
+    <h1 class="page-header__title">Paiement</h1>
+    <div class="page-header__spacer"></div>
+  </header>
+
+  <!-- Page loading state -->
+  <div *ngIf="pageLoading()" class="payment-page-loading">
+    <div class="payment-page-loading__spinner"></div>
+    <p>Chargement...</p>
+  </div>
+
+  <!-- No booking found -->
+  <div *ngIf="!pageLoading() && !booking()" class="payment-empty">
+    <span class="material-symbols-outlined">receipt_long</span>
+    <p>Aucune réservation trouvée.</p>
+    <a routerLink="/home" class="btn btn--primary">Retour à l'accueil</a>
+  </div>
+
+  <ng-container *ngIf="!pageLoading() && booking(); let b">
+
+    <!-- ===== SELECTION VIEW ===== -->
+    <div class="payment-content" *ngIf="viewState() === 'selection'">
+
+      <!-- Amount summary -->
+      <div class="payment-amount-card">
+        <p class="payment-amount-card__label">{{ paidAmount() !== null && paidAmount() !== b.pricing.total ? 'Acompte à payer' : 'Montant total à payer' }}</p>
+        <p class="payment-amount-card__amount">{{ (paidAmount() !== null ? paidAmount() : b.pricing.total) | fcfa }}</p>
+        <p class="payment-amount-card__field">{{ b.fieldName }}</p>
+        <p *ngIf="paidAmount() !== null && paidAmount() !== b.pricing.total" class="payment-amount-card__remaining">
+          Solde restant : {{ (b.pricing.total - paidAmount()!) | fcfa }}
+        </p>
+      </div>
+
+      <!-- Error message -->
+      <div *ngIf="errorMessage()" class="payment-error">
+        <span class="material-symbols-outlined">error</span>
+        {{ errorMessage() }}
+      </div>
+
+      <!-- Payment method selection -->
+      <div class="payment-methods-section">
+        <h2 class="payment-section-title">Mode de paiement</h2>
+
+        <div class="payment-options">
+          <button
+            *ngFor="let option of paymentOptions"
+            class="payment-option"
+            [class.payment-option--selected]="selectedMethod() === option.value"
+            (click)="selectMethod(option.value)">
+            <div class="payment-option__icon-wrap" [style.background]="option.color + '20'">
+              <span class="material-symbols-outlined payment-option__icon"
+                    [style.color]="option.color">
+                {{ option.icon }}
+              </span>
+            </div>
+            <div class="payment-option__info">
+              <p class="payment-option__label">{{ option.label }}</p>
+              <p class="payment-option__desc">{{ option.description }}</p>
+            </div>
+            <div class="payment-option__check">
+              <span class="material-symbols-outlined" [class.filled]="selectedMethod() === option.value">
+                {{ selectedMethod() === option.value ? 'radio_button_checked' : 'radio_button_unchecked' }}
+              </span>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <!-- Security note -->
+      <div class="payment-security">
+        <span class="material-symbols-outlined filled payment-security__icon">lock</span>
+        <div>
+          <p class="payment-security__title">Paiement sécurisé</p>
+          <p class="payment-security__text">Vos informations sont chiffrées et protégées par SSL. EasyArena ne stocke jamais vos données de paiement.</p>
+        </div>
+      </div>
+
+      <!-- Pay button -->
+      <div class="payment-actions">
+        <button
+          class="btn btn--primary btn--full payment-btn"
+          [class.loading]="loading()"
+          [disabled]="loading()"
+          (click)="processPayment()">
+          <ng-container *ngIf="!loading()">
+            <span class="material-symbols-outlined filled">lock</span>
+            Payer {{ (paidAmount() !== null ? paidAmount() : b.pricing.total) | fcfa }}
+          </ng-container>
+          <span *ngIf="loading()" class="loading-spinner"></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ===== GATEWAY VIEW ===== -->
+    <div class="payment-content payment-gateway" *ngIf="viewState() === 'gateway'">
+
+      <div class="gateway-amount">
+        <p class="payment-amount-card__label">Montant</p>
+        <p class="payment-amount-card__amount">{{ (paidAmount() !== null ? paidAmount() : b.pricing.total) | fcfa }}</p>
+        <p class="payment-amount-card__field">{{ b.fieldName }}</p>
+      </div>
+
+      <!-- WAVE desktop: QR generated from redirect_url -->
+      <ng-container *ngIf="selectedMethod() === 'wave' && qrCodeDataUrl()">
+        <p class="gateway-instruction">Scannez avec votre téléphone pour payer via Wave</p>
+        <img [src]="qrCodeDataUrl()" alt="QR Wave" class="gateway-qr">
+      </ng-container>
+
+      <!-- OM desktop: base64 QR from Samirpay -->
+      <ng-container *ngIf="selectedMethod() === 'orange_money' && !isMobile() && paymentResponse()?.qr_code">
+        <p class="gateway-instruction">Scannez pour payer via Orange Money</p>
+        <img [src]="'data:image/png;base64,' + paymentResponse()!.qr_code"
+             alt="QR Orange Money" class="gateway-qr">
+      </ng-container>
+
+      <!-- OM mobile: 2 buttons -->
+      <ng-container *ngIf="selectedMethod() === 'orange_money' && isMobile()">
+        <p class="gateway-instruction">Choisissez votre application de paiement</p>
+        <button class="btn btn--primary gateway-btn"
+                (click)="openPaymentLink(paymentResponse()?.urls?.OM!)">
+          <span class="material-symbols-outlined">phone_android</span>
+          Payer avec Orange Money
+        </button>
+        <button class="btn btn--outline gateway-btn"
+                (click)="openPaymentLink(paymentResponse()?.urls?.MAXIT!)">
+          <span class="material-symbols-outlined">phone_android</span>
+          Payer avec Maxit
+        </button>
+      </ng-container>
+
+      <p class="gateway-ref">Réf. : {{ paymentResponse()?.external_ref }}</p>
+
+      <div class="gateway-waiting">
+        <div class="loading-spinner-sm"></div>
+        <span>En attente de confirmation...</span>
+      </div>
+
+      <button class="btn btn--ghost gateway-back" (click)="backToSelection()">
+        <span class="material-symbols-outlined">arrow_back</span>
+        Changer de méthode
+      </button>
+    </div>
+
+  </ng-container>
+</div>

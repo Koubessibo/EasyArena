@@ -1,0 +1,122 @@
+<div class="scanner" [ngClass]="{
+  'scanner--success': scannerState() === 'success',
+  'scanner--error':   scannerState() === 'error',
+  'scanner--scanning': scannerState() === 'scanning'
+}">
+
+  <!-- ── Header ───────────────────────────────────────────────────────────── -->
+  <header class="scanner__header">
+    <a routerLink="/owner/overview" class="scanner__back">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+    </a>
+    <h1 class="scanner__title">Scanner un billet</h1>
+    <div class="scanner__spacer"></div>
+  </header>
+
+  <!-- ── Zone vidéo ───────────────────────────────────────────────────────── -->
+  <div class="scanner__viewport">
+
+    <!-- Erreur d'accès caméra -->
+    <div *ngIf="cameraError()" class="scanner__camera-error">
+      <div class="scanner__camera-error-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/>
+          <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+      </div>
+      <p class="scanner__camera-error-text">{{ cameraError() }}</p>
+      <button class="scanner__retry-btn" (click)="startCamera()">Réessayer</button>
+    </div>
+
+    <!-- Flux vidéo caméra -->
+    <video
+      #cameraStream
+      class="scanner__video"
+      autoplay
+      playsinline
+      muted
+      [class.scanner__video--hidden]="!!cameraError()"
+    ></video>
+
+    <!-- Canvas caché — surface de travail pour jsQR (jamais visible) -->
+    <canvas #qrCanvas style="display:none"></canvas>
+
+    <!-- Overlay de visée QR -->
+    <div *ngIf="!cameraError()" class="scanner__overlay">
+      <div class="scanner__overlay-top"></div>
+      <div class="scanner__overlay-middle">
+        <div class="scanner__overlay-side"></div>
+        <!-- Cadre de visée -->
+        <div class="scanner__frame" [ngClass]="{
+          'scanner__frame--success': scannerState() === 'success',
+          'scanner__frame--error':   scannerState() === 'error',
+          'scanner__frame--scanning': scannerState() === 'scanning'
+        }">
+          <span class="scanner__frame-corner scanner__frame-corner--tl"></span>
+          <span class="scanner__frame-corner scanner__frame-corner--tr"></span>
+          <span class="scanner__frame-corner scanner__frame-corner--bl"></span>
+          <span class="scanner__frame-corner scanner__frame-corner--br"></span>
+          <!-- Ligne de scan animée -->
+          <div *ngIf="scannerState() === 'scanning'" class="scanner__scan-line"></div>
+        </div>
+        <div class="scanner__overlay-side"></div>
+      </div>
+      <div class="scanner__overlay-bottom">
+        <p class="scanner__hint">Placez le QR Code dans le cadre</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Feedback ─────────────────────────────────────────────────────────── -->
+  <div *ngIf="feedbackMessage()" class="scanner__feedback"
+       [ngClass]="{
+         'scanner__feedback--success': scannerState() === 'success',
+         'scanner__feedback--error':   scannerState() === 'error'
+       }">
+    <div class="scanner__feedback-icon">
+      <svg *ngIf="scannerState() === 'success'" xmlns="http://www.w3.org/2000/svg"
+           viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <polyline points="20 6 9 17 4 12"/>
+      </svg>
+      <svg *ngIf="scannerState() === 'error'" xmlns="http://www.w3.org/2000/svg"
+           viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </div>
+    <p class="scanner__feedback-text">{{ feedbackMessage() }}</p>
+
+    <!-- Détails du billet validé -->
+    <div *ngIf="validatedTicket() as ticket" class="scanner__ticket-details">
+      <p><span>Événement :</span> {{ ticket.eventName }}</p>
+      <p><span>Porteur :</span> {{ ticket.holderName }}</p>
+    </div>
+  </div>
+
+  <!-- ── Saisie manuelle (fallback) ────────────────────────────────────────── -->
+  <div class="scanner__manual">
+    <p class="scanner__manual-label">Saisie manuelle du jeton QR</p>
+    <div class="scanner__manual-form">
+      <input
+        class="scanner__manual-input"
+        type="text"
+        placeholder="Coller le jeton ici..."
+        [(ngModel)]="manualToken"
+        (keyup.enter)="onManualSubmit()"
+        [disabled]="scannerState() === 'scanning'"
+      />
+      <button
+        class="scanner__manual-btn"
+        (click)="onManualSubmit()"
+        [disabled]="scannerState() === 'scanning' || !manualToken.trim()"
+      >
+        <span *ngIf="scannerState() !== 'scanning'">Valider</span>
+        <span *ngIf="scannerState() === 'scanning'" class="scanner__spinner"></span>
+      </button>
+    </div>
+  </div>
+
+</div>

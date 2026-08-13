@@ -1,0 +1,75 @@
+<div class="pin-screen">
+
+  <!-- Back button -->
+  <button class="pin-screen__back icon-btn" (click)="goBack()" type="button">
+    <span class="material-symbols-outlined">arrow_back</span>
+  </button>
+
+  <!-- Success state -->
+  <div *ngIf="success()" class="pin-success">
+    <div class="pin-success__icon-wrap">
+      <span class="material-symbols-outlined pin-success__icon">check_circle</span>
+    </div>
+    <h2 class="pin-success__title">PIN créé avec succès !</h2>
+    <p class="pin-success__subtitle">Redirection en cours...</p>
+    <div class="pin-success__loader"></div>
+  </div>
+
+  <!-- PIN setup flow -->
+  <ng-container *ngIf="!success()">
+
+    <!-- Lock icon -->
+    <div class="pin-screen__icon-wrap">
+      <span class="material-symbols-outlined pin-screen__icon">lock</span>
+    </div>
+
+    <!-- Title -->
+    <h1 class="pin-screen__title">Créer votre PIN</h1>
+    <p class="pin-screen__subtitle">Ce code à 4 chiffres sécurise votre compte</p>
+
+    <!-- Progress -->
+    <div class="pin-screen__progress">
+      <span
+        class="pin-screen__progress-step"
+        [class.pin-screen__progress-step--active]="step() === 'create'">
+        Étape 1/2 — Entrez votre PIN
+      </span>
+      <span
+        class="pin-screen__progress-step"
+        [class.pin-screen__progress-step--active]="step() === 'confirm'">
+        Étape 2/2 — Confirmez votre PIN
+      </span>
+    </div>
+
+    <!-- Error message -->
+    <div *ngIf="errorMessage()" class="pin-screen__error">
+      <span class="material-symbols-outlined">error</span>
+      {{ errorMessage() }}
+    </div>
+
+    <!-- PIN dots -->
+    <div class="pin-dots">
+      <div
+        *ngFor="let digit of currentDigits; let i = index"
+        class="pin-dots__dot"
+        [class.pin-dots__dot--filled]="digit !== ''">
+      </div>
+    </div>
+
+    <!-- Numeric keyboard -->
+    <div class="pin-keyboard">
+      <button
+        *ngFor="let key of keys"
+        class="pin-keyboard__key"
+        [class.pin-keyboard__key--empty]="key === ''"
+        [class.pin-keyboard__key--back]="key === 'back'"
+        [disabled]="key === ''"
+        (click)="pressKey(key)"
+        type="button">
+        <ng-container *ngIf="key !== 'back' && key !== ''">{{ key }}</ng-container>
+        <span *ngIf="key === 'back'" class="material-symbols-outlined">backspace</span>
+      </button>
+    </div>
+
+  </ng-container>
+</div>

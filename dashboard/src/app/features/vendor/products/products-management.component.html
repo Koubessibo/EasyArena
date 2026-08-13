@@ -1,0 +1,156 @@
+<div class="page-content">
+  <app-page-header title="Mes Produits" subtitle="Gérez votre catalogue de produits sportifs" [showBack]="true">
+    <button class="btn btn--primary" (click)="openAdd()">
+      <span class="material-symbols-outlined">add</span>
+      Ajouter un produit
+    </button>
+  </app-page-header>
+
+  <!-- Error banner -->
+  <div class="alert alert--error" *ngIf="svc.error()">
+    <span class="material-symbols-outlined">error</span>
+    {{ svc.error() }}
+    <button class="btn btn--ghost btn--icon btn--sm" (click)="svc.error.set(null)">
+      <span class="material-symbols-outlined">close</span>
+    </button>
+  </div>
+
+  <!-- Success feedback -->
+  <div class="alert alert--success" *ngIf="feedback()?.type === 'success'">
+    <span class="material-symbols-outlined">check_circle</span>
+    {{ feedback()!.message }}
+  </div>
+
+  <!-- Add/Edit Form -->
+  <div class="card" *ngIf="showForm()">
+    <div class="card__header">
+      <h3 class="card__title">{{ editingProduct() ? 'Modifier le produit' : 'Nouveau produit' }}</h3>
+      <button class="btn btn--ghost btn--icon" (click)="closeForm()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div class="card__body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Nom du produit</label>
+          <input class="form-input" type="text" placeholder="Ex: Ballon Football Pro"
+            [value]="formData().name" (input)="updateFormField('name', $any($event.target).value)">
+        </div>
+        <div class="form-group" style="grid-column: 1 / -1;">
+          <label class="form-label">Description du produit *</label>
+          <textarea class="form-input" rows="3" placeholder="Décrivez le produit, sa taille, ses spécifications..."
+            [value]="formData().description" (input)="updateFormField('description', $any($event.target).value)"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Catégorie</label>
+          <select class="form-select" [value]="formData().category" (change)="updateFormField('category', $any($event.target).value)">
+            <option *ngFor="let c of categories.slice(1)" [value]="c.value">{{ c.label }}</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Prix (FCFA)</label>
+          <input class="form-input" type="number" placeholder="18500"
+            [value]="formData().price" (input)="updateFormField('price', +$any($event.target).value)">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Quantité en Stock</label>
+          <input class="form-input" type="number" placeholder="10"
+            [value]="formData().stock" (input)="updateFormField('stock', +$any($event.target).value)">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Statut</label>
+          <select class="form-select" [value]="formData().status" (change)="updateFormField('status', $any($event.target).value)">
+            <option value="active">Actif / En vente</option>
+            <option value="inactive">Inactif / Masqué</option>
+            <option value="out_of_stock">Rupture de stock</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Photo upload section -->
+      <div class="form-section">
+        <label class="form-label">Photo du produit</label>
+
+        <!-- Existing photos (edit mode) -->
+        <div class="photo-grid" *ngIf="editingProduct()?.photos?.length">
+          <div class="photo-thumb" *ngFor="let photo of editingProduct()!.photos">
+            <img [src]="photo.url" [alt]="editingProduct()!.name">
+            <span class="photo-cover-badge" *ngIf="photo.is_cover">Cover</span>
+            <button class="photo-delete-btn" type="button" (click)="deleteExistingPhoto(photo)">
+              <span class="material-symbols-outlined">delete</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Pending previews -->
+        <div class="photo-grid" *ngIf="previews().length">
+          <div class="photo-thumb photo-thumb--pending" *ngFor="let url of previews(); let i = index">
+            <img [src]="url" alt="aperçu">
+            <button class="photo-delete-btn" type="button" (click)="removePendingFile(i)">
+              <span class="material-symbols-outlined">close</span>
+            </button>
+          </div>
+        </div>
+
+        <input #fileInput type="file" accept="image/*" multiple hidden (change)="onFileSelected($event)">
+        <button type="button" class="btn btn--outline btn--sm" (click)="fileInput.click()">
+          <span class="material-symbols-outlined">add_photo_alternate</span>
+          Ajouter des photos
+        </button>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn btn--outline" (click)="closeForm()">Annuler</button>
+        <button class="btn btn--primary" (click)="save()" [disabled]="saving()">
+          <span class="loading-spinner" *ngIf="saving()"></span>
+          <ng-container *ngIf="!saving()">
+            <span class="material-symbols-outlined">save</span>
+            {{ editingProduct() ? 'Enregistrer' : 'Créer le produit' }}
+          </ng-container>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Category filters -->
+  <div class="filter-chips">
+    <button *ngFor="let cat of categories" class="filter-chip"
+      [class.active]="filterCategory() === cat.value" (click)="filterCategory.set(cat.value)">
+      {{ cat.label }}
+    </button>
+  </div>
+
+  <!-- Products grid -->
+  <div class="products-grid">
+    <div *ngFor="let product of filteredProducts()" class="product-card">
+      <div class="product-card__img-wrap">
+        <img *ngIf="product.imageUrl" [src]="product.imageUrl" [alt]="product.name" class="product-card__img">
+        <div *ngIf="!product.imageUrl" class="product-card__img-placeholder">
+          <span class="material-symbols-outlined">inventory_2</span>
+        </div>
+        <div class="product-card__status-badge">
+          <app-status-badge [status]="product.status"></app-status-badge>
+        </div>
+      </div>
+      <div class="product-card__body">
+        <p class="product-card__cat">{{ categoryLabel(product.category) }}</p>
+        <p class="product-card__name">{{ product.name }}</p>
+        <div class="product-card__meta">
+          <p class="product-card__price">{{ product.price | fcfa }}</p>
+          <p class="product-card__stock" [class.stock--low]="product.stock < 5">
+            Stock: {{ product.stock }}
+          </p>
+        </div>
+      </div>
+      <div class="product-card__actions">
+        <button class="btn btn--sm btn--outline" style="flex:1" (click)="openEdit(product)">
+          <span class="material-symbols-outlined">edit</span>
+          Modifier
+        </button>
+        <button class="btn btn--sm btn--ghost" (click)="deleteProduct(product.id)" style="color:var(--error)">
+          <span class="material-symbols-outlined">delete</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

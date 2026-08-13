@@ -1,0 +1,193 @@
+<div class="profile-page">
+
+  <!-- ══ HERO COVER ══════════════════════════════════════════════════════ -->
+  <div class="prof-hero">
+    <!-- Gradient BG with blobs -->
+    <div class="prof-hero__bg">
+      <div class="prof-hero__bg-blob prof-hero__bg-blob--1"></div>
+      <div class="prof-hero__bg-blob prof-hero__bg-blob--2"></div>
+    </div>
+
+    <!-- Avatar + Info -->
+    <div class="prof-hero__body">
+      <div class="prof-avatar-wrap">
+        <div class="prof-avatar" (click)="avatarInput.click()">
+          <img *ngIf="currentUser()?.avatarUrl"
+               [src]="currentUser()?.avatarUrl"
+               [alt]="currentUser()?.fullName"
+               class="prof-avatar__img">
+          <div *ngIf="!currentUser()?.avatarUrl" class="prof-avatar__initials">
+            {{ (currentUser()?.fullName || 'U').charAt(0).toUpperCase() }}
+          </div>
+          <div class="prof-avatar__spinner" *ngIf="isUploading()">
+            <span class="spinner spinner--sm"></span>
+          </div>
+        </div>
+        <button class="prof-avatar__cam" type="button" (click)="avatarInput.click()">
+          <span class="material-symbols-outlined">photo_camera</span>
+        </button>
+        <button *ngIf="currentUser()?.avatarUrl" class="prof-avatar__remove" type="button" (click)="removeAvatar($event)">
+          <span class="material-symbols-outlined">delete</span>
+        </button>
+        <input #avatarInput type="file" accept="image/*" hidden (change)="onAvatarSelected($event)">
+      </div>
+
+      <div class="prof-hero__info">
+        <h1 class="prof-hero__name">{{ currentUser()?.fullName || 'Utilisateur' }}</h1>
+        <div class="prof-hero__badges">
+          <span class="prof-badge prof-badge--phone" *ngIf="currentUser()?.phone">
+            <span class="material-symbols-outlined">phone</span>
+            {{ currentUser()?.phone }}
+          </span>
+        </div>
+      </div>
+
+      <a routerLink="/profile/edit" class="prof-hero__edit-btn">
+        <span class="material-symbols-outlined">edit</span>
+        Modifier
+      </a>
+    </div>
+
+    <!-- Stats bar -->
+    <div class="prof-stats">
+      <ng-container *ngIf="!statsLoading(); else statsSkel">
+        <div class="prof-stat">
+          <span class="prof-stat__num">{{ upcomingCount() }}</span>
+          <span class="prof-stat__label">À venir</span>
+        </div>
+        <div class="prof-stat-sep"></div>
+        <div class="prof-stat">
+          <span class="prof-stat__num">{{ bookingsCount() }}</span>
+          <span class="prof-stat__label">Réservations</span>
+        </div>
+        <div class="prof-stat-sep"></div>
+        <div class="prof-stat">
+          <span class="prof-stat__num">{{ formatCFA(totalSpent()) }}</span>
+          <span class="prof-stat__label">Dépensé</span>
+        </div>
+      </ng-container>
+      <ng-template #statsSkel>
+        <div class="prof-stat" *ngFor="let i of [1,2,3]">
+          <div class="prof-stat-skel skel-pulse" style="width:40px;height:22px;border-radius:6px;"></div>
+          <div class="prof-stat-skel skel-pulse" style="width:60px;height:10px;border-radius:4px;margin-top:4px;"></div>
+        </div>
+      </ng-template>
+    </div>
+  </div>
+
+  <!-- ══ MENU SECTIONS ══════════════════════════════════════════════════ -->
+  <div class="prof-body">
+
+    <!-- ── HUB ACCÈS RAPIDE ──────────────────────────────────────────── -->
+    <div class="prof-hub">
+      <p class="prof-hub__title">Accès Rapide</p>
+      <div class="prof-hub__list">
+
+        <a routerLink="/events" class="prof-hub__row">
+          <div class="prof-hub__row-icon" style="background:#ede9fe;color:#7c3aed">
+            <span class="material-symbols-outlined">event</span>
+          </div>
+          <div class="prof-hub__row-content">
+            <span class="prof-hub__row-label">Événements</span>
+            <span class="prof-hub__row-sub">Billets &amp; tournois sportifs</span>
+          </div>
+          <span class="prof-hub__row-badge prof-hub__row-badge--purple">Nouveau</span>
+          <span class="material-symbols-outlined prof-hub__row-chevron">chevron_right</span>
+        </a>
+
+        <a routerLink="/subscriptions" class="prof-hub__row">
+          <div class="prof-hub__row-icon" style="background:#e0e7ff;color:#4338ca">
+            <span class="material-symbols-outlined">card_membership</span>
+          </div>
+          <div class="prof-hub__row-content">
+            <span class="prof-hub__row-label">Mes Abonnements</span>
+            <span class="prof-hub__row-sub">Passes &amp; forfaits illimités</span>
+          </div>
+          <span class="material-symbols-outlined prof-hub__row-chevron">chevron_right</span>
+        </a>
+
+        <a routerLink="/favorites" class="prof-hub__row">
+          <div class="prof-hub__row-icon" style="background:#fce7f3;color:#be185d">
+            <span class="material-symbols-outlined">favorite</span>
+          </div>
+          <div class="prof-hub__row-content">
+            <span class="prof-hub__row-label">Mes Favoris</span>
+            <span class="prof-hub__row-sub">Terrains sauvegardés</span>
+          </div>
+          <span class="material-symbols-outlined prof-hub__row-chevron">chevron_right</span>
+        </a>
+
+        <a routerLink="/orders" class="prof-hub__row">
+          <div class="prof-hub__row-icon" style="background:#d1fae5;color:#065f46">
+            <span class="material-symbols-outlined">shopping_bag</span>
+          </div>
+          <div class="prof-hub__row-content">
+            <span class="prof-hub__row-label">Mes Commandes</span>
+            <span class="prof-hub__row-sub">Boutique &amp; équipements</span>
+          </div>
+          <span class="material-symbols-outlined prof-hub__row-chevron">chevron_right</span>
+        </a>
+
+        <a routerLink="/my-tickets" class="prof-hub__row">
+          <div class="prof-hub__row-icon" style="background:#fef3c7;color:#92400e">
+            <span class="material-symbols-outlined">confirmation_number</span>
+          </div>
+          <div class="prof-hub__row-content">
+            <span class="prof-hub__row-label">Mes Billets</span>
+            <span class="prof-hub__row-sub">Billets &amp; codes QR actifs</span>
+          </div>
+          <span class="material-symbols-outlined prof-hub__row-chevron">chevron_right</span>
+        </a>
+
+      </div>
+    </div>
+    <!-- /HUB ACCÈS RAPIDE -->
+
+    <ng-container *ngFor="let section of menuSections">
+      <div class="prof-section">
+        <p *ngIf="section.title" class="prof-section__title">{{ section.title }}</p>
+        <div class="prof-menu-card">
+          <button
+            *ngFor="let item of section.items; let last = last"
+            class="prof-menu-item"
+            [class.prof-menu-item--danger]="item.danger"
+            (click)="handleMenuAction(item)">
+            <div class="prof-menu-item__icon-wrap"
+                 [class.prof-menu-item__icon-wrap--danger]="item.danger">
+              <span class="material-symbols-outlined prof-menu-item__icon">{{ item.icon }}</span>
+            </div>
+            <span class="prof-menu-item__label">{{ item.label }}</span>
+            <div class="prof-menu-item__right">
+              <span *ngIf="item.badge" class="prof-menu-item__badge">{{ item.badge }}</span>
+              <span class="material-symbols-outlined prof-menu-item__arrow" *ngIf="!item.danger">
+                chevron_right
+              </span>
+            </div>
+          </button>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- ── PWA INSTALL (si non installé) ── -->
+    <div class="prof-pwa-section" *ngIf="!isInstalled()">
+      <button class="prof-pwa-install-btn" (click)="installPwa()">
+        <div class="prof-pwa-install-btn__icon">
+          <span class="material-symbols-outlined">download_for_offline</span>
+        </div>
+        <div class="prof-pwa-install-btn__content">
+          <span class="prof-pwa-install-btn__label">Installer EasyArena</span>
+          <span class="prof-pwa-install-btn__sub">Application gratuite · 0 Mo · Hors-ligne</span>
+        </div>
+        <span class="material-symbols-outlined prof-pwa-install-btn__arrow">chevron_right</span>
+      </button>
+    </div>
+
+    <!-- ── FOOTER ──────────────────────────────────────────────────── -->
+    <div class="prof-footer">
+      <div class="prof-footer__logo">EA</div>
+      <p class="prof-footer__app">EasyArena v1.0.0</p>
+      <p class="prof-footer__copy">&copy; 2026 EasyArena. Tous droits réservés.</p>
+    </div>
+
+  </div>
+</div>

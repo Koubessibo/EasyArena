@@ -1,0 +1,57 @@
+<div class="splash-screen">
+
+  <!-- Skip button (first 2 slides only) -->
+  <button
+    *ngIf="isFirstTwoSlides"
+    class="splash-screen__skip"
+    (click)="skip()">
+    Passer
+  </button>
+
+  <!-- Logo -->
+  <div class="splash-screen__logo">
+    <img src="/logo-long.png" alt="EasyArena" class="splash-screen__logo-img">
+  </div>
+
+  <!-- Slides -->
+  <div class="splash-slides" [class.splash-slides--animating]="animating()">
+    <div class="splash-slide">
+      <div class="splash-slide__icon-wrap">
+        <span class="material-symbols-outlined splash-slide__icon">{{ slides[currentSlide()].icon }}</span>
+      </div>
+      <h2 class="splash-slide__title">{{ slides[currentSlide()].title }}</h2>
+      <p class="splash-slide__description">{{ slides[currentSlide()].description }}</p>
+    </div>
+  </div>
+
+  <!-- Dots indicator -->
+  <div class="splash-dots">
+    <button
+      *ngFor="let slide of slides; let i = index"
+      class="splash-dots__dot"
+      [class.splash-dots__dot--active]="i === currentSlide()"
+      (click)="goToSlide(i)"
+      [attr.aria-label]="'Aller à la diapositive ' + (i + 1)">
+    </button>
+  </div>
+
+  <!-- Actions -->
+  <div class="splash-actions">
+    <!-- Last slide: Commencer + Se connecter -->
+    <ng-container *ngIf="isLastSlide">
+      <button class="btn btn--primary btn--full" (click)="goToRegister()">
+        Commencer
+      </button>
+      <a routerLink="/login" class="splash-actions__login-link">Se connecter</a>
+    </ng-container>
+
+    <!-- Other slides: Next button -->
+    <ng-container *ngIf="!isLastSlide">
+      <button class="btn btn--primary btn--full" (click)="nextSlide()">
+        Suivant
+        <span class="material-symbols-outlined">arrow_forward</span>
+      </button>
+    </ng-container>
+  </div>
+
+</div>

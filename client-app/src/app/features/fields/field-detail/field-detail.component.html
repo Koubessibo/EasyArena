@@ -1,0 +1,367 @@
+<div class="fd" *ngIf="!loading(); else loadingTemplate">
+  <ng-container *ngIf="field() as f">
+
+    <!-- ══ HEADER NAV & BREADCRUMB BAR ═════════════════════════════════ -->
+    <div class="fd-top-bar">
+      <div class="fd-top-bar__inner">
+        <a routerLink="/home" class="fd-back-link">
+          <span class="material-symbols-outlined">arrow_back</span>
+          <span>Retour aux terrains</span>
+        </a>
+        <div class="fd-top-bar__actions">
+          <button class="fd-icon-btn" (click)="share()" title="Partager">
+            <span class="material-symbols-outlined">share</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ MAIN CONTAINER ══════════════════════════════════════════════ -->
+    <div class="fd-container">
+
+      <!-- ── TITLE & BADGES ──────────────────────────────────────────── -->
+      <div class="fd-header-section">
+        <div class="fd-header-tags">
+          <span class="fd-tag fd-tag--sport">
+            <span class="material-symbols-outlined">{{ getSportIcon(f.sport) }}</span>
+            {{ f.sport | titlecase }}
+          </span>
+          <span class="fd-tag fd-tag--surface" style="background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;">
+            <span class="material-symbols-outlined">grass</span>
+            {{ getSurfaceLabel(f.surface) }}
+          </span>
+          <span *ngIf="f.hasLighting" class="fd-tag fd-tag--lighting" style="background:#fef3c7;color:#92400e;border:1px solid #fde68a;">
+            <span class="material-symbols-outlined">lightbulb</span>
+            Éclairé la nuit
+          </span>
+          <span class="fd-tag" [class.fd-tag--open]="f.isAvailable" [class.fd-tag--closed]="!f.isAvailable">
+            <span class="fd-tag__dot"></span>
+            {{ f.isAvailable ? 'Disponible' : 'Fermé' }}
+          </span>
+        </div>
+        <h1 class="fd-title">{{ f.name }}</h1>
+        <p class="fd-address">
+          <span class="material-symbols-outlined">location_on</span>
+          {{ f.address }}{{ f.city ? ', ' + f.city : '' }}
+        </p>
+      </div>
+
+      <!-- ── MAIN GRID (LEFT: CONTENT, RIGHT: BOOKING WIDGET) ────────── -->
+      <div class="fd-grid">
+
+        <!-- ── LEFT COLUMN ─────────────────────────────────────────── -->
+        <div class="fd-main-content">
+
+          <!-- Main Gallery Showcase -->
+          <div class="fd-gallery">
+            <div class="fd-gallery__main">
+              <img [src]="f.images[activeImageIndex()] || f.imageUrl" [alt]="f.name" class="fd-gallery__img">
+              <div *ngIf="!f.imageUrl && !f.images.length" class="fd-gallery__placeholder">
+                <span class="material-symbols-outlined">stadium</span>
+              </div>
+            </div>
+            <!-- Thumbnails strip -->
+            <div class="fd-gallery__thumbs" *ngIf="f.images.length > 1">
+              <button
+                *ngFor="let img of f.images; let i = index"
+                class="fd-gallery__thumb"
+                [class.fd-gallery__thumb--active]="activeImageIndex() === i"
+                (click)="selectImage(i)">
+                <img [src]="img" [alt]="f.name">
+              </button>
+            </div>
+          </div>
+
+          <!-- Price Highlight Pill (Mobile / Quick Overview) -->
+          <div class="fd-price-card">
+            <div class="fd-price-card__left">
+              <span class="fd-price-card__label">Tarif par créneau</span>
+              <div class="fd-price-card__val">
+                <span class="fd-price-card__amount">{{ f.pricePerHour | fcfa }}</span>
+                <span class="fd-price-card__unit">/ 1 heure</span>
+              </div>
+            </div>
+            <div class="fd-price-card__badge">
+              <span class="material-symbols-outlined">verified</span>
+              Paiement Sécurisé
+            </div>
+          </div>
+
+          <!-- Amenities & Features Card -->
+          <div class="fd-card">
+            <h2 class="fd-card__title">
+              <span class="material-symbols-outlined">workspace_premium</span>
+              Équipements & Prestations du Terrain
+            </h2>
+            <div class="fd-amenities-grid">
+              <div style="display:flex;align-items:center;gap:0.6rem;padding:0.75rem 1rem;background:#f8fafc;border-radius:12px;border:1px solid #f1f5f9;font-size:0.875rem;font-weight:700;color:#0f172a;">
+                <span class="material-symbols-outlined" style="color:#0284c7;">grass</span>
+                {{ f.surface === 'synthetic_turf' ? 'Gazon Synthétique' : (f.surface === 'natural_grass' ? 'Gazon Naturel' : 'Revêtement Pro') }}
+              </div>
+              <div *ngIf="f.hasLighting" style="display:flex;align-items:center;gap:0.6rem;padding:0.75rem 1rem;background:#fffbeb;border-radius:12px;border:1px solid #fef3c7;font-size:0.875rem;font-weight:700;color:#92400e;">
+                <span class="material-symbols-outlined" style="color:#d97706;">lightbulb</span>
+                Éclairage Nocturne LED
+              </div>
+              <div *ngIf="f.hasChangingRooms" style="display:flex;align-items:center;gap:0.6rem;padding:0.75rem 1rem;background:#f8fafc;border-radius:12px;border:1px solid #f1f5f9;font-size:0.875rem;font-weight:700;color:#0f172a;">
+                <span class="material-symbols-outlined" style="color:#10b981;">shower</span>
+                Vestiaires & Douches
+              </div>
+              <div *ngIf="f.hasParking" style="display:flex;align-items:center;gap:0.6rem;padding:0.75rem 1rem;background:#f8fafc;border-radius:12px;border:1px solid #f1f5f9;font-size:0.875rem;font-weight:700;color:#0f172a;">
+                <span class="material-symbols-outlined" style="color:#6366f1;">local_parking</span>
+                Parking Sécurisé
+              </div>
+              <div *ngIf="f.hasCafeteria" style="display:flex;align-items:center;gap:0.6rem;padding:0.75rem 1rem;background:#f8fafc;border-radius:12px;border:1px solid #f1f5f9;font-size:0.875rem;font-weight:700;color:#0f172a;">
+                <span class="material-symbols-outlined" style="color:#f59e0b;">local_cafe</span>
+                Buvette / Restauration
+              </div>
+              <div *ngIf="f.hasWifi" style="display:flex;align-items:center;gap:0.6rem;padding:0.75rem 1rem;background:#f8fafc;border-radius:12px;border:1px solid #f1f5f9;font-size:0.875rem;font-weight:700;color:#0f172a;">
+                <span class="material-symbols-outlined" style="color:#06b6d4;">wifi</span>
+                Wi-Fi Gratuit
+              </div>
+              <div *ngIf="f.providesEquipment" style="display:flex;align-items:center;gap:0.6rem;padding:0.75rem 1rem;background:#f8fafc;border-radius:12px;border:1px solid #f1f5f9;font-size:0.875rem;font-weight:700;color:#0f172a;">
+                <span class="material-symbols-outlined" style="color:#10b981;">sports_soccer</span>
+                Ballons & Chasubles
+              </div>
+            </div>
+          </div>
+
+          <!-- About Card -->
+          <div class="fd-card" *ngIf="f.description">
+            <h2 class="fd-card__title">
+              <span class="material-symbols-outlined">info</span>
+              À propos du complexe
+            </h2>
+            <p class="fd-card__text">{{ f.description }}</p>
+          </div>
+
+          <!-- Location & Map Card -->
+          <div class="fd-card">
+            <h2 class="fd-card__title">
+              <span class="material-symbols-outlined">map</span>
+              Emplacement & Position Carte Exacte
+            </h2>
+            <div class="fd-map-box">
+              <div class="fd-map-box__icon">
+                <span class="material-symbols-outlined">location_on</span>
+              </div>
+              <div class="fd-map-box__info">
+                <strong>{{ f.name }}</strong>
+                <span>{{ f.address }}{{ f.city ? ', ' + f.city : '' }}, Sénégal</span>
+              </div>
+              <a class="fd-map-box__btn" target="_blank"
+                 [href]="f.googleMapsUrl || 'https://maps.google.com/?q=' + encodeURIComponent(f.name + ' ' + f.address + ' ' + f.city)">
+                <span class="material-symbols-outlined">open_in_new</span>
+                Voir sur la Carte
+              </a>
+            </div>
+          </div>
+
+          <!-- Owner & Contact Card -->
+          <div class="fd-card">
+            <h2 class="fd-card__title">
+              <span class="material-symbols-outlined">contact_phone</span>
+              Gestionnaire & Contacts du Terrain
+            </h2>
+            <div class="fd-owner-box">
+              <div class="fd-owner-box__avatar">{{ f.owner.name.charAt(0) || 'P' }}</div>
+              <div class="fd-owner-box__details">
+                <strong class="fd-owner-box__name">{{ f.owner.name || 'Propriétaire Certifié' }}</strong>
+                <span class="fd-owner-box__role">Partenaire EasyArena Vérifié</span>
+                <span *ngIf="f.contactPhone || f.owner.phone" class="fd-contact-item">
+                  <span class="material-symbols-outlined">call</span> {{ f.contactPhone || f.owner.phone }}
+                </span>
+                <span *ngIf="f.contactEmail" class="fd-contact-item">
+                  <span class="material-symbols-outlined">mail</span> {{ f.contactEmail }}
+                </span>
+              </div>
+              <a *ngIf="f.contactPhone || f.owner.phone" [href]="'tel:' + (f.contactPhone || f.owner.phone)" class="fd-call-btn" title="Appeler">
+                <span class="material-symbols-outlined">call</span> Appeler
+              </a>
+            </div>
+          </div>
+
+          <!-- Subscription Promo Card -->
+          <div class="fd-promo-card">
+            <div class="fd-promo-card__icon">
+              <span class="material-symbols-outlined">card_membership</span>
+            </div>
+            <div class="fd-promo-card__text">
+              <h3>Pass & Formules d'Abonnement</h3>
+              <p>Profitez de tarifs préférentiels en souscrivant un pack de réservations.</p>
+            </div>
+            <a [routerLink]="['/subscriptions']" class="fd-promo-card__btn">
+              Découvrir les offres
+            </a>
+          </div>
+
+        </div>
+
+        <!-- ── RIGHT COLUMN: STICKY BOOKING PANEL ──────────────────── -->
+        <aside class="fd-sidebar">
+          <div class="fd-booking-widget">
+
+            <div class="fd-bw-header">
+              <span class="fd-bw-header__title">Réserver un créneau</span>
+              <div class="fd-bw-header__price">
+                <span class="fd-bw-header__amount">{{ (selectedSlot() ? totalPrice() : f.pricePerHour) | fcfa }}</span>
+                <span class="fd-bw-header__unit">{{ selectedSlot() && numSlots() > 1 ? '× ' + numSlots() + ' h' : '/ créneau' }}</span>
+              </div>
+            </div>
+
+            <!-- Date picker -->
+            <div class="fd-bw-section">
+              <label class="fd-bw-label">
+                <span class="material-symbols-outlined">calendar_today</span>
+                1. Choisissez la date
+              </label>
+              <div class="fd-day-picker">
+                <button
+                  *ngFor="let day of dayTabs()"
+                  type="button"
+                  class="fd-day-btn"
+                  [class.fd-day-btn--active]="selectedDate()?.date === day.date"
+                  [class.fd-day-btn--blocked]="blockedDates().has(day.date)"
+                  (click)="selectDay(day)">
+                  <span class="fd-day-btn__name">{{ day.shortDay }}</span>
+                  <span class="fd-day-btn__num">{{ day.dayNum }}</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Slot picker -->
+            <div class="fd-bw-section">
+              <label class="fd-bw-label">
+                <span class="material-symbols-outlined">schedule</span>
+                2. Choisissez l'heure
+              </label>
+
+              <!-- Loading -->
+              <div *ngIf="availabilityLoading()" class="fd-bw-loading">
+                <div class="fd-spinner"></div>
+                <span>Chargement des horaires…</span>
+              </div>
+
+              <!-- Error -->
+              <div *ngIf="availabilityError() && !availabilityLoading()" class="fd-bw-error">
+                <span class="material-symbols-outlined">error</span>
+                <span>Erreur de chargement.</span>
+                <button type="button" class="fd-retry-link" (click)="selectDay(selectedDate()!)">Réessayer</button>
+              </div>
+
+              <!-- Day blocked -->
+              <div *ngIf="dayIsBlocked() && !availabilityLoading()" class="fd-bw-blocked">
+                <span class="material-symbols-outlined">event_busy</span>
+                Terrain fermé cette journée.
+              </div>
+
+              <!-- Slots Grid -->
+              <div class="fd-slots-grid" *ngIf="!availabilityLoading() && !availabilityError() && selectedDate() && !dayIsBlocked()">
+                <ng-container *ngIf="availabilitySlots().length > 0; else noSlots">
+                  <button
+                    *ngFor="let slot of availabilitySlots()"
+                    type="button"
+                    class="fd-slot-btn"
+                    [class.fd-slot-btn--available]="slot.available"
+                    [class.fd-slot-btn--selected]="selectedSlot()?.slot_start === slot.slot_start && selectedSlot()?.schedule_id === slot.schedule_id"
+                    [class.fd-slot-btn--in-range]="slot.available && selectedSlotRange().includes(slot.slot_start) && selectedSlot()?.slot_start !== slot.slot_start"
+                    [class.fd-slot-btn--blocked]="slot.blocked"
+                    [class.fd-slot-btn--unavailable]="!slot.available && !slot.blocked"
+                    [disabled]="!slot.available"
+                    (click)="selectSlot(slot)">
+                    {{ slot.slot_start }}
+                  </button>
+                </ng-container>
+                <ng-template #noSlots>
+                  <p class="fd-no-slots-msg">Aucun horaire disponible ce jour.</p>
+                </ng-template>
+              </div>
+
+              <!-- Duration selector -->
+              <div *ngIf="selectedSlot()" class="fd-duration-box">
+                <div class="fd-duration-box__row">
+                  <span class="material-symbols-outlined fd-duration-box__icon">timer</span>
+                  <span class="fd-duration-box__text">{{ selectedSlot()?.slot_start }} à {{ endTime() }}</span>
+                  <div class="fd-duration-box__controls">
+                    <button type="button" class="fd-step-btn" (click)="changeNumSlots(-1)" [disabled]="numSlots() <= 1">−</button>
+                    <span class="fd-step-val">{{ numSlots() }}h</span>
+                    <button type="button" class="fd-step-btn" (click)="changeNumSlots(1)">+</button>
+                  </div>
+                </div>
+                <p *ngIf="!rangeAvailable()" class="fd-duration-box__warn">
+                  <span class="material-symbols-outlined">warning</span>
+                  Plage horaire partiellement indisponible
+                </p>
+              </div>
+            </div>
+
+            <!-- Booking Action CTA -->
+            <div class="fd-bw-cta">
+              <div *ngIf="bookingError()" class="fd-bw-booking-err">
+                <span class="material-symbols-outlined">error</span>
+                {{ bookingError() }}
+              </div>
+
+              <button
+                type="button"
+                class="fd-bw-submit-btn"
+                [class.fd-bw-submit-btn--ready]="selectedSlot() && f.isAvailable && rangeAvailable()"
+                [disabled]="!selectedSlot() || !f.isAvailable || !rangeAvailable() || bookingLoading()"
+                (click)="bookNow()">
+                <div *ngIf="bookingLoading()" class="fd-spinner fd-spinner--white"></div>
+                <ng-container *ngIf="!bookingLoading()">
+                  <span class="material-symbols-outlined">check_circle</span>
+                  {{ selectedSlot() ? 'Confirmer la Réservation' : 'Sélectionnez un horaire' }}
+                </ng-container>
+              </button>
+
+              <p class="fd-bw-guarantee">
+                <span class="material-symbols-outlined">shield</span>
+                Confirmation immédiate par SMS & QR Code Pass
+              </p>
+            </div>
+
+          </div>
+        </aside>
+
+      </div>
+    </div>
+
+    <!-- ── MOBILE BOTTOM STICKY BAR ─────────────────────────────── -->
+    <div class="fd-mobile-bar" *ngIf="field() as f">
+      <div class="fd-mobile-bar__info">
+        <span class="fd-mobile-bar__price">{{ (selectedSlot() ? totalPrice() : f.pricePerHour) | fcfa }}</span>
+        <span class="fd-mobile-bar__sub">{{ selectedSlot() ? selectedSlot()?.slot_start + ' (' + numSlots() + 'h)' : 'Sélectionnez une heure' }}</span>
+      </div>
+      <button
+        type="button"
+        class="fd-mobile-bar__btn"
+        [class.fd-mobile-bar__btn--ready]="selectedSlot() && f.isAvailable && rangeAvailable()"
+        [disabled]="!selectedSlot() || !f.isAvailable || !rangeAvailable() || bookingLoading()"
+        (click)="bookNow()">
+        <div *ngIf="bookingLoading()" class="fd-spinner fd-spinner--white"></div>
+        <ng-container *ngIf="!bookingLoading()">
+          {{ selectedSlot() ? 'Réserver' : 'Choisir un créneau' }}
+        </ng-container>
+      </button>
+    </div>
+
+  </ng-container>
+</div>
+
+<!-- Auth Prompt -->
+<app-auth-prompt
+  *ngIf="showAuthPrompt()"
+  message="pour réserver ce terrain"
+  (dismissed)="showAuthPrompt.set(false)">
+</app-auth-prompt>
+
+<!-- Loading Skeleton -->
+<ng-template #loadingTemplate>
+  <div class="fd-skeleton-wrap">
+    <div class="fd-skeleton-card skel-pulse"></div>
+    <div class="fd-skeleton-grid">
+      <div class="fd-skeleton-left skel-pulse"></div>
+      <div class="fd-skeleton-right skel-pulse"></div>
+    </div>
+  </div>
+</ng-template>

@@ -1,0 +1,86 @@
+<a class="fc"
+   [class.fc--horizontal]="variant === 'horizontal'"
+   [routerLink]="['/fields', field.id]">
+
+  <!-- ── Hero image ───────────────────────────────────────────── -->
+  <div class="fc__hero">
+    <img *ngIf="field.imageUrl && !imgError()"
+         [src]="field.imageUrl"
+         [alt]="field.name"
+         class="fc__img"
+         loading="lazy"
+         (error)="onImageError()">
+    <div *ngIf="!field.imageUrl || imgError()" class="fc__placeholder">
+      <span class="material-symbols-outlined">stadium</span>
+    </div>
+
+    <div *ngIf="!field.isAvailable" class="fc__unavail-overlay">
+      <span>Indisponible</span>
+    </div>
+
+    <div class="fc__gradient"></div>
+
+    <span class="fc__count-badge">
+      <span class="material-symbols-outlined">grid_view</span>
+      1 terrain
+    </span>
+
+    <button class="fc__fav" (click)="onFavoriteClick($event)"
+            [attr.aria-label]="isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris'">
+      <span class="material-symbols-outlined" [class.filled]="isFavorite">favorite</span>
+    </button>
+
+    <div class="fc__hero-info">
+      <h3 class="fc__hero-name">{{ field.name }}</h3>
+      <p class="fc__hero-location">
+        <span class="material-symbols-outlined">location_on</span>
+        {{ field.district ? field.district + ', ' + field.city : field.city }}
+      </p>
+    </div>
+  </div>
+
+  <!-- ── Vertical body (GoSport style) ────────────────────────── -->
+  <div class="fc__body" *ngIf="variant !== 'horizontal'">
+    <div class="fc__section-label">
+      <span class="material-symbols-outlined">grid_view</span>
+      TERRAIN DISPONIBLE
+    </div>
+
+    <div class="fc__listing">
+      <p class="fc__listing-name">{{ field.name }}</p>
+
+      <div class="fc__listing-price">
+        <span class="fc__price-amount">{{ field.pricePerHour | fcfa }}</span>
+        <span class="fc__price-unit">FCFA/heure</span>
+      </div>
+
+      <div class="fc__tags">
+        <span class="fc__tag">{{ getSportLabel(field.sport) }}</span>
+        <span class="fc__tag">{{ getSurfaceLabel(field.surface) }}</span>
+        <span *ngIf="field.hasLighting" class="fc__tag fc__tag--light">⚡</span>
+      </div>
+
+      <div class="fc__listing-footer">
+        <span class="fc__avail" [class.fc__avail--ok]="field.isAvailable">
+          <span class="fc__dot"></span>
+          {{ field.isAvailable ? 'Disponible' : 'Indisponible' }}
+        </span>
+        <span class="fc__reserve-btn">Réserver →</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Horizontal body (search page compact) ────────────────── -->
+  <div class="fc__body fc__body--h" *ngIf="variant === 'horizontal'">
+    <h3 class="fc__h-name">{{ field.name }}</h3>
+    <div class="fc__h-location">
+      <span class="material-symbols-outlined">location_on</span>
+      {{ field.district ? field.district + ', ' + field.city : field.city }}
+    </div>
+    <div class="fc__h-footer">
+      <span class="fc__price-amount">{{ field.pricePerHour | fcfa }}</span>
+      <span class="fc__price-unit">/h</span>
+    </div>
+  </div>
+
+</a>

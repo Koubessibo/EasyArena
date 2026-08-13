@@ -1,0 +1,115 @@
+<div class="orders-page">
+  <!-- Header -->
+  <div class="orders-header">
+    <a routerLink="/home" class="back-btn" title="Retour à l'accueil">
+      <span class="material-symbols-outlined">arrow_back</span>
+    </a>
+    <div class="header-titles">
+      <h1>Mes Commandes</h1>
+      <p class="subtitle">Suivez l'historique et l'état de livraison de vos achats dans la boutique</p>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div class="loading-state" *ngIf="isLoading()">
+    <div class="spinner-large"></div>
+    <p>Chargement de vos commandes...</p>
+  </div>
+
+  <!-- Error State -->
+  <div class="alert alert--error" *ngIf="errorMessage()">
+    <span class="material-symbols-outlined">error</span>
+    {{ errorMessage() }}
+  </div>
+
+  <!-- Empty State -->
+  <div class="empty-state" *ngIf="!isLoading() && orders().length === 0 && !errorMessage()">
+    <div class="empty-icon-wrapper">
+      <span class="material-symbols-outlined empty-icon">shopping_bag</span>
+    </div>
+    <h2>Aucune commande effectuée</h2>
+    <p>Vous n'avez pas encore passé de commande dans notre boutique.</p>
+    <a routerLink="/shop" class="btn btn--primary">
+      <span class="material-symbols-outlined">storefront</span>
+      Découvrir la boutique
+    </a>
+  </div>
+
+  <!-- Orders List -->
+  <div class="orders-list" *ngIf="!isLoading() && orders().length > 0">
+    <div class="order-card" *ngFor="let order of orders()">
+      <!-- Card Top Header -->
+      <div class="order-card__header">
+        <div class="order-meta">
+          <span class="order-ref">{{ order.reference }}</span>
+          <span class="order-date">
+            <span class="material-symbols-outlined">schedule</span>
+            {{ order.created_at | date:'dd MMM yyyy, HH:mm' }}
+          </span>
+        </div>
+        <span class="order-status" [ngClass]="statusClass(order.status)">
+          <span class="status-dot"></span>
+          {{ statusLabel(order.status) }}
+        </span>
+      </div>
+
+      <!-- Card Items List -->
+      <div class="order-card__items">
+        <div class="order-item" *ngFor="let item of order.items">
+          <div class="order-item__img">
+            <img *ngIf="item.product?.image_url" [src]="item.product!.image_url" [alt]="item.product?.name">
+            <span *ngIf="!item.product?.image_url" class="material-symbols-outlined default-img-icon">inventory_2</span>
+          </div>
+          <div class="order-item__info">
+            <span class="item-name">{{ item.product?.name || 'Produit Boutique' }}</span>
+            <span class="item-qty">Quantité : <strong>{{ item.quantity }}</strong></span>
+          </div>
+          <div class="order-item__price">
+            <span class="item-unit-price" *ngIf="item.quantity > 1">{{ item.price | number }} FCFA / un.</span>
+            <span class="item-total-price">{{ (item.price * item.quantity) | number }} FCFA</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Payment & Total Footer -->
+      <div class="order-card__footer">
+        <div class="payment-info">
+          <span class="material-symbols-outlined">payments</span>
+          <span>Paiement via <strong>Samir Money</strong> ({{ order.payment_phone }})</span>
+        </div>
+        <div class="order-total">
+          <span class="total-label">Total réglé :</span>
+          <span class="total-amount">{{ order.total_amount | number }} FCFA</span>
+        </div>
+      </div>
+
+      <!-- Delivery Timeline Stepper -->
+      <div class="status-timeline">
+        <div class="timeline-step" [class.done]="['PAID','DELIVERED'].includes(order.status)">
+          <div class="step-icon">
+            <span class="material-symbols-outlined">credit_card</span>
+          </div>
+          <span class="step-label">Commandé</span>
+        </div>
+
+        <div class="timeline-line" [class.done]="order.status === 'DELIVERED'"></div>
+
+        <div class="timeline-step" [class.active]="order.status === 'PAID'" [class.done]="order.status === 'DELIVERED'">
+          <div class="step-icon">
+            <span class="material-symbols-outlined">local_shipping</span>
+          </div>
+          <span class="step-label">En livraison</span>
+        </div>
+
+        <div class="timeline-line" [class.done]="order.status === 'DELIVERED'"></div>
+
+        <div class="timeline-step" [class.done]="order.status === 'DELIVERED'">
+          <div class="step-icon">
+            <span class="material-symbols-outlined">task_alt</span>
+          </div>
+          <span class="step-label">Livré</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

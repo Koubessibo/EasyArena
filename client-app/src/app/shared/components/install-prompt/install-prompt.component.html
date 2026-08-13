@@ -1,0 +1,37 @@
+<!-- Smart Banner — appears automatically for authenticated users -->
+<div class="pwa-smart-banner" *ngIf="showPrompt()" role="banner" aria-label="Installer l'application EasyArena">
+
+  <!-- Mobile: Full-width smart banner above bottom-nav -->
+  <div class="pwa-banner__inner">
+
+    <!-- App Icon -->
+    <div class="pwa-banner__icon-wrap">
+      <img src="/logo-long.png" alt="EasyArena App" class="pwa-banner__icon" onerror="this.src='/favicon.ico'">
+      <span class="pwa-banner__verified" title="Application Officielle Vérifiée">
+        <span class="material-symbols-outlined">verified</span>
+      </span>
+    </div>
+
+    <!-- App Info -->
+    <div class="pwa-banner__meta">
+      <div class="pwa-banner__title-row">
+        <strong class="pwa-banner__name">EasyArena Mobile</strong>
+        <span class="pwa-banner__tag">Officiel</span>
+      </div>
+      <p class="pwa-banner__sub">Billets QR · Hors-ligne · Gratuit · 0 Mo</p>
+    </div>
+
+    <!-- Install CTA -->
+    <div class="pwa-banner__actions">
+      <button class="pwa-banner__btn-install" (click)="install()" aria-label="Installer l'application">
+        <span class="material-symbols-outlined">download_for_offline</span>
+        <span class="pwa-banner__btn-label">Installer</span>
+      </button>
+      <button class="pwa-banner__btn-close" (click)="dismiss()" aria-label="Fermer la bannière">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+  </div>
+</div>
+

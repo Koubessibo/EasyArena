@@ -1,0 +1,132 @@
+<div class="search-screen page-container">
+
+  <!-- Sticky header with search input -->
+  <div class="search-header">
+    <button class="icon-btn search-header__back" (click)="goBack()" type="button">
+      <span class="material-symbols-outlined">arrow_back</span>
+    </button>
+    <div class="search-header__input-wrap">
+      <span class="material-symbols-outlined search-header__icon">search</span>
+      <input
+        #searchInput
+        type="search"
+        class="search-header__input"
+        placeholder="Terrain, ville, sport..."
+        [value]="query()"
+        (input)="onSearchInput($any($event.target).value)"
+        autocomplete="off">
+      <button
+        *ngIf="query()"
+        class="search-header__clear icon-btn"
+        (click)="clearSearch()"
+        type="button">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Filter chips -->
+  <div class="search-filters">
+    <!-- Sport filters -->
+    <button
+      *ngFor="let s of sportFilters"
+      class="chip"
+      [class.chip--active]="activeSport() === s.value"
+      (click)="toggleSport(s.value)"
+      type="button">
+      {{ s.label }}
+    </button>
+
+    <div class="search-filters__separator"></div>
+
+    <!-- Price filters -->
+    <button
+      *ngFor="let p of priceFilters"
+      class="chip"
+      [class.chip--active]="activePriceRange() === p.value"
+      (click)="togglePrice(p.value)"
+      type="button">
+      {{ p.label }}
+    </button>
+
+    <div class="search-filters__separator"></div>
+
+    <!-- Distance filters -->
+    <button
+      *ngFor="let d of distanceFilters"
+      class="chip"
+      [class.chip--active]="activeDistance() === d.value"
+      (click)="toggleDistance(d.value)"
+      type="button">
+      {{ d.label }}
+    </button>
+  </div>
+
+  <!-- Results header -->
+  <div *ngIf="!loading()" class="search-results-header">
+    <span class="search-results-header__count">
+      {{ resultsCount }} terrain{{ resultsCount !== 1 ? 's' : '' }} trouvé{{ resultsCount !== 1 ? 's' : '' }}
+    </span>
+    <!-- View toggle -->
+    <div class="search-view-toggle">
+      <button
+        class="search-view-toggle__btn"
+        [class.search-view-toggle__btn--active]="viewMode() === 'list'"
+        (click)="setViewMode('list')"
+        type="button"
+        aria-label="Vue liste">
+        <span class="material-symbols-outlined">list</span>
+      </button>
+      <button
+        class="search-view-toggle__btn"
+        [class.search-view-toggle__btn--active]="viewMode() === 'map'"
+        (click)="setViewMode('map')"
+        type="button"
+        aria-label="Vue carte">
+        <span class="material-symbols-outlined">map</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading skeleton -->
+  <div *ngIf="loading()" class="search-skeleton">
+    <div *ngFor="let _ of skeletonItems" class="search-skeleton__card">
+      <div class="skeleton search-skeleton__img"></div>
+      <div class="search-skeleton__info">
+        <div class="skeleton skeleton--text" style="width: 65%"></div>
+        <div class="skeleton skeleton--text" style="width: 40%; margin-top: 0.5rem"></div>
+        <div class="skeleton skeleton--text" style="width: 55%; margin-top: 0.5rem"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- List view results -->
+  <div *ngIf="!loading() && viewMode() === 'list'" class="search-results">
+
+    <!-- Empty state -->
+    <div *ngIf="filteredFields().length === 0" class="empty-state">
+      <span class="material-symbols-outlined empty-state-icon">search_off</span>
+      <p class="empty-state-title">Aucun terrain trouvé</p>
+      <p class="empty-state-text">Essayez d'autres filtres ou une autre recherche.</p>
+    </div>
+
+    <!-- Results list -->
+    <div *ngIf="filteredFields().length > 0" class="search-results__list">
+      <app-field-card
+        *ngFor="let field of filteredFields()"
+        [field]="field"
+        [isFavorite]="isFavorite(field.id)"
+        (favoriteToggled)="toggleFavorite($event)"
+        variant="horizontal">
+      </app-field-card>
+    </div>
+  </div>
+
+  <!-- Map view placeholder -->
+  <div *ngIf="!loading() && viewMode() === 'map'" class="search-map-placeholder">
+    <span class="material-symbols-outlined search-map-placeholder__icon">map</span>
+    <p class="search-map-placeholder__title">Vue carte</p>
+    <p class="search-map-placeholder__subtitle">Bientôt disponible</p>
+  </div>
+
+</div>

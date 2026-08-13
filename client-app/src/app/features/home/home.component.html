@@ -1,0 +1,472 @@
+<div class="home-page">
+
+  <!-- ═══════════════════════════════════════════════
+       HERO CINÉMATOGRAPHIQUE PLEIN ÉCRAN
+  ═══════════════════════════════════════════════ -->
+  <section class="hero" [class.hero--animating]="heroAnimating()">
+
+    <!-- Background image with Ken Burns effect -->
+    <div class="hero__bg-wrap">
+      <div *ngFor="let slide of heroSlides; let i = index"
+           class="hero__bg-slot"
+           [class.hero__bg-slot--active]="heroIndex() === i"
+           [style.background-image]="heroIndex() === i ? 'url(' + slide.imageUrl + ')' : 'none'">
+      </div>
+      <div class="hero__bg-overlay"></div>
+      <!-- Decorative grain texture -->
+      <div class="hero__grain"></div>
+    </div>
+
+    <!-- Hero content -->
+    <div class="hero__content">
+      <div class="hero__inner">
+
+        <!-- Sport Tag pill -->
+        <span class="hero__tag" [style.background]="currentSlide.accent + '22'" [style.border-color]="currentSlide.accent + '55'" [style.color]="currentSlide.accent">
+          {{ currentSlide.tag }}
+        </span>
+
+        <!-- Headline -->
+        <h1 class="hero__headline">
+          <span *ngFor="let line of currentSlide.headline.split('\n'); let li = index"
+                class="hero__headline-line"
+                [style.animation-delay]="(li * 0.12) + 's'">
+            {{ line }}
+          </span>
+        </h1>
+
+        <!-- Subtitle -->
+        <p class="hero__sub">{{ currentSlide.sub }}</p>
+
+        <!-- CTA Buttons -->
+        <div class="hero__ctas">
+          <a [routerLink]="currentSlide.ctaLink" class="hero__cta-primary">
+            <span class="material-symbols-outlined">sports_soccer</span>
+            {{ currentSlide.cta }}
+          </a>
+          <a routerLink="/shop" class="hero__cta-ghost">
+            <span class="material-symbols-outlined">storefront</span>
+            Boutique
+          </a>
+        </div>
+
+        <!-- Stats Bar -->
+        <div class="hero__stats">
+          <div class="hero__stat" *ngFor="let stat of stats">
+            <span class="material-symbols-outlined hero__stat-icon">{{ stat.icon }}</span>
+            <span class="hero__stat-num">{{ stat.num }}</span>
+            <span class="hero__stat-label">{{ stat.label }}</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Slide indicators -->
+    <div class="hero__indicators">
+      <button
+        *ngFor="let slide of heroSlides; let i = index"
+        class="hero__indicator"
+        [class.hero__indicator--active]="heroIndex() === i"
+        (click)="goToSlide(i)"
+        [style.background]="heroIndex() === i ? currentSlide.accent : 'rgba(255,255,255,0.35)'"
+        [attr.aria-label]="'Slide ' + (i + 1)">
+      </button>
+    </div>
+
+    <!-- Navigation arrows -->
+    <button class="hero__arrow hero__arrow--prev" (click)="prevHero()" aria-label="Précédent">
+      <span class="material-symbols-outlined">chevron_left</span>
+    </button>
+    <button class="hero__arrow hero__arrow--next" (click)="nextHero()" aria-label="Suivant">
+      <span class="material-symbols-outlined">chevron_right</span>
+    </button>
+
+    <!-- Progress bar -->
+    <div class="hero__progress">
+      <div class="hero__progress-bar" [style.background]="currentSlide.accent"></div>
+    </div>
+
+  </section>
+
+  <!-- ═══════════════════════════════════════════════
+       SPORT TABS
+  ═══════════════════════════════════════════════ -->
+  <div class="sport-tabs-section">
+    <div class="sport-tabs">
+      <button
+        *ngFor="let tab of sportTabs"
+        class="sport-tab"
+        [class.sport-tab--active]="activeTab() === tab.value"
+        [style.--tab-color]="tab.color"
+        (click)="selectTab(tab.value)">
+        <div class="sport-tab__icon-wrap">
+          <span class="material-symbols-outlined sport-tab__icon">{{ tab.icon }}</span>
+        </div>
+        <span class="sport-tab__label">{{ tab.label }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       TERRAINS VEDETTES (Cards premium défilantes)
+  ═══════════════════════════════════════════════ -->
+  <!-- ═══════════════════════════════════════════════
+       TERRAINS VEDETTES (Cards premium défilantes)
+  ═══════════════════════════════════════════════ -->
+  <section class="section featured-section">
+    <div class="section__header">
+      <div>
+        <h2 class="section__title">
+          {{ activeTab() === 'all' ? 'Terrains Vedettes' : 'Terrains ' + activeTabLabel }}
+        </h2>
+        <p class="section__sub">
+          {{ activeTab() === 'all' ? 'Les complexes les mieux notés près de vous' : 'Sélectionnés pour la catégorie ' + activeTabLabel }}
+        </p>
+      </div>
+      <a routerLink="/search" class="section__link">
+        Voir tout
+        <span class="material-symbols-outlined">arrow_forward</span>
+      </a>
+    </div>
+
+    <!-- Horizontal scroll of featured cards -->
+    <div class="featured-scroll" *ngIf="!loading() && displayFeatured().length > 0">
+      <a
+        *ngFor="let field of displayFeatured(); let i = index"
+        [routerLink]="['/fields', field.id]"
+        class="feat-card"
+        [style.animation-delay]="(i * 0.08) + 's'">
+
+        <div class="feat-card__img-wrap">
+          <img *ngIf="field.imageUrl" [src]="field.imageUrl" [alt]="field.name" class="feat-card__img" loading="lazy">
+          <div *ngIf="!field.imageUrl" class="feat-card__img feat-card__img--placeholder">
+            <span class="material-symbols-outlined">stadium</span>
+          </div>
+
+          <!-- Wishlist btn -->
+          <button class="feat-card__wish"
+                  [class.feat-card__wish--active]="isFavorite(field.id)"
+                  (click)="$event.preventDefault(); toggleFavorite(field.id)"
+                  [attr.aria-label]="isFavorite(field.id) ? 'Retirer des favoris' : 'Ajouter aux favoris'">
+            <span class="material-symbols-outlined">{{ isFavorite(field.id) ? 'favorite' : 'favorite_border' }}</span>
+          </button>
+
+          <!-- Rating badge -->
+          <div class="feat-card__rating">
+            <span class="material-symbols-outlined">star</span>
+            {{ field.rating || '4.8' }}
+          </div>
+        </div>
+
+        <div class="feat-card__body">
+          <p class="feat-card__sport">
+            <span class="material-symbols-outlined">sports_soccer</span>
+            {{ field.sport | titlecase }}
+          </p>
+          <h3 class="feat-card__name">{{ field.name }}</h3>
+          <p class="feat-card__location">
+            <span class="material-symbols-outlined">location_on</span>
+            {{ field.city }}
+          </p>
+          <div class="feat-card__footer">
+            <div class="feat-card__price-box">
+              <span class="feat-card__price">{{ field.pricePerHour | number:'1.0-0' }}</span>
+              <span class="feat-card__currency">FCFA/h</span>
+            </div>
+            <span class="feat-card__arrow">Réserver →</span>
+          </div>
+        </div>
+
+      </a>
+    </div>
+
+    <!-- Skeleton placeholders only when loading -->
+    <div class="featured-scroll" *ngIf="loading()">
+      <div *ngFor="let i of [1,2,3]" class="feat-card feat-card--skeleton">
+        <div class="feat-card__img-wrap">
+          <div class="feat-skel-img skel-pulse"></div>
+        </div>
+        <div class="feat-card__body">
+          <div class="skel-bar skel-pulse" style="width: 60%; height: 12px;"></div>
+          <div class="skel-bar skel-pulse" style="width: 90%; height: 18px; margin-top: 6px;"></div>
+          <div class="skel-bar skel-pulse" style="width: 50%; height: 12px; margin-top: 6px;"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════
+       PROMO BANNER — BOUTIQUE
+  ═══════════════════════════════════════════════ -->
+  <div class="promo-banner-wrap">
+    <div class="promo-banner">
+      <div class="promo-banner__left">
+        <span class="promo-banner__tag">Nouveau ✨</span>
+        <h3 class="promo-banner__title">Boutique Officielle</h3>
+        <p class="promo-banner__sub">Eau, boissons, équipements livrés sur le terrain</p>
+        <a routerLink="/shop" class="promo-banner__btn">
+          Explorer la boutique
+          <span class="material-symbols-outlined">arrow_forward</span>
+        </a>
+      </div>
+      <div class="promo-banner__right">
+        <span class="material-symbols-outlined promo-banner__icon">shopping_bag</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       TERRAINS À PROXIMITÉ / CATALOGUE
+  ═══════════════════════════════════════════════ -->
+  <section class="section nearby-section">
+    <div class="section__header">
+      <div>
+        <h2 class="section__title">
+          {{ activeTab() === 'all' ? 'Tous les Terrains' : 'Résultats ' + activeTabLabel }}
+        </h2>
+        <p class="section__sub">{{ displayNearby().length }} terrain{{ displayNearby().length > 1 ? 's' : '' }} disponible{{ displayNearby().length > 1 ? 's' : '' }}</p>
+      </div>
+    </div>
+
+    <!-- Loading skeletons -->
+    <div *ngIf="loading()" class="fields-grid">
+      <div *ngFor="let i of [1,2,3,4,5,6]" class="field-skel">
+        <div class="field-skel__img skel-pulse"></div>
+        <div class="field-skel__body">
+          <div class="skel-bar skel-pulse" style="width:55%; height:12px;"></div>
+          <div class="skel-bar skel-pulse" style="width:85%; height:17px; margin-top:6px;"></div>
+          <div class="skel-bar skel-pulse" style="width:45%; height:12px; margin-top:8px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Fields Grid -->
+    <div *ngIf="!loading() && displayNearby().length > 0" class="fields-grid">
+      <app-field-card
+        *ngFor="let field of displayNearby(); let i = index"
+        [field]="field"
+        [isFavorite]="isFavorite(field.id)"
+        (favoriteToggled)="toggleFavorite($event)"
+        variant="vertical"
+        [style.animation-delay]="(i * 0.06) + 's'">
+      </app-field-card>
+    </div>
+
+    <!-- Empty state -->
+    <div *ngIf="!loading() && displayNearby().length === 0" class="empty-state">
+      <div class="empty-state__icon-box">
+        <span class="material-symbols-outlined">search_off</span>
+      </div>
+      <h3>Aucun terrain de {{ activeTabLabel }} trouvé</h3>
+      <p>Essayez une autre catégorie ou explorez tous les terrains.</p>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════
+       SECTION 1: COMMENT ÇA MARCHE ? (HOW IT WORKS)
+  ═══════════════════════════════════════════════ -->
+  <section class="section how-it-works-section">
+    <div class="section__header text-center">
+      <span class="badge-pill">
+        <span class="material-symbols-outlined">auto_awesome</span>
+        Simple, Rapide & Transparente
+      </span>
+      <h2 class="section__title text-center-title">Comment ça marche sur EasyArena ?</h2>
+      <p class="section__sub text-center-sub">Que vous soyez joueur ou propriétaire de terrain, tout est pensé pour vous faire gagner du temps.</p>
+    </div>
+
+    <!-- How It Works Role Switcher -->
+    <div class="how-tabs">
+      <button class="how-tab" [class.how-tab--active]="howItWorksTab() === 'players'" (click)="switchHowTab('players')">
+        <span class="material-symbols-outlined">sports_soccer</span>
+        Pour les Joueurs & Clients
+      </button>
+      <button class="how-tab" [class.how-tab--active]="howItWorksTab() === 'owners'" (click)="switchHowTab('owners')">
+        <span class="material-symbols-outlined">stadium</span>
+        Pour les Propriétaires & Vendeurs
+      </button>
+    </div>
+
+    <!-- Players Steps -->
+    <div class="steps-grid" *ngIf="howItWorksTab() === 'players'">
+      <div class="step-card is-revealed" *ngFor="let item of howItWorksPlayers">
+        <div class="step-card__top">
+          <span class="step-card__number">{{ item.step }}</span>
+          <div class="step-card__icon" [style.background]="item.color + '15'" [style.color]="item.color">
+            <span class="material-symbols-outlined">{{ item.icon }}</span>
+          </div>
+        </div>
+        <h3 class="step-card__title">{{ item.title }}</h3>
+        <p class="step-card__desc">{{ item.desc }}</p>
+        <span class="step-card__badge" [style.color]="item.color" [style.border-color]="item.color + '44'">
+          {{ item.badge }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Owners Steps -->
+    <div class="steps-grid" *ngIf="howItWorksTab() === 'owners'">
+      <div class="step-card is-revealed" *ngFor="let item of howItWorksOwners">
+        <div class="step-card__top">
+          <span class="step-card__number">{{ item.step }}</span>
+          <div class="step-card__icon" [style.background]="item.color + '15'" [style.color]="item.color">
+            <span class="material-symbols-outlined">{{ item.icon }}</span>
+          </div>
+        </div>
+        <h3 class="step-card__title">{{ item.title }}</h3>
+        <p class="step-card__desc">{{ item.desc }}</p>
+        <span class="step-card__badge" [style.color]="item.color" [style.border-color]="item.color + '44'">
+          {{ item.badge }}
+        </span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════
+       SECTION 2: CONFIANCE, SÉCURITÉ & RÉASSURANCE
+  ═══════════════════════════════════════════════ -->
+  <section class="section trust-section">
+    <div class="section__header text-center">
+      <span class="badge-pill badge-pill--emerald">
+        <span class="material-symbols-outlined">shield</span>
+        Sécurité & Transparence
+      </span>
+      <h2 class="section__title text-center-title">Pourquoi faire confiance à EasyArena ?</h2>
+      <p class="section__sub text-center-sub">Une infrastructure technologique et réglementaire conçue pour protéger chaque réservation.</p>
+    </div>
+
+    <div class="reassurance-grid">
+      <div class="reassurance-card" *ngFor="let item of reassuranceItems">
+        <div class="reassurance-card__icon-wrap" [style.color]="item.color" [style.background]="item.color + '15'">
+          <span class="material-symbols-outlined">{{ item.icon }}</span>
+        </div>
+        <h3 class="reassurance-card__title">{{ item.title }}</h3>
+        <p class="reassurance-card__desc">{{ item.desc }}</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════
+       SECTION 3: AVIS CLIENTS & TÉMOIGNAGES
+  ═══════════════════════════════════════════════ -->
+  <section class="section testimonials-section">
+    <div class="section__header text-center">
+      <span class="badge-pill-green">TÉMOIGNAGES</span>
+      <h2 class="section__title text-center-title font-heavy">Ce que disent nos utilisateurs</h2>
+      <p class="section__sub text-center-sub">Ils font confiance à EasyArena pour leurs réservations</p>
+    </div>
+
+    <div class="testimonials-grid">
+      <div class="testimonial-card" *ngFor="let t of testimonials">
+        <div class="testimonial-card__header">
+          <div class="testimonial-card__stars">
+            <span class="material-symbols-outlined star-fill" *ngFor="let s of [1,2,3,4,5]">star</span>
+          </div>
+          <span class="testimonial-card__quote-mark">“</span>
+        </div>
+        <p class="testimonial-card__quote">{{ t.quote }}</p>
+        <div class="testimonial-card__divider"></div>
+        <div class="testimonial-card__author">
+          <div class="testimonial-card__avatar">{{ t.avatar }}</div>
+          <div class="testimonial-card__info">
+            <h4 class="testimonial-card__name">{{ t.author }}</h4>
+            <p class="testimonial-card__role">{{ t.role }}</p>
+            <span class="testimonial-card__badge">{{ t.activityBadge }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Carousel Dots -->
+    <div class="testimonial-dots">
+      <span class="dot"></span>
+      <span class="dot"></span>
+      <span class="dot dot--active"></span>
+      <span class="dot"></span>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════
+       SECTION 4: FOIRE AUX QUESTIONS (F.A.Q.)
+  ═══════════════════════════════════════════════ -->
+  <section class="section faq-section">
+    <div class="section__header text-center">
+      <span class="badge-pill">
+        <span class="material-symbols-outlined">help</span>
+        Questions Fréquentes
+      </span>
+      <h2 class="section__title text-center-title">Tout ce que vous devez savoir</h2>
+      <p class="section__sub text-center-sub">Des réponses claires à vos interrogations avant de réserver.</p>
+    </div>
+
+    <div class="faq-accordion">
+      <div
+        *ngFor="let item of faqs; let i = index"
+        class="faq-item"
+        [class.faq-item--open]="openFaqIndex() === i"
+        (click)="toggleFaq(i)">
+
+        <div class="faq-item__question">
+          <h3>{{ item.q }}</h3>
+          <span class="material-symbols-outlined faq-item__chevron">
+            {{ openFaqIndex() === i ? 'expand_less' : 'expand_more' }}
+          </span>
+        </div>
+
+        <div class="faq-item__answer" *ngIf="openFaqIndex() === i">
+          <p>{{ item.a }}</p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════
+       CTA BANNER PRO (AVANT FOOTER)
+  ═══════════════════════════════════════════════ -->
+  <section class="home-cta-section">
+    <div class="home-cta-card">
+      <div class="home-cta-card__bg-grain"></div>
+      <div class="home-cta-card__content">
+        <span class="home-cta-card__tag">
+          <span class="material-symbols-outlined">bolt</span>
+          Réservation 100% Instantanée
+        </span>
+        <h2 class="home-cta-card__title">
+          Prêt à fouler les plus beaux terrains du Sénégal ?
+        </h2>
+        <p class="home-cta-card__sub">
+          Rejoignez la plus grande communauté de passionnés. Réservez votre terrain en 30s, payez par Mobile Money (Wave, Orange Money) et jouez sans attendre !
+        </p>
+
+        <div class="home-cta-card__actions">
+          <a routerLink="/search" class="home-cta-card__btn-primary">
+            <span class="material-symbols-outlined">sports_soccer</span>
+            Trouver un terrain
+          </a>
+          <a routerLink="/shop" class="home-cta-card__btn-secondary">
+            <span class="material-symbols-outlined">shopping_bag</span>
+            Découvrir la boutique
+          </a>
+        </div>
+
+        <div class="home-cta-card__trust">
+          <div class="trust-item">
+            <span class="material-symbols-outlined">verified</span>
+            <span>+40 Complexes vérifiés</span>
+          </div>
+          <div class="trust-item">
+            <span class="material-symbols-outlined">lock</span>
+            <span>Paiement sécurisé Wave & OM</span>
+          </div>
+          <div class="trust-item">
+            <span class="material-symbols-outlined">headset_mic</span>
+            <span>Support client 7j/7</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>

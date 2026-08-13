@@ -1,0 +1,125 @@
+<div class="rate-screen">
+  <div class="rate-screen__container">
+
+    <!-- Success state -->
+    <div *ngIf="submitted()" class="rate-success">
+      <div class="rate-success__icon">
+        <span class="material-symbols-outlined">thumb_up</span>
+      </div>
+      <h2 class="rate-success__title">Merci pour votre avis !</h2>
+      <p class="rate-success__subtitle">Votre évaluation aide la communauté à trouver les meilleurs terrains.</p>
+      <div class="rate-success__loader">
+        <div class="rate-success__bar"></div>
+      </div>
+    </div>
+
+    <!-- Rating form -->
+    <ng-container *ngIf="!submitted()">
+      <!-- Header -->
+      <div class="rate-screen__header">
+        <div class="rate-logo">
+          <img src="/logo-short.png" alt="EasyArena" class="rate-logo__img">
+        </div>
+        <button type="button" class="rate-screen__skip" (click)="skip()">Passer</button>
+      </div>
+
+      <!-- Field info -->
+      <div class="rate-field" *ngIf="booking()">
+        <div class="rate-field__image">
+          <span class="material-symbols-outlined">stadium</span>
+        </div>
+        <div class="rate-field__info">
+          <h3 class="rate-field__name">{{ booking()!.fieldName }}</h3>
+          <p class="rate-field__date">
+            <span class="material-symbols-outlined">calendar_today</span>
+            {{ booking()!.date }} · {{ booking()!.startTime }} – {{ booking()!.endTime }}
+          </p>
+        </div>
+      </div>
+
+      <!-- Title -->
+      <div class="rate-screen__content">
+        <h1 class="rate-screen__title">Comment était votre session ?</h1>
+        <p class="rate-screen__subtitle">Évaluez votre expérience sur ce terrain</p>
+
+        <!-- Stars -->
+        <div class="star-rating">
+          <button
+            *ngFor="let star of stars"
+            type="button"
+            class="star-rating__star"
+            [class]="getStarClass(star)"
+            (mouseenter)="hoverStar(star)"
+            (mouseleave)="leaveStar()"
+            (click)="selectStar(star)">
+            <span class="material-symbols-outlined filled">star</span>
+          </button>
+        </div>
+
+        <p class="star-rating__label" *ngIf="hoveredStar() || selectedStar()">
+          {{ ratingLabels[hoveredStar() || selectedStar()] }}
+        </p>
+
+        <!-- Category ratings -->
+        <div class="rate-categories">
+          <div class="rate-category">
+            <span class="rate-category__label">Qualité du terrain</span>
+            <div class="rate-category__dots">
+              <span *ngFor="let s of stars"
+                class="rate-category__dot"
+                [class.rate-category__dot--active]="s <= (selectedStar())">
+              </span>
+            </div>
+          </div>
+          <div class="rate-category">
+            <span class="rate-category__label">Accueil</span>
+            <div class="rate-category__dots">
+              <span *ngFor="let s of stars"
+                class="rate-category__dot"
+                [class.rate-category__dot--active]="s <= (selectedStar())">
+              </span>
+            </div>
+          </div>
+          <div class="rate-category">
+            <span class="rate-category__label">Équipements</span>
+            <div class="rate-category__dots">
+              <span *ngFor="let s of stars"
+                class="rate-category__dot"
+                [class.rate-category__dot--active]="s <= (selectedStar())">
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Comment -->
+        <div class="form-group">
+          <label class="form-label" for="comment">Commentaire (optionnel)</label>
+          <textarea
+            id="comment"
+            class="rate-textarea"
+            rows="4"
+            placeholder="Partagez votre expérience avec la communauté..."
+            [value]="comment()"
+            (input)="comment.set($any($event.target).value)">
+          </textarea>
+        </div>
+
+        <!-- Submit -->
+        <button
+          type="button"
+          class="btn btn--primary btn--full"
+          [class.loading]="loading()"
+          [disabled]="!canSubmit || loading()"
+          (click)="submitRating()">
+          <span *ngIf="!loading()">Soumettre l'avis</span>
+          <span *ngIf="loading()" class="loading-spinner"></span>
+        </button>
+
+        <button type="button" class="btn btn--ghost btn--full rate-skip-btn" (click)="skip()">
+          Passer cette étape
+        </button>
+      </div>
+    </ng-container>
+
+  </div>
+</div>

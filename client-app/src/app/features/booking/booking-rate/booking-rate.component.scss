@@ -1,0 +1,291 @@
+@use '../../../../styles/variables' as *;
+
+.rate-screen {
+  min-height: 100dvh;
+  background: var(--bg-primary);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+
+  &__container {
+    width: 100%;
+    max-width: var(--max-width-sm);
+    padding: var(--space-6) var(--space-4) var(--space-10);
+  }
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-8);
+  }
+
+  &__skip {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-md);
+    transition: color var(--transition-fast);
+
+    &:hover { color: var(--text-primary); }
+  }
+
+  &__content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+  }
+
+  &__title {
+    font-size: var(--font-size-2xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--text-primary);
+    text-align: center;
+  }
+
+  &__subtitle {
+    font-size: var(--font-size-base);
+    color: var(--text-secondary);
+    text-align: center;
+    margin-top: calc(-1 * var(--space-3));
+  }
+}
+
+.rate-logo {
+  display: flex;
+  align-items: center;
+
+  &__img {
+    height: 32px;
+    object-fit: contain;
+  }
+}
+
+.rate-field {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  background: var(--bg-card);
+  border-radius: var(--radius-xl);
+  padding: var(--space-4);
+  box-shadow: var(--shadow-sm);
+
+  &__image {
+    width: 56px;
+    height: 56px;
+    border-radius: var(--radius-lg);
+    background: var(--primary-green-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+
+    .material-symbols-outlined {
+      color: var(--primary-green);
+      font-size: 1.75rem;
+    }
+  }
+
+  &__name {
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-primary);
+    margin-bottom: var(--space-1);
+  }
+
+  &__date {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+
+    .material-symbols-outlined { font-size: 0.875rem; }
+  }
+}
+
+// Stars
+.star-rating {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-2);
+
+  &__star {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: var(--space-1);
+    transition: transform var(--transition-fast);
+
+    &:hover { transform: scale(1.2); }
+
+    .material-symbols-outlined {
+      font-size: 2.5rem;
+      transition: color var(--transition-fast);
+    }
+  }
+
+  &__label {
+    text-align: center;
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-medium);
+    color: var(--primary-green);
+    min-height: 1.5rem;
+    margin-top: calc(-1 * var(--space-3));
+  }
+}
+
+.star--active .material-symbols-outlined { color: #f59e0b; }
+.star--inactive .material-symbols-outlined { color: var(--gray-300); }
+
+// Category ratings
+.rate-categories {
+  background: var(--bg-card);
+  border-radius: var(--radius-xl);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  box-shadow: var(--shadow-sm);
+}
+
+.rate-category {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  &__label {
+    font-size: var(--font-size-sm);
+    color: var(--text-primary);
+    font-weight: var(--font-weight-medium);
+  }
+
+  &__dots {
+    display: flex;
+    gap: var(--space-1);
+  }
+
+  &__dot {
+    width: 10px;
+    height: 10px;
+    border-radius: var(--radius-full);
+    background: var(--gray-200);
+    transition: background var(--transition-fast);
+
+    &--active { background: var(--primary-green); }
+  }
+}
+
+// Textarea
+.rate-textarea {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  color: var(--text-primary);
+  background: var(--bg-card);
+  resize: none;
+  transition: border-color var(--transition-fast);
+  box-sizing: border-box;
+
+  &::placeholder { color: var(--text-muted); }
+
+  &:focus {
+    outline: none;
+    border-color: var(--primary-green);
+    box-shadow: 0 0 0 3px var(--primary-green-muted);
+  }
+}
+
+.rate-skip-btn { color: var(--text-secondary); }
+
+// Success state
+.rate-success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  padding-top: var(--space-16);
+  text-align: center;
+
+  &__icon {
+    width: 96px;
+    height: 96px;
+    border-radius: var(--radius-full);
+    background: var(--primary-green-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: scaleIn 0.4s ease;
+
+    .material-symbols-outlined {
+      font-size: 3rem;
+      color: var(--primary-green);
+    }
+  }
+
+  &__title {
+    font-size: var(--font-size-2xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--text-primary);
+  }
+
+  &__subtitle {
+    font-size: var(--font-size-base);
+    color: var(--text-secondary);
+    max-width: 280px;
+  }
+
+  &__loader {
+    width: 200px;
+    height: 4px;
+    background: var(--gray-200);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+    margin-top: var(--space-4);
+  }
+
+  &__bar {
+    height: 100%;
+    background: var(--primary-green);
+    border-radius: var(--radius-full);
+    animation: loadBar 2s ease forwards;
+  }
+}
+
+@keyframes scaleIn {
+  from { transform: scale(0); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes loadBar {
+  from { width: 0; }
+  to { width: 100%; }
+}
+
+// Loading spinner
+.loading-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: var(--radius-full);
+  animation: spin 0.7s linear infinite;
+  display: inline-block;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+// Responsive
+@include tablet-up {
+  .rate-screen__container {
+    padding-top: var(--space-12);
+  }
+}

@@ -1,0 +1,136 @@
+
+.cgu-page {
+  padding: 2rem 1.25rem;
+
+  @media (max-width: 768px) {
+    padding: 1rem;
+  }
+  max-width: 1000px;
+  margin: 0 auto;
+  font-family: 'Inter', sans-serif;
+}
+
+.cgu-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.cgu-title {
+  font-size: 1.85rem;
+  font-weight: 900;
+  color: #0f172a;
+  margin: 0 0 0.35rem;
+  letter-spacing: -0.02em;
+}
+
+.cgu-subtitle {
+  font-size: 0.95rem;
+  color: #64748b;
+  margin: 0 0 0.65rem;
+}
+
+.cgu-version {
+  display: inline-block;
+  font-size: 0.775rem;
+  font-weight: 800;
+  color: #10b981;
+  background: #f0fdf4;
+  padding: 0.3rem 0.8rem;
+  border-radius: 20px;
+  border: 1px solid #bbf7d0;
+}
+
+/* Tabs */
+.cgu-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 0.65rem;
+  margin-bottom: 1.75rem;
+  flex-wrap: wrap;
+}
+
+.cgu-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.65rem 1.35rem;
+  border-radius: 30px;
+  border: 1.5px solid #e2e8f0;
+  background: #ffffff;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.875rem;
+  font-weight: 800;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  .material-symbols-outlined { font-size: 1.1rem; }
+
+  &:hover { border-color: #10b981; color: #10b981; }
+
+  &--active {
+    background: #10b981;
+    color: #ffffff;
+    border-color: #10b981;
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+
+    .material-symbols-outlined { color: #ffffff; }
+  }
+}
+
+/* Cards & Articles */
+.card {
+  background: #ffffff;
+  border-radius: 24px;
+  border: 1.5px solid #e2e8f0;
+  padding: 2rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+
+  .card-title {
+    font-size: 1.25rem;
+    font-weight: 900;
+    color: #0f172a;
+    margin: 0 0 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid #f1f5f9;
+  }
+}
+
+.cgu-article {
+  margin-bottom: 1.5rem;
+
+  h3 {
+    font-size: 1rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0 0 0.4rem;
+  }
+
+  p {
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: #475569;
+    margin: 0 0 0.4rem;
+  }
+
+  ul {
+    margin: 0.4rem 0;
+    padding-left: 1.2rem;
+    li {
+      font-size: 0.875rem;
+      color: #475569;
+      line-height: 1.6;
+      margin-bottom: 0.3rem;
+    }
+  }
+
+  &.highlight-box {
+    background: #f0fdf4;
+    border: 1.5px solid #a7f3d0;
+    border-radius: 16px;
+    padding: 1.15rem 1.35rem;
+
+    h3 { color: #065f46; }
+    p, li { color: #064e3b; }
+  }
+}

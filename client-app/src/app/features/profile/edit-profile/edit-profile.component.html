@@ -1,0 +1,179 @@
+<div class="ep-page">
+
+  <!-- Hidden file input -->
+  <input #fileInput type="file" accept="image/*" style="display:none" (change)="onFileSelected($event)">
+
+  <!-- ── HEADER ─────────────────────────────────────────────────── -->
+  <header class="ep-header">
+    <button class="ep-header__back" (click)="goBack()" type="button" aria-label="Retour">
+      <span class="material-symbols-outlined">arrow_back</span>
+    </button>
+    <h1 class="ep-header__title">Modifier le profil</h1>
+    <div class="ep-header__spacer"></div>
+  </header>
+
+  <!-- ── TOAST ──────────────────────────────────────────────────── -->
+  <div class="ep-toast" [class.ep-toast--visible]="showToast()">
+    <span class="material-symbols-outlined">check_circle</span>
+    {{ toastMessage() }}
+  </div>
+
+  <div class="ep-body">
+
+    <!-- ── AVATAR ─────────────────────────────────────────────── -->
+    <div class="ep-avatar-section">
+      <div class="ep-avatar" (click)="triggerFileInput()">
+        <!-- Spinner overlay while uploading -->
+        <div *ngIf="avatarUploading()" class="ep-avatar__uploading">
+          <div class="ep-spinner"></div>
+        </div>
+        <!-- Preview or stored -->
+        <img *ngIf="avatarPreview() || storedAvatarUrl"
+             [src]="avatarPreview() || storedAvatarUrl"
+             [alt]="fullName()"
+             class="ep-avatar__img">
+        <div *ngIf="!avatarPreview() && !storedAvatarUrl" class="ep-avatar__initials">
+          {{ initials }}
+        </div>
+        <div class="ep-avatar__cam">
+          <span class="material-symbols-outlined">photo_camera</span>
+        </div>
+      </div>
+      <p class="ep-avatar__hint">Appuyer pour changer la photo</p>
+      <p class="ep-avatar__formats">JPG, PNG — 5 Mo max</p>
+    </div>
+
+    <!-- ── ERROR ──────────────────────────────────────────────── -->
+    <div *ngIf="errorMessage()" class="ep-error">
+      <span class="material-symbols-outlined">error</span>
+      {{ errorMessage() }}
+    </div>
+
+    <!-- ── INFO FORM ──────────────────────────────────────────── -->
+    <div class="ep-card">
+      <h2 class="ep-card__title">
+        <span class="material-symbols-outlined">person</span>
+        Informations personnelles
+      </h2>
+
+      <!-- Nom complet -->
+      <div class="ep-field">
+        <label class="ep-label" for="fullName">Prénom & Nom</label>
+        <div class="ep-input-wrap">
+          <span class="material-symbols-outlined ep-input-icon">badge</span>
+          <input id="fullName" type="text" class="ep-input"
+                 placeholder="Votre nom complet"
+                 [value]="fullName()"
+                 (input)="fullName.set($any($event.target).value)"
+                 required>
+        </div>
+      </div>
+
+      <!-- Email -->
+      <div class="ep-field">
+        <label class="ep-label" for="email">Email</label>
+        <div class="ep-input-wrap">
+          <span class="material-symbols-outlined ep-input-icon">mail</span>
+          <input id="email" type="email" class="ep-input"
+                 placeholder="votre@email.com"
+                 [value]="email()"
+                 (input)="email.set($any($event.target).value)"
+                 autocomplete="email">
+        </div>
+      </div>
+
+      <!-- Téléphone -->
+      <div class="ep-field">
+        <label class="ep-label">Téléphone</label>
+        <app-phone-input [ngModel]="phone()" (ngModelChange)="phone.set($event)" name="phone">
+        </app-phone-input>
+      </div>
+
+      <!-- Save button -->
+      <button class="ep-save-btn" (click)="onSave()" [disabled]="loading()" type="button">
+        <div *ngIf="loading()" class="ep-spinner ep-spinner--white"></div>
+        <ng-container *ngIf="!loading()">
+          <span class="material-symbols-outlined">save</span>
+          Sauvegarder les modifications
+        </ng-container>
+      </button>
+    </div>
+
+    <!-- ── PIN CHANGE ─────────────────────────────────────────── -->
+    <div class="ep-card ep-card--pin">
+      <button class="ep-pin-toggle" (click)="togglePinSection()" type="button">
+        <div class="ep-pin-toggle__left">
+          <div class="ep-pin-toggle__icon">
+            <span class="material-symbols-outlined">lock</span>
+          </div>
+          <div>
+            <span class="ep-pin-toggle__label">Changer mon code PIN</span>
+            <span class="ep-pin-toggle__sub">Modifiez votre code d'accès sécurisé</span>
+          </div>
+        </div>
+        <span class="material-symbols-outlined ep-pin-toggle__chevron"
+              [class.ep-pin-toggle__chevron--open]="showPinSection()">
+          expand_more
+        </span>
+      </button>
+
+      <div class="ep-pin-form" [class.ep-pin-form--visible]="showPinSection()">
+        <!-- Success -->
+        <div *ngIf="pinSuccess()" class="ep-pin-success">
+          <span class="material-symbols-outlined">check_circle</span>
+          Code PIN changé avec succès !
+        </div>
+
+        <!-- Error -->
+        <div *ngIf="pinError()" class="ep-pin-error">
+          <span class="material-symbols-outlined">warning</span>
+          {{ pinError() }}
+        </div>
+
+        <!-- Fields -->
+        <div class="ep-field" *ngIf="!pinSuccess()">
+          <label class="ep-label" for="currentPin">Code actuel</label>
+          <div class="ep-input-wrap">
+            <span class="material-symbols-outlined ep-input-icon">pin</span>
+            <input id="currentPin" type="password" inputmode="numeric" maxlength="6"
+                   class="ep-input" placeholder="••••"
+                   [value]="currentPin()"
+                   (input)="currentPin.set($any($event.target).value)">
+          </div>
+        </div>
+
+        <div class="ep-field" *ngIf="!pinSuccess()">
+          <label class="ep-label" for="newPin">Nouveau code (4 chiffres min.)</label>
+          <div class="ep-input-wrap">
+            <span class="material-symbols-outlined ep-input-icon">lock_open</span>
+            <input id="newPin" type="password" inputmode="numeric" maxlength="6"
+                   class="ep-input" placeholder="••••"
+                   [value]="newPin()"
+                   (input)="newPin.set($any($event.target).value)">
+          </div>
+        </div>
+
+        <div class="ep-field" *ngIf="!pinSuccess()">
+          <label class="ep-label" for="confirmPin">Confirmer le code</label>
+          <div class="ep-input-wrap">
+            <span class="material-symbols-outlined ep-input-icon">lock_reset</span>
+            <input id="confirmPin" type="password" inputmode="numeric" maxlength="6"
+                   class="ep-input" placeholder="••••"
+                   [value]="confirmPin()"
+                   (input)="confirmPin.set($any($event.target).value)">
+          </div>
+        </div>
+
+        <button class="ep-pin-btn" (click)="onChangePin()" [disabled]="pinLoading()" type="button"
+                *ngIf="!pinSuccess()">
+          <div *ngIf="pinLoading()" class="ep-spinner ep-spinner--white"></div>
+          <ng-container *ngIf="!pinLoading()">
+            <span class="material-symbols-outlined">lock</span>
+            Mettre à jour le PIN
+          </ng-container>
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>

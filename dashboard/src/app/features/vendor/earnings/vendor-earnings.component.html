@@ -1,0 +1,186 @@
+<div class="vendor-earnings">
+
+  <button class="btn-back" (click)="location.back()">
+    <span class="material-symbols-outlined">arrow_back</span>
+    Retour
+  </button>
+
+  <!-- Header -->
+  <div class="vendor-earnings__header">
+    <div>
+      <h1 class="vendor-earnings__title">Revenus & Retraits Vendeur</h1>
+      <p class="vendor-earnings__subtitle">Suivez vos ventes d'équipements et retirez vos fonds sur Wave ou Mobile Money.</p>
+    </div>
+  </div>
+
+  <!-- Alerts -->
+  <div class="alert alert--success" *ngIf="successMessage()">
+    <span class="material-symbols-outlined">check_circle</span>
+    {{ successMessage() }}
+  </div>
+
+  <div class="alert alert--error" *ngIf="errorMessage()">
+    <span class="material-symbols-outlined">error</span>
+    {{ errorMessage() }}
+  </div>
+
+  <!-- Loader -->
+  <div class="loader-wrap" *ngIf="isLoading()">
+    <div class="spinner spinner--lg"></div>
+    <p>Chargement de vos statistiques financières...</p>
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="kpi-grid" *ngIf="!isLoading()">
+    
+    <div class="kpi-card">
+      <div class="kpi-card__icon kpi-card__icon--blue">
+        <span class="material-symbols-outlined">monitoring</span>
+      </div>
+      <div class="kpi-card__content">
+        <span class="kpi-card__label">Chiffre d'Affaires Cumulé</span>
+        <strong class="kpi-card__value">{{ totalRevenue() | number:'1.0-0' }} FCFA</strong>
+      </div>
+    </div>
+
+    <div class="kpi-card kpi-card--emerald">
+      <div class="kpi-card__bg-glow"></div>
+      <div class="kpi-card__icon kpi-card__icon--green">
+        <span class="material-symbols-outlined">account_balance_wallet</span>
+      </div>
+      <div class="kpi-card__content">
+        <span class="kpi-card__label">Solde Retirable</span>
+        <strong class="kpi-card__value">{{ availableBalance() | number:'1.0-0' }} FCFA</strong>
+      </div>
+      <button class="btn btn--withdraw" (click)="openWithdrawModal()">
+        <span class="material-symbols-outlined">send_to_mobile</span>
+        Demander un retrait
+      </button>
+    </div>
+
+  </div>
+
+  <!-- Historique des ventes -->
+  <div class="history-section" *ngIf="!isLoading()">
+    <div class="history-header">
+      <h2 class="history-section__title">Historique des transactions & ventes</h2>
+      <span class="history-count">{{ recentTransactions().length }} opérations</span>
+    </div>
+    
+    <div class="empty-state" *ngIf="recentTransactions().length === 0">
+      <div class="empty-state__icon">
+        <span class="material-symbols-outlined">receipt_long</span>
+      </div>
+      <h3>Aucune transaction pour le moment</h3>
+      <p>Vos revenus générés par les commandes apparaîtront ici.</p>
+    </div>
+
+    <div class="table-container table-responsive" *ngIf="recentTransactions().length > 0">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Date & Heure</th>
+            <th>Référence</th>
+            <th>Description</th>
+            <th>Statut</th>
+            <th class="text-right">Montant</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let tx of recentTransactions()">
+            <td class="tx-date">
+              <span class="material-symbols-outlined icon-sub">schedule</span>
+              {{ tx.created_at | date:'dd/MM/yyyy HH:mm' }}
+            </td>
+            <td class="tx-ref">#{{ (tx.reference || tx.id).slice(0, 8) | uppercase }}</td>
+            <td class="tx-desc">
+              <span class="tx-type-pill">Vente d'article</span>
+            </td>
+            <td>
+              <span class="badge badge--success">
+                <span class="material-symbols-outlined">check</span>
+                Payée
+              </span>
+            </td>
+            <td class="text-right tx-amount">+{{ tx.total_amount | number:'1.0-0' }} FCFA</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal de Retrait Mobile Money -->
+<div class="modal-overlay" *ngIf="isWithdrawModalOpen()">
+  <div class="modal-content">
+    <button class="modal-close" (click)="closeWithdrawModal()" type="button">
+      <span class="material-symbols-outlined">close</span>
+    </button>
+    
+    <div class="modal-header">
+      <div class="modal-header__icon">
+        <span class="material-symbols-outlined">account_balance_wallet</span>
+      </div>
+      <div>
+        <h2>Demande de Retrait</h2>
+        <p class="modal-sub">Transfert direct sur votre compte Mobile Money</p>
+      </div>
+    </div>
+
+    <div class="modal-body">
+      <div class="balance-banner">
+        <span>Solde disponible :</span>
+        <strong>{{ availableBalance() | number:'1.0-0' }} FCFA</strong>
+      </div>
+
+      <!-- Mode / Operator Selection -->
+      <div class="form-group">
+        <label class="form-label">Opérateur Mobile Money *</label>
+        <div class="operator-selector">
+          <button
+            *ngFor="let op of operators"
+            type="button"
+            class="op-btn"
+            [class.op-btn--active]="withdrawOperator() === op.value"
+            (click)="withdrawOperator.set(op.value)">
+            <span class="op-indicator" [style.background]="op.color"></span>
+            <span>{{ op.label }}</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Phone -->
+      <div class="form-group">
+        <label class="form-label" for="phone">Numéro de Téléphone Récepteur *</label>
+        <input 
+          class="form-control" 
+          type="tel" 
+          id="phone" 
+          [(ngModel)]="withdrawPhone" 
+          placeholder="Ex: 77 000 00 00 ou +221..." />
+      </div>
+
+      <!-- Amount -->
+      <div class="form-group">
+        <label class="form-label" for="amount">Montant à retirer (FCFA) *</label>
+        <input 
+          class="form-control" 
+          type="number" 
+          id="amount" 
+          [(ngModel)]="withdrawAmount" 
+          placeholder="Ex: 10000"
+          min="500" />
+        <span class="form-hint">Montant minimum : 500 FCFA</span>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn--outline" (click)="closeWithdrawModal()">Annuler</button>
+      <button class="btn btn--primary" [disabled]="isSubmitting() || !withdrawAmount()" (click)="requestWithdrawal()">
+        <span *ngIf="!isSubmitting()">Confirmer le transfert</span>
+        <span *ngIf="isSubmitting()" class="spinner spinner--sm"></span>
+      </button>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,132 @@
+<div class="cart-page">
+  <!-- Header -->
+  <div class="cart-header">
+    <div class="header-titles">
+      <a routerLink="/shop" class="back-link">
+        <span class="material-symbols-outlined">arrow_back</span>
+        Continuer mes achats
+      </a>
+      <h1>Mon Panier <span class="item-count-badge" *ngIf="cartService.count() > 0">({{ cartService.count() }} {{ cartService.count() > 1 ? 'articles' : 'article' }})</span></h1>
+    </div>
+    
+    <button *ngIf="cartService.count() > 0" class="btn-clear-cart" (click)="cartService.clearCart()">
+      <span class="material-symbols-outlined">delete_sweep</span>
+      Vider le panier
+    </button>
+  </div>
+
+  <!-- Empty Cart State -->
+  <div *ngIf="cartService.count() === 0" class="empty-cart">
+    <div class="empty-icon-wrapper">
+      <span class="material-symbols-outlined empty-icon">shopping_cart_checkout</span>
+    </div>
+    <h2>Votre panier est vide</h2>
+    <p>Découvrez notre sélection de boissons, équipements et accessoires sportifs.</p>
+    <a routerLink="/shop" class="btn btn--primary">
+      <span class="material-symbols-outlined">storefront</span>
+      Découvrir la boutique
+    </a>
+  </div>
+
+  <!-- Active Cart Content -->
+  <div *ngIf="cartService.count() > 0" class="cart-content">
+    
+    <!-- Items List -->
+    <div class="cart-items-list">
+      <div class="cart-item-card" *ngFor="let item of cartService.items()">
+        <!-- Thumbnail -->
+        <div class="item-img-wrapper">
+          <img [src]="item.product.imageUrl || '/assets/placeholder.png'" [alt]="item.product.name">
+        </div>
+
+        <!-- Info -->
+        <div class="item-info">
+          <h3 class="item-title">{{ item.product.name }}</h3>
+          <span class="item-unit-price">{{ item.product.price | number }} FCFA / unité</span>
+          <span class="stock-status" *ngIf="item.product.stock > 0">En stock</span>
+        </div>
+
+        <!-- Quantity Stepper Controls -->
+        <div class="quantity-stepper">
+          <button 
+            type="button" 
+            class="stepper-btn" 
+            (click)="cartService.updateQuantity(item.product.id, item.quantity - 1)"
+            title="Diminuer">
+            <span class="material-symbols-outlined">remove</span>
+          </button>
+          
+          <span class="stepper-value">{{ item.quantity }}</span>
+
+          <button 
+            type="button" 
+            class="stepper-btn" 
+            [disabled]="item.quantity >= item.product.stock"
+            (click)="cartService.updateQuantity(item.product.id, item.quantity + 1)"
+            title="Augmenter">
+            <span class="material-symbols-outlined">add</span>
+          </button>
+        </div>
+
+        <!-- Total Price for Item -->
+        <div class="item-total">
+          <span class="total-amount">{{ (item.product.price * item.quantity) | number }} FCFA</span>
+        </div>
+
+        <!-- Delete Action -->
+        <button 
+          type="button" 
+          class="btn-delete-item" 
+          (click)="cartService.removeFromCart(item.product.id)"
+          title="Supprimer du panier">
+          <span class="material-symbols-outlined">delete</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Summary Box -->
+    <div class="cart-summary-card">
+      <h2 class="summary-title">Récapitulatif de la commande</h2>
+
+      <div class="summary-lines">
+        <div class="summary-line">
+          <span class="line-label">Sous-total ({{ cartService.count() }} articles)</span>
+          <span class="line-value">{{ cartService.total() | number }} FCFA</span>
+        </div>
+
+        <div class="summary-line">
+          <span class="line-label">Livraison / Retrait terrain</span>
+          <span class="line-value free-shipping">OFFERT</span>
+        </div>
+
+        <div class="summary-divider"></div>
+
+        <div class="summary-line summary-line--total">
+          <span class="total-label">Total Général</span>
+          <span class="total-amount">{{ cartService.total() | number }} FCFA</span>
+        </div>
+      </div>
+
+      <!-- Payment Button -->
+      <button
+        class="btn btn--checkout btn--full"
+        (click)="proceedToPayment()">
+        <span class="material-symbols-outlined">account_balance_wallet</span>
+        Payer {{ cartService.total() | number }} FCFA
+      </button>
+
+      <!-- Trust assurances -->
+      <div class="cart-trust-badges">
+        <div class="badge-item">
+          <span class="material-symbols-outlined">verified</span>
+          Paiement Samir Money sécurisé
+        </div>
+        <div class="badge-item">
+          <span class="material-symbols-outlined">sports_soccer</span>
+          Retrait direct sur le terrain
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>

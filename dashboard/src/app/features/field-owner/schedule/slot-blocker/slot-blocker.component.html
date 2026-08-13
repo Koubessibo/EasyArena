@@ -1,0 +1,39 @@
+<div class="slot-blocker card">
+  <h3 class="slot-blocker__title">
+    <span class="material-symbols-outlined">do_not_disturb_on</span>
+    Bloquer des créneaux
+  </h3>
+
+  <div class="slot-blocker__form">
+    <div class="form-group">
+      <label class="form-label">Date</label>
+      <input class="form-input" type="date" [ngModel]="date()" (ngModelChange)="date.set($event); loadSlots()">
+    </div>
+  </div>
+
+  <p *ngIf="error()" class="slot-blocker__error">{{ error() }}</p>
+
+  <div *ngIf="slotsLoading()" class="slot-blocker__loading">
+    <span class="loading-spinner"></span> Chargement des créneaux…
+  </div>
+
+  <div *ngIf="!slotsLoading() && slots().length > 0" class="slot-blocker__grid">
+    <button
+      *ngFor="let slot of slots()"
+      class="slot-toggle"
+      [class.slot-toggle--blocked]="slot.blocked"
+      (click)="toggle(slot)"
+      [title]="slot.blocked ? 'Débloquer ce créneau' : 'Bloquer ce créneau'">
+      <span class="slot-toggle__time">{{ slot.slot_start }}</span>
+      <span class="material-symbols-outlined slot-toggle__icon">
+        {{ slot.blocked ? 'lock' : 'lock_open' }}
+      </span>
+    </button>
+  </div>
+
+  <p *ngIf="!slotsLoading() && date() && slots().length === 0" class="slot-blocker__empty">
+    Aucun créneau défini pour cette date. Configurez d'abord un horaire.
+  </p>
+
+  <p *ngIf="!date()" class="slot-blocker__empty">Sélectionnez une date pour voir les créneaux.</p>
+</div>

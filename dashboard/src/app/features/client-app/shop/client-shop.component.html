@@ -1,0 +1,82 @@
+<div class="shop-container">
+  
+  <div class="shop-main">
+    <div class="shop-header">
+      <h1 class="shop-title">Boutique Officielle</h1>
+      <p class="shop-subtitle">Achetez vos maillots, ballons et équipements directement depuis l'application.</p>
+    </div>
+
+    <div class="alert alert--success" *ngIf="successMessage()">
+      <span class="material-symbols-outlined">check_circle</span>
+      {{ successMessage() }}
+    </div>
+
+    <div class="alert alert--error" *ngIf="errorMessage()">
+      <span class="material-symbols-outlined">error</span>
+      {{ errorMessage() }}
+    </div>
+
+    <div class="loader" *ngIf="isLoading()">
+      <div class="spinner spinner--lg"></div>
+    </div>
+
+    <div class="product-grid" *ngIf="!isLoading()">
+      <article class="product-card" *ngFor="let product of products()">
+        <div class="product-card__cover" 
+             [style.backgroundImage]="product.image_url ? 'url(' + product.image_url + ')' : 'url(assets/images/default-product.jpg)'">
+        </div>
+        <div class="product-card__body">
+          <h2 class="product-card__name">{{ product.name }}</h2>
+          <p class="product-card__desc">{{ product.description }}</p>
+          <div class="product-card__meta">
+            <span class="product-card__price">{{ product.price | number:'1.0-0' }} CFA</span>
+            <span class="product-card__stock" [class.low-stock]="product.stock_quantity < 5">
+              Reste {{ product.stock_quantity }}
+            </span>
+          </div>
+        </div>
+        <div class="product-card__footer">
+          <button class="btn btn--primary btn--full" (click)="addToCart(product)">
+            Ajouter au panier
+          </button>
+        </div>
+      </article>
+    </div>
+  </div>
+
+  <!-- Panier Latéral -->
+  <aside class="cart-sidebar">
+    <div class="cart-header">
+      <h2>Mon Panier</h2>
+      <span class="cart-badge">{{ cartItemCount() }}</span>
+    </div>
+
+    <div class="cart-items" *ngIf="cart().length > 0">
+      <div class="cart-item" *ngFor="let item of cart()">
+        <div class="cart-item__info">
+          <span class="cart-item__name">{{ item.product.name }}</span>
+          <span class="cart-item__price">{{ item.quantity }} x {{ item.product.price }} CFA</span>
+        </div>
+        <button class="cart-item__remove" (click)="removeFromCart(item.product.id)" title="Retirer">
+          <span class="material-symbols-outlined">delete</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="cart-empty" *ngIf="cart().length === 0">
+      <span class="material-symbols-outlined">shopping_cart</span>
+      <p>Votre panier est vide</p>
+    </div>
+
+    <div class="cart-footer" *ngIf="cart().length > 0">
+      <div class="cart-total">
+        <span>Total</span>
+        <strong>{{ cartTotal() | number:'1.0-0' }} CFA</strong>
+      </div>
+      <button class="btn btn--checkout btn--full" [disabled]="isCheckingOut()" (click)="checkout()">
+        <span *ngIf="!isCheckingOut()">Payer maintenant</span>
+        <span *ngIf="isCheckingOut()" class="spinner"></span>
+      </button>
+    </div>
+  </aside>
+</div>

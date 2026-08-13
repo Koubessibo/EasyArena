@@ -1,0 +1,92 @@
+<div class="auth-wrapper">
+
+  <!-- Left Side: Brand & Hero Showcase (Desktop) -->
+  <div class="auth-hero">
+    <div class="auth-hero__overlay"></div>
+    <div class="auth-hero__content">
+      <a routerLink="/" class="auth-hero__logo">
+        <img src="/logo-long.png" alt="EasyArena" class="auth-hero__logo-img">
+      </a>
+      <div class="auth-hero__body">
+        <span class="auth-hero__tag">
+          <span class="material-symbols-outlined">sports_soccer</span>
+          Plateforme N°1 au Sénégal
+        </span>
+        <h2 class="auth-hero__title">Réservez vos terrains de sport en 30 secondes.</h2>
+        <p class="auth-hero__sub">Rejoignez des milliers de passionnés. Payez en toute sécurité avec Wave ou Orange
+          Money et accédez directement aux terrains.</p>
+
+        <div class="auth-hero__features">
+          <div class="auth-feat-item">
+            <span class="material-symbols-outlined">verified</span>
+            <span>+40 Complexes vérifiés</span>
+          </div>
+          <div class="auth-feat-item">
+            <span class="material-symbols-outlined">qr_code_2</span>
+            <span>Billet QR Instantané (Accès Hors-Ligne)</span>
+          </div>
+          <div class="auth-feat-item">
+            <span class="material-symbols-outlined">shield_lock</span>
+            <span>Paiement Sécurisé Samir Money BCEAO</span>
+          </div>
+        </div>
+      </div>
+      <p class="auth-hero__footer">© 2026 EasyArena par AXE DIGITAL SERVICES. Tous droits réservés.</p>
+    </div>
+  </div>
+
+  <!-- Right Side: Auth Card Form -->
+  <div class="auth-card-wrap">
+    <div class="auth-card">
+
+      <!-- Header Mobile/Card -->
+      <div class="auth-card__header">
+        <a routerLink="/" class="auth-card__logo-mobile">
+          <img src="/logo-long.png" alt="EasyArena" class="auth-card__logo-img">
+        </a>
+        <h1 class="auth-card__title">Content de vous revoir ! </h1>
+        <p class="auth-card__subtitle">Connectez-vous avec votre numéro de téléphone</p>
+      </div>
+
+      <!-- Form -->
+      <form class="auth-form" (ngSubmit)="onSubmit()" novalidate>
+
+        <!-- Error message -->
+        <div *ngIf="errorMessage()" class="auth-form__error">
+          <span class="material-symbols-outlined">error</span>
+          {{ errorMessage() }}
+        </div>
+
+        <!-- Phone field -->
+        <div class="form-group">
+          <label class="form-label">Numéro de téléphone</label>
+          <app-phone-input [ngModel]="phone()" (ngModelChange)="phone.set($event)" name="phone"></app-phone-input>
+        </div>
+
+        <!-- Submit button -->
+        <button type="submit" class="btn btn--primary btn--full auth-submit-btn">
+          Continuer vers l'application
+          <span class="material-symbols-outlined">arrow_forward</span>
+        </button>
+
+        <!-- Links -->
+        <div class="auth-card__foot-links">
+          <p class="auth-card__foot-text">
+            Pas encore de compte ?
+            <a routerLink="/register" class="auth-card__link">Créer un compte gratuitement</a>
+          </p>
+          <p class="auth-card__foot-text">
+            <a routerLink="/forgot-password" class="auth-card__link auth-card__link--muted">Code PIN oublié ?</a>
+          </p>
+        </div>
+
+        <div class="auth-card__security-badge">
+          <span class="material-symbols-outlined">lock</span>
+          <span>Connexion sécurisée 256-bit SSL · Samir Money Agrée BCEAO</span>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+</div>

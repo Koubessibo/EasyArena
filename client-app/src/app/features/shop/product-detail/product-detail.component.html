@@ -1,0 +1,198 @@
+<div class="product-detail-page" *ngIf="!loading(); else loadingTpl">
+  <ng-container *ngIf="product() as p">
+
+    <!-- Top Navigation Bar -->
+    <div class="product-nav">
+      <a routerLink="/shop" class="nav-back-btn" title="Retour à la boutique">
+        <span class="material-symbols-outlined">arrow_back</span>
+        <span>Boutique</span>
+      </a>
+      <div class="nav-actions">
+        <button class="nav-action-btn" title="Partager">
+          <span class="material-symbols-outlined">share</span>
+        </button>
+        <button
+          class="nav-action-btn"
+          [class.nav-action-btn--active]="isWishlisted"
+          (click)="toggleWishlist()"
+          title="Ajouter aux favoris">
+          <span class="material-symbols-outlined" [class.filled]="isWishlisted">favorite</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Main E-Commerce Grid (2 Columns on Desktop) -->
+    <div class="product-grid">
+
+      <!-- Column 1: Image Gallery -->
+      <div class="product-gallery-container">
+        <div class="product-main-image-wrapper">
+          <img [src]="p.images[activeImageIndex()].url"
+               [alt]="p.images[activeImageIndex()].alt"
+               class="product-main-image">
+
+          <span *ngIf="discountPercent" class="discount-badge">
+            -{{ discountPercent }}%
+          </span>
+
+          <span class="stock-badge" [class.stock-badge--low]="p.stock <= 5">
+            <span class="dot"></span>
+            <span *ngIf="p.stock > 10">En Stock</span>
+            <span *ngIf="p.stock > 0 && p.stock <= 10">Plus que {{ p.stock }} dispo</span>
+            <span *ngIf="p.stock === 0">Rupture</span>
+          </span>
+        </div>
+
+        <!-- Thumbnails gallery -->
+        <div class="product-thumbnails" *ngIf="p.images.length > 1">
+          <button
+            *ngFor="let img of p.images; let i = index"
+            class="thumb-btn"
+            [class.thumb-btn--active]="activeImageIndex() === i"
+            (click)="selectImage(i)">
+            <img [src]="img.url" [alt]="img.alt">
+          </button>
+        </div>
+
+        <!-- Trust Badges -->
+        <div class="trust-features">
+          <div class="trust-item">
+            <span class="material-symbols-outlined">verified_user</span>
+            <div>
+              <strong>Produit Authentique</strong>
+              <span>Certifié par le club partner</span>
+            </div>
+          </div>
+          <div class="trust-item">
+            <span class="material-symbols-outlined">payments</span>
+            <div>
+              <strong>Paiement Sécurisé</strong>
+              <span>Via Mobile Money</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Column 2: Product Info & Purchase Actions -->
+      <div class="product-info-container">
+        
+        <!-- Category / Brand -->
+        <div class="product-brand-tag" *ngIf="p.brand">
+          <span class="material-symbols-outlined">sports_soccer</span>
+          {{ p.brand }}
+        </div>
+
+        <!-- Product Name -->
+        <h1 class="product-title">{{ p.name }}</h1>
+
+        <!-- Rating / Reviews -->
+        <div class="product-rating-row">
+          <div class="stars-badge" *ngIf="p.rating > 0; else certifiedBadge">
+            <span class="material-symbols-outlined star-icon">star</span>
+            <strong>{{ p.rating | number:'1.1-1' }}</strong>
+            <span class="review-count">({{ p.reviewCount }} avis)</span>
+          </div>
+          <ng-template #certifiedBadge>
+            <span class="certified-badge">
+              <span class="material-symbols-outlined">workspace_premium</span>
+              Produit Officiel EasyArena
+            </span>
+          </ng-template>
+        </div>
+
+        <!-- Price Card -->
+        <div class="price-card">
+          <div class="price-row">
+            <span class="current-price">{{ p.price | fcfa }}</span>
+            <span *ngIf="p.originalPrice" class="original-price">{{ p.originalPrice | fcfa }}</span>
+            <span *ngIf="discountPercent" class="discount-tag">-{{ discountPercent }}%</span>
+          </div>
+          <p class="price-hint">Taxes incluses. Disponible immédiatement sur le terrain.</p>
+        </div>
+
+        <!-- Description -->
+        <div class="info-section">
+          <h3 class="section-heading">
+            <span class="material-symbols-outlined">description</span>
+            Description du produit
+          </h3>
+          <p class="description-text">{{ p.description }}</p>
+        </div>
+
+        <!-- Tags -->
+        <div class="tags-row" *ngIf="p.tags && p.tags.length > 0">
+          <span *ngFor="let tag of p.tags" class="tag-pill">#{{ tag }}</span>
+        </div>
+
+        <!-- Desktop Direct Add to Cart Action -->
+        <div class="desktop-buy-action">
+          <button
+            class="btn btn--add-cart btn--full"
+            [disabled]="!p.isAvailable"
+            (click)="addToCart()">
+            <span class="material-symbols-outlined">shopping_cart</span>
+            Ajouter au panier • {{ p.price | fcfa }}
+          </button>
+        </div>
+
+        <!-- Vendor Profile Card -->
+        <div class="vendor-box">
+          <span class="vendor-box__label">Vendu par</span>
+          <div class="vendor-card">
+            <div class="vendor-avatar">
+              <img *ngIf="p.vendor.avatarUrl" [src]="p.vendor.avatarUrl" [alt]="p.vendor.name">
+              <span *ngIf="!p.vendor.avatarUrl">{{ p.vendor.name.charAt(0) }}</span>
+            </div>
+            <div class="vendor-details">
+              <div class="vendor-name-row">
+                <span class="vendor-name">{{ p.vendor.name }}</span>
+                <span class="verified-badge" *ngIf="p.vendor.isVerified">
+                  <span class="material-symbols-outlined">verified</span>
+                  Vendeur Partenaire
+                </span>
+              </div>
+              <span class="vendor-location" *ngIf="p.vendor.location">
+                <span class="material-symbols-outlined">location_on</span>
+                {{ p.vendor.location }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Mobile Sticky Purchase Bar -->
+    <div class="mobile-sticky-bar">
+      <div class="sticky-price-info">
+        <span class="label">Prix :</span>
+        <span class="amount">{{ p.price | fcfa }}</span>
+      </div>
+      <button
+        class="btn btn--add-cart"
+        [disabled]="!p.isAvailable"
+        (click)="addToCart()">
+        <span class="material-symbols-outlined">shopping_cart</span>
+        Ajouter au panier
+      </button>
+    </div>
+
+  </ng-container>
+</div>
+
+<app-auth-prompt
+  *ngIf="showAuthPrompt()"
+  message="pour contacter le vendeur"
+  (dismissed)="showAuthPrompt.set(false)">
+</app-auth-prompt>
+
+<ng-template #loadingTpl>
+  <div class="product-loading-container">
+    <div class="skeleton skeleton--image"></div>
+    <div class="skeleton-details">
+      <div class="skeleton skeleton--title"></div>
+      <div class="skeleton skeleton--price"></div>
+      <div class="skeleton skeleton--text"></div>
+    </div>
+  </div>
+</ng-template>

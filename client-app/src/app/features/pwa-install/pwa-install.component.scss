@@ -1,0 +1,338 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+.pwa-page {
+  padding: 2.5rem 1.25rem;
+  max-width: 960px;
+  margin: 0 auto;
+  font-family: 'Inter', sans-serif;
+}
+
+/* Hero */
+.pwa-hero {
+  text-align: center;
+  margin-bottom: 3rem;
+
+  &__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 1rem;
+    border-radius: 30px;
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+    font-size: 0.85rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+    border: 1px solid rgba(16, 185, 129, 0.25);
+
+    .material-symbols-outlined { font-size: 1.1rem; }
+  }
+
+  &__title {
+    font-size: 2.25rem;
+    font-weight: 900;
+    color: #0f172a;
+    margin: 0 0 0.75rem;
+    letter-spacing: -0.02em;
+  }
+
+  &__desc {
+    font-size: 1.05rem;
+    color: #64748b;
+    max-width: 640px;
+    margin: 0 auto 2rem;
+    line-height: 1.6;
+  }
+
+  &__action {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  &__hint {
+    font-size: 0.825rem;
+    color: #94a3b8;
+  }
+}
+
+.btn-install-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 2.25rem;
+  border-radius: 35px;
+  background: #10b981;
+  color: #ffffff;
+  font-family: 'Inter', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 800;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.35);
+  transition: all 0.25s ease;
+
+  .material-symbols-outlined { font-size: 1.4rem; }
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 30px rgba(16, 185, 129, 0.45);
+    background: #059669;
+  }
+}
+
+.pwa-status-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  border-radius: 16px;
+  text-align: left;
+  margin-top: 1rem;
+
+  &--success {
+    background: #f0fdf4;
+    border: 1.5px solid #a7f3d0;
+    color: #065f46;
+
+    .material-symbols-outlined { font-size: 2rem; color: #10b981; }
+    p { margin: 0; font-size: 0.875rem; color: #047857; }
+  }
+}
+
+/* Features */
+.pwa-features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 3.5rem;
+}
+
+.feature-card {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 20px;
+  padding: 1.75rem;
+  text-align: center;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.02);
+
+  h3 {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 1rem 0 0.5rem;
+  }
+
+  p {
+    font-size: 0.9rem;
+    color: #64748b;
+    line-height: 1.5;
+    margin: 0;
+  }
+}
+
+.feature-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  .material-symbols-outlined { font-size: 1.6rem; }
+
+  &--green { background: #dcfce7; color: #16a34a; }
+  &--blue { background: #dbeafe; color: #2563eb; }
+  &--purple { background: #f3e8ff; color: #9333ea; }
+}
+
+/* Guide */
+.pwa-guide-section {
+  .section-title {
+    font-size: 1.6rem;
+    font-weight: 900;
+    color: #0f172a;
+    text-align: center;
+    margin: 0 0 0.35rem;
+  }
+
+  .section-subtitle {
+    font-size: 0.95rem;
+    color: #64748b;
+    text-align: center;
+    margin: 0 0 2rem;
+  }
+}
+
+.pwa-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.pwa-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border-radius: 30px;
+  border: 1.5px solid #e2e8f0;
+  background: #ffffff;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  .material-symbols-outlined { font-size: 1.2rem; }
+
+  &:hover { border-color: #10b981; color: #10b981; }
+
+  &--active {
+    background: #10b981;
+    color: #ffffff;
+    border-color: #10b981;
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+
+    .material-symbols-outlined { color: #ffffff; }
+  }
+}
+
+.card {
+  background: #ffffff;
+  border-radius: 24px;
+  border: 1.5px solid #e2e8f0;
+  padding: 2.25rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+}
+
+.step-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+
+.step-item {
+  display: flex;
+  gap: 1.25rem;
+  align-items: flex-start;
+}
+
+.step-number {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #10b981;
+  color: #ffffff;
+  font-size: 1.1rem;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.step-content {
+  h4 {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0 0 0.35rem;
+  }
+
+  p {
+    font-size: 0.925rem;
+    color: #475569;
+    margin: 0;
+    line-height: 1.5;
+  }
+}
+
+.inline-icon {
+  vertical-align: middle;
+  font-size: 1.1rem;
+  color: #10b981;
+}
+
+/* ── Step Connector ── */
+.step-connector {
+  width: 2px;
+  height: 2rem;
+  background: linear-gradient(to bottom, rgba(16, 185, 129, 0.4), rgba(16, 185, 129, 0.1));
+  margin: 0 0 0 calc(1.75rem - 1px);
+}
+
+/* ── Step Visual Icon ── */
+.step-visual {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(5, 150, 105, 0.2));
+  border: 1.5px solid rgba(16, 185, 129, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.75rem;
+  position: relative;
+
+  &__icon {
+    font-size: 1.4rem;
+    color: #10b981;
+  }
+
+  &__arrow {
+    position: absolute;
+    top: -8px;
+    right: -6px;
+    font-size: 1.1rem;
+    font-weight: 900;
+    color: #34d399;
+  }
+
+  &--ios-share {
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.15), rgba(14, 165, 233, 0.2));
+    border-color: rgba(56, 189, 248, 0.4);
+
+    .step-visual__icon { color: #38bdf8; }
+    .step-visual__arrow { color: #38bdf8; }
+  }
+}
+
+/* ── iOS Safari Warning Block ── */
+.ios-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem 1.15rem;
+  background: rgba(251, 191, 36, 0.08);
+  border: 1.5px solid rgba(251, 191, 36, 0.35);
+  border-radius: 14px;
+  margin-bottom: 1.5rem;
+  color: #92400e;
+
+  > .material-symbols-outlined {
+    font-size: 1.35rem;
+    color: #f59e0b;
+    flex-shrink: 0;
+    margin-top: 0.1rem;
+  }
+
+  strong {
+    display: block;
+    font-size: 0.92rem;
+    font-weight: 800;
+    color: #78350f;
+    margin-bottom: 0.25rem;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: #92400e;
+    line-height: 1.5;
+  }
+}

@@ -1,0 +1,364 @@
+<div class="pwa-page">
+
+  <!-- Hero Header -->
+  <div class="pwa-hero">
+    <div class="pwa-hero__badge">
+      <span class="material-symbols-outlined">install_mobile</span>
+      Application Web Progressive (PWA)
+    </div>
+    <h1 class="pwa-hero__title">Installez EasyArena sur votre Appareil</h1>
+    <p class="pwa-hero__desc">
+      Accédez à vos terrains, vos billets QR Code et vos commandes instantanément, même sans connexion Internet !
+    </p>
+
+    <!-- Status Banner if already installed -->
+    <div class="pwa-status-box pwa-status-box--success" *ngIf="isStandalone()">
+      <span class="material-symbols-outlined">check_circle</span>
+      <div>
+        <strong>EasyArena est déjà installé !</strong>
+        <p>Vous utilisez actuellement l'application en mode natif Plein Écran.</p>
+      </div>
+    </div>
+
+    <!-- 1-Click Install Button -->
+    <div class="pwa-hero__action" *ngIf="!isStandalone()">
+      <button class="btn-install-primary" (click)="installPwa()">
+        <span class="material-symbols-outlined">download_for_offline</span>
+        <span>Installer l'application en 1 clic</span>
+      </button>
+      <span class="pwa-hero__hint">Directement sur votre écran d'accueil · 0 Mo d'espace requis</span>
+    </div>
+  </div>
+
+  <!-- Advantages Grid -->
+  <div class="pwa-features">
+    <div class="feature-card">
+      <div class="feature-icon feature-icon--green">
+        <span class="material-symbols-outlined">wifi_off</span>
+      </div>
+      <h3>Accès Hors-Ligne</h3>
+      <p>Consultez vos billets QR Code et vos réservations même en zone à faible réseau.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon feature-icon--blue">
+        <span class="material-symbols-outlined">bolt</span>
+      </div>
+      <h3>Rapidité Éclair</h3>
+      <p>Lancement instantané depuis l'écran d'accueil sans passer par un navigateur.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon feature-icon--purple">
+        <span class="material-symbols-outlined">notifications_active</span>
+      </div>
+      <h3>Rappels & Notifications</h3>
+      <p>Soyez averti à l'approche de vos matchs et de la confirmation de vos réservations.</p>
+    </div>
+  </div>
+
+  <!-- Device Selection Tabs -->
+  <div class="pwa-guide-section">
+    <h2 class="section-title">Guide d'installation pas-à-pas</h2>
+    <p class="section-subtitle">Sélectionnez votre appareil pour voir la méthode ultra-simple :</p>
+
+    <div class="pwa-tabs">
+      <button class="pwa-tab" [class.pwa-tab--active]="activeTab() === 'android'" (click)="activeTab.set('android')">
+        <span class="material-symbols-outlined">android</span>
+        Android (Chrome)
+      </button>
+      <button class="pwa-tab" [class.pwa-tab--active]="activeTab() === 'ios'" (click)="activeTab.set('ios')">
+        <span class="material-symbols-outlined">phone_iphone</span>
+        iPhone / iPad (Safari)
+      </button>
+      <button class="pwa-tab" [class.pwa-tab--active]="activeTab() === 'desktop'" (click)="activeTab.set('desktop')">
+        <span class="material-symbols-outlined">laptop</span>
+        PC & Mac (Chrome/Edge)
+      </button>
+    </div>
+
+    <!-- 🤖 Android Instructions -->
+    <div class="pwa-instructions card" *ngIf="activeTab() === 'android'">
+      <div class="step-list">
+        <div class="step-item">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <div class="step-visual">
+              <span class="material-symbols-outlined step-visual__icon">more_vert</span>
+            </div>
+            <h4>Ouvrez le menu de Chrome</h4>
+            <p>Appuyez sur les <strong>3 petits points verticaux (⋮)</strong> en haut à droite de l'écran Chrome.</p>
+          </div>
+        </div>
+
+        <div class="step-connector"></div>
+
+        <div class="step-item">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <div class="step-visual">
+              <span class="material-symbols-outlined step-visual__icon">add_to_home_screen</span>
+            </div>
+            <h4>Sélectionnez "Installer l'application"</h4>
+            <p>Ou appuyez sur <strong>"Ajouter à l'écran d'accueil"</strong> dans la liste des options du menu.</p>
+          </div>
+        </div>
+
+        <div class="step-connector"></div>
+
+        <div class="step-item">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <div class="step-visual">
+              <span class="material-symbols-outlined step-visual__icon">check_circle</span>
+            </div>
+            <h4>Confirmez l'installation</h4>
+            <p>L'icône EasyArena ⚽ apparaîtra immédiatement sur votre écran d'accueil comme une application native !</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 🍏 iOS (Safari) Instructions -->
+    <div class="pwa-instructions card" *ngIf="activeTab() === 'ios'">
+
+      <!-- iOS-specific warning -->
+      <div class="ios-warning">
+        <span class="material-symbols-outlined">info</span>
+        <div>
+          <strong>Utilisez Safari uniquement</strong>
+          <p>L'installation de PWA sur iPhone/iPad fonctionne <strong>uniquement avec Safari</strong>. Chrome et Firefox sur iOS ne supportent pas cette fonctionnalité.</p>
+        </div>
+      </div>
+
+      <div class="step-list">
+        <div class="step-item">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <div class="step-visual">
+              <span class="material-symbols-outlined step-visual__icon">public</span>
+            </div>
+            <h4>Ouvrez ce site sur Safari</h4>
+            <p>Assurez-vous d'utiliser le navigateur <strong>Safari</strong> officiel d'Apple (icône boussole bleue).</p>
+          </div>
+        </div>
+
+        <div class="step-connector"></div>
+
+        <div class="step-item">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <div class="step-visual step-visual--ios-share">
+              <span class="material-symbols-outlined step-visual__icon">ios_share</span>
+              <span class="step-visual__arrow">↑</span>
+            </div>
+            <h4>Appuyez sur le bouton Partager</h4>
+            <p>Touchez l'icône <strong>Partager <span class="material-symbols-outlined inline-icon">ios_share</span> (carré avec flèche ↑)</strong> dans la barre du bas de Safari.</p>
+          </div>
+        </div>
+
+        <div class="step-connector"></div>
+
+        <div class="step-item">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <div class="step-visual">
+              <span class="material-symbols-outlined step-visual__icon">add_box</span>
+            </div>
+            <h4>Choisissez "Sur l'écran d'accueil"</h4>
+            <p>Faites défiler vers le bas dans la feuille de partage, puis touchez <strong>"Sur l'écran d'accueil" ⊞</strong> et appuyez sur <strong>"Ajouter"</strong>.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 💻 Desktop Instructions -->
+    <div class="pwa-instructions card" *ngIf="activeTab() === 'desktop'">
+      <div class="step-list">
+        <div class="step-item">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <div class="step-visual">
+              <span class="material-symbols-outlined step-visual__icon">install_desktop</span>
+            </div>
+            <h4>Repérez l'icône d'installation</h4>
+            <p>Regardez tout à droite de votre barre d'adresse : une icône <strong><span class="material-symbols-outlined inline-icon">install_desktop</span> (ordinateur avec flèche↓)</strong> devrait apparaître.</p>
+          </div>
+        </div>
+
+        <div class="step-connector"></div>
+
+        <div class="step-item">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <div class="step-visual">
+              <span class="material-symbols-outlined step-visual__icon">ads_click</span>
+            </div>
+            <h4>Cliquez sur "Installer"</h4>
+            <p>Validez la fenêtre pop-up pour installer la version bureau autonome d'EasyArena. Elle se lancera comme une vraie application !</p>
+          </div>
+        </div>
+
+        <div class="step-connector"></div>
+
+        <div class="step-item">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <div class="step-visual">
+              <span class="material-symbols-outlined step-visual__icon">rocket_launch</span>
+            </div>
+            <h4>Profitez de l'application !</h4>
+            <p>EasyArena se lancera maintenant dans sa propre fenêtre, sans navigateur — comme une application native.</p>
+          </div>
+        </div>
+      </div>
+<div class="pwa-container">
+
+    <!-- Status Banner if already installed -->
+    <div class="pwa-status-box pwa-status-box--success" *ngIf="isStandalone()">
+      <span class="material-symbols-outlined">check_circle</span>
+      <div>
+        <strong>EasyArena est déjà installé !</strong>
+        <p>Vous utilisez actuellement l'application en mode natif Plein Écran.</p>
+      </div>
+    </div>
+
+    <!-- 1-Click Install Button -->
+    <div class="pwa-hero__action" *ngIf="!isStandalone()">
+      <button class="btn-install-primary" (click)="installPwa()">
+        <span class="material-symbols-outlined">download_for_offline</span>
+        <span>Installer l'application en 1 clic</span>
+      </button>
+      <span class="pwa-hero__hint">Directement sur votre écran d'accueil · 0 Mo d'espace requis</span>
+    </div>
+  </div>
+
+  <!-- Advantages Grid -->
+  <div class="pwa-features">
+    <div class="feature-card">
+      <div class="feature-icon feature-icon--green">
+        <span class="material-symbols-outlined">wifi_off</span>
+      </div>
+      <h3>Accès Hors-Ligne</h3>
+      <p>Consultez vos billets QR Code et vos réservations même en zone à faible réseau.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon feature-icon--blue">
+        <span class="material-symbols-outlined">bolt</span>
+      </div>
+      <h3>Rapidité Éclair</h3>
+      <p>Lancement instantané depuis l'écran d'accueil sans passer par un navigateur.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon feature-icon--purple">
+        <span class="material-symbols-outlined">notifications_active</span>
+      </div>
+      <h3>Rappels & Notifications</h3>
+      <p>Soyez averti à l'approche de vos matchs et de la confirmation de vos réservations.</p>
+    </div>
+  </div>
+
+  <!-- Device Selection Tabs -->
+  <div class="pwa-guide-section">
+    <h2 class="section-title">Guide d'installation pas-à-pas</h2>
+    <p class="section-subtitle">Sélectionnez votre appareil pour voir la méthode ultra-simple :</p>
+
+    <div class="pwa-tabs">
+      <button class="pwa-tab" [class.pwa-tab--active]="activeTab() === 'android'" (click)="activeTab.set('android')">
+        <span class="material-symbols-outlined">android</span>
+        Android (Chrome)
+      </button>
+      <button class="pwa-tab" [class.pwa-tab--active]="activeTab() === 'ios'" (click)="activeTab.set('ios')">
+        <span class="material-symbols-outlined">phone_iphone</span>
+        iPhone / iPad (Safari)
+      </button>
+      <button class="pwa-tab" [class.pwa-tab--active]="activeTab() === 'desktop'" (click)="activeTab.set('desktop')">
+        <span class="material-symbols-outlined">laptop</span>
+        PC & Mac (Chrome/Edge)
+      </button>
+    </div>
+
+    <!-- 🤖 Android Instructions -->
+    <div class="pwa-instructions card" *ngIf="activeTab() === 'android'">
+      <div class="step-list">
+        <div class="step-item">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <h4>Ouvrez le menu de votre navigateur Chrome</h4>
+            <p>Appuyez sur les <strong>3 petits points verticalisés (⋮)</strong> en haut à droite de l'écran.</p>
+          </div>
+        </div>
+
+        <div class="step-item">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <h4>Sélectionnez "Installer l'application"</h4>
+            <p>Ou appuyez sur <strong>"Ajouter à l'écran d'accueil"</strong> dans la liste des options.</p>
+          </div>
+        </div>
+
+        <div class="step-item">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <h4>Confirmez l'installation</h4>
+            <p>L'icône EasyArena ⚽ apparaîtra immédiatement sur votre écran d'accueil comme une application native !</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 🍏 iOS (Safari) Instructions -->
+    <div class="pwa-instructions card" *ngIf="activeTab() === 'ios'">
+      <div class="step-list">
+        <div class="step-item">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <h4>Ouvrez ce site sur Safari</h4>
+            <p>Assurez-vous d'utiliser le navigateur <strong>Safari</strong> officiel d'Apple.</p>
+          </div>
+        </div>
+
+        <div class="step-item">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <h4>Appuyez sur le bouton Partager</h4>
+            <p>Touchez l'icône de partage <strong><span class="material-symbols-outlined inline-icon">ios_share</span> (le carré avec la flèche vers le haut)</strong> dans la barre du bas.</p>
+          </div>
+        </div>
+
+        <div class="step-item">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <h4>Choisissez "Sur l'écran d'accueil"</h4>
+            <p>Faites défiler vers le bas puis touchez <strong>"Sur l'écran d'accueil" ⊞</strong> et appuyez sur <strong>"Ajouter"</strong>.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 💻 Desktop Instructions -->
+    <div class="pwa-instructions card" *ngIf="activeTab() === 'desktop'">
+      <div class="step-list">
+        <div class="step-item">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <h4>Regardez votre barre d'adresse</h4>
+            <p>Repérez l'icône d'installation <strong><span class="material-symbols-outlined inline-icon">install_desktop</span> (ordinateur avec flèche)</strong> tout à droite de la barre d'adresse.</p>
+          </div>
+        </div>
+
+        <div class="step-item">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <h4>Cliquez sur "Installer"</h4>
+            <p>Validez la fenêtre pop-up pour installer la version bureau autonome d'EasyArena.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>

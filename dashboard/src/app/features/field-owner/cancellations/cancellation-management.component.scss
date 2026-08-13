@@ -1,0 +1,213 @@
+
+.cancellation-mgmt {
+  padding: 2rem 1.25rem;
+
+  @media (max-width: 768px) {
+    padding: 1rem;
+  }
+  max-width: 1000px;
+  margin: 0 auto;
+  font-family: 'Inter', sans-serif;
+
+  &__header {
+    margin-bottom: 2rem;
+  }
+
+  &__title {
+    font-size: 1.85rem;
+    font-weight: 900;
+    color: #0f172a;
+    margin: 0 0 0.35rem;
+    letter-spacing: -0.02em;
+  }
+
+  &__subtitle {
+    color: #64748b;
+    margin: 0;
+    font-size: 0.95rem;
+  }
+}
+
+.request-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.request-card {
+  background: #ffffff;
+  border-radius: 24px;
+  border: 1.5px solid #e2e8f0;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+  transition: all 0.25s ease;
+
+  &:hover {
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.06);
+    border-color: #cbd5e1;
+  }
+
+  &__body {
+    padding: 1.75rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+  }
+
+  &__info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  &__client {
+    font-size: 1.15rem;
+    font-weight: 900;
+    margin: 0;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    .material-symbols-outlined { color: #10b981; }
+  }
+
+  &__detail {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #475569;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+
+    .material-symbols-outlined { font-size: 1.1rem; color: #94a3b8; }
+    strong { color: #0f172a; }
+  }
+
+  &__amount {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    background: #f8fafc;
+    padding: 1rem 1.25rem;
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+  }
+
+  &__amount-label {
+    font-size: 0.725rem;
+    text-transform: uppercase;
+    font-weight: 800;
+    color: #64748b;
+    letter-spacing: 0.04em;
+  }
+
+  &__amount-value {
+    font-size: 1.3rem;
+    font-weight: 900;
+    color: #10b981;
+    margin-top: 0.15rem;
+  }
+
+  &__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding: 1.25rem 1.75rem;
+    background: #f8fafc;
+    border-top: 1.5px solid #f1f5f9;
+  }
+}
+
+/* Buttons & Alerts */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.75rem 1.5rem;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.875rem;
+  font-weight: 800;
+  border-radius: 30px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &--success {
+    background: #10b981;
+    color: #ffffff;
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+
+    &:hover:not(:disabled) { background: #059669; }
+  }
+
+  &--danger {
+    background: #fef2f2;
+    color: #ef4444;
+    border: 1px solid #fecaca;
+
+    &:hover:not(:disabled) { background: #fee2e2; }
+  }
+
+  &:disabled { opacity: 0.6; cursor: not-allowed; }
+}
+
+.alert {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 1rem 1.25rem;
+  border-radius: 16px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+
+  &--success { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+  &--error   { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+}
+
+.empty-state {
+  text-align: center;
+  padding: 4rem 1rem;
+  background: #ffffff;
+  border-radius: 24px;
+  border: 1.5px solid #e2e8f0;
+  color: #64748b;
+
+  .material-symbols-outlined { font-size: 2.25rem; margin-bottom: 0.35rem; }
+  p { margin: 0; font-size: 0.95rem; }
+}
+
+.loader {
+  text-align: center;
+  padding: 3.5rem 1rem;
+  color: #64748b;
+
+  p { margin: 0; font-size: 0.95rem; }
+}
+
+.spinner {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: currentColor;
+  animation: spin 0.8s linear infinite;
+
+  &--lg {
+    border-color: rgba(0, 0, 0, 0.1);
+    border-top-color: #10b981;
+    width: 2.5rem;
+    height: 2.5rem;
+    margin-bottom: 1rem;
+  }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

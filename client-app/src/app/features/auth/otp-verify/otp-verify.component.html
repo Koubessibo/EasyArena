@@ -1,0 +1,90 @@
+<div class="otp-screen">
+  <div class="otp-screen__container">
+
+    <!-- Logo -->
+    <div class="otp-screen__logo">
+      <img src="/logo-short.png" alt="EasyArena" class="otp-screen__logo-img">
+    </div>
+
+    <!-- Content card -->
+    <div class="otp-card">
+      <!-- Header -->
+      <div class="otp-card__header">
+        <div class="otp-icon-wrap">
+          <span class="material-symbols-outlined filled otp-icon">verified</span>
+        </div>
+        <h1 class="otp-card__title">Vérifier le téléphone</h1>
+        <p class="otp-card__subtitle">
+          Un code à 6 chiffres a été envoyé par SMS au numéro
+          <strong>{{ phone() }}</strong>
+        </p>
+      </div>
+
+      <!-- Error / Success messages -->
+      <div *ngIf="errorMessage()" class="otp-message otp-message--error">
+        <span class="material-symbols-outlined">error</span>
+        {{ errorMessage() }}
+      </div>
+      <div *ngIf="successMessage()" class="otp-message otp-message--success">
+        <span class="material-symbols-outlined">check_circle</span>
+        {{ successMessage() }}
+      </div>
+
+      <!-- OTP Input boxes -->
+      <div class="otp-input-group" (paste)="onDigitPaste($event)">
+        <input
+          *ngFor="let digit of otpDigits(); let i = index; trackBy: trackByIdx"
+          [id]="'otp-' + i"
+          type="text"
+          inputmode="numeric"
+          maxlength="1"
+          class="otp-input"
+          [class.otp-input--filled]="digit"
+          [class.otp-input--error]="errorMessage()"
+          [value]="digit"
+          (input)="onDigitInput($event, i)"
+          (keydown)="onDigitKeyDown($event, i)"
+          autocomplete="one-time-code">
+      </div>
+
+      <!-- Countdown & Resend -->
+      <div class="otp-countdown">
+        <span *ngIf="!canResend()" class="otp-countdown__timer">
+          <span class="material-symbols-outlined">schedule</span>
+          Renvoyer dans <strong>{{ formattedCountdown }}</strong>
+        </span>
+        <button
+          *ngIf="canResend()"
+          type="button"
+          class="otp-resend-btn"
+          [disabled]="resending()"
+          (click)="resendCode()">
+          <span *ngIf="!resending()">
+            <span class="material-symbols-outlined">refresh</span>
+            Renvoyer le code
+          </span>
+          <span *ngIf="resending()" class="loading-spinner"></span>
+        </button>
+      </div>
+
+      <!-- Verify button -->
+      <button
+        type="button"
+        class="btn btn--primary btn--full verify-btn"
+        [class.loading]="loading()"
+        [disabled]="loading() || otpValue.length < 6"
+        (click)="verify()">
+        <span *ngIf="!loading()">
+          <span class="material-symbols-outlined">check_circle</span>
+          Vérifier
+        </span>
+        <span *ngIf="loading()" class="loading-spinner"></span>
+      </button>
+
+      <!-- Helper text -->
+      <p class="otp-help-text">
+        Vous n'avez pas reçu le code ? Vérifiez votre numéro ou attendez que le délai expire pour renvoyer.
+      </p>
+    </div>
+  </div>
+</div>

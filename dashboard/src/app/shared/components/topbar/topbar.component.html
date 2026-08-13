@@ -1,0 +1,41 @@
+<header class="topbar">
+  <!-- Mobile menu button -->
+  <button class="topbar__hamburger" (click)="openMobileSidebar.emit()">
+    <span class="material-symbols-outlined">menu</span>
+  </button>
+
+  <!-- Search -->
+  <div class="topbar__search">
+    <span class="material-symbols-outlined topbar__search-icon">search</span>
+    <input type="text" class="topbar__search-input" placeholder="Rechercher...">
+  </div>
+
+  <div class="topbar__actions">
+    <!-- Notifications -->
+    <button class="topbar__icon-btn">
+      <span class="material-symbols-outlined">notifications</span>
+      <span class="topbar__notif-dot"></span>
+    </button>
+
+    <!-- User menu -->
+    <div class="topbar__user" (click)="userMenuOpen.update(v => !v)">
+      <img *ngIf="user()?.avatarUrl" [src]="user()?.avatarUrl" [alt]="user()?.name" class="topbar__avatar">
+      <div *ngIf="!user()?.avatarUrl" class="topbar__avatar topbar__avatar--initials">{{ initials }}</div>
+      <span class="topbar__user-name">{{ user()?.name }}</span>
+      <span class="material-symbols-outlined topbar__chevron">expand_more</span>
+
+      <!-- Dropdown -->
+      <div class="topbar__dropdown" *ngIf="userMenuOpen()" (click)="$event.stopPropagation()">
+        <div class="topbar__dropdown-header">
+          <p class="topbar__dropdown-name">{{ user()?.name }}</p>
+          <p class="topbar__dropdown-email">{{ user()?.email }}</p>
+        </div>
+        <hr class="divider">
+        <button class="topbar__dropdown-item topbar__dropdown-item--danger" (click)="logout()">
+          <span class="material-symbols-outlined">logout</span>
+          Déconnexion
+        </button>
+      </div>
+    </div>
+  </div>
+</header>

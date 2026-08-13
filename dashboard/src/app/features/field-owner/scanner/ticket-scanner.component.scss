@@ -1,0 +1,383 @@
+// ──────────────────────────────────────────────────────────────────────────────
+// Variables & tokens
+// ──────────────────────────────────────────────────────────────────────────────
+$color-success:      #22c55e;
+$color-error:        #ef4444;
+$color-scanning:     #3b82f6;
+$color-overlay:      rgba(0, 0, 0, 0.60);
+$color-bg-dark:      #0f172a;
+$color-text-primary: #f1f5f9;
+$color-text-muted:   #94a3b8;
+$frame-size:         240px;
+$corner-size:        28px;
+$corner-thickness:   4px;
+$border-radius-lg:   16px;
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Host (plein écran mobile)
+// ──────────────────────────────────────────────────────────────────────────────
+:host {
+  display: block;
+  width: 100%;
+  min-height: 100dvh;
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Bloc racine .scanner
+// ──────────────────────────────────────────────────────────────────────────────
+.scanner {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  background: $color-bg-dark;
+  color: $color-text-primary;
+  position: relative;
+  overflow: hidden;
+  transition: background-color 0.3s ease;
+
+  // Modificateurs d'état — grand fond visuel VERT (succès) et ROUGE (erreur/fraude)
+  &--success {
+    background-color: #14532d; // Grand fond Vert de Succès
+    --state-color: #{$color-success};
+  }
+  &--error {
+    background-color: #7f1d1d; // Grand fond Rouge d'Erreur / Alerte
+    --state-color: #{$color-error};
+  }
+  &--scanning {
+    --state-color: #{$color-scanning};
+  }
+
+  // ── Header ────────────────────────────────────────────────────────────────
+  &__header {
+    display: flex;
+    align-items: center;
+    padding: 1rem 1.25rem;
+    gap: 0.75rem;
+    position: relative;
+    z-index: 10;
+  }
+
+  &__back {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.08);
+    color: $color-text-primary;
+    text-decoration: none;
+    transition: background 0.2s;
+    flex-shrink: 0;
+
+    &:hover { background: rgba(255, 255, 255, 0.14); }
+
+    svg { width: 1.1rem; height: 1.1rem; }
+  }
+
+  &__title {
+    flex: 1;
+    text-align: center;
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: $color-text-primary;
+    margin: 0;
+  }
+
+  &__spacer { width: 2.25rem; flex-shrink: 0; }
+
+  // ── Viewport (zone caméra) ────────────────────────────────────────────────
+  &__viewport {
+    position: relative;
+    flex: 1;
+    overflow: hidden;
+    background: #000;
+  }
+
+  // ── Vidéo ─────────────────────────────────────────────────────────────────
+  &__video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+
+    &--hidden { visibility: hidden; }
+  }
+
+  // ── Erreur caméra ─────────────────────────────────────────────────────────
+  &__camera-error {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    gap: 1rem;
+    text-align: center;
+    background: $color-bg-dark;
+    z-index: 5;
+  }
+
+  &__camera-error-icon {
+    width: 3.5rem;
+    height: 3.5rem;
+    color: $color-error;
+    svg { width: 100%; height: 100%; }
+  }
+
+  &__camera-error-text {
+    font-size: 0.9rem;
+    color: $color-text-muted;
+    line-height: 1.5;
+    max-width: 280px;
+    margin: 0;
+  }
+
+  &__retry-btn {
+    padding: 0.625rem 1.5rem;
+    background: $color-scanning;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    &:hover { opacity: 0.85; }
+  }
+
+  // ── Overlay de visée ──────────────────────────────────────────────────────
+  &__overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    z-index: 4;
+  }
+
+  &__overlay-top,
+  &__overlay-bottom {
+    background: $color-overlay;
+    flex: 1;
+  }
+
+  &__overlay-bottom {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 1.25rem;
+  }
+
+  &__overlay-middle {
+    display: flex;
+    align-items: center;
+    height: $frame-size;
+  }
+
+  &__overlay-side {
+    background: $color-overlay;
+    flex: 1;
+    height: 100%;
+  }
+
+  // ── Cadre de visée ────────────────────────────────────────────────────────
+  &__frame {
+    position: relative;
+    width: $frame-size;
+    height: $frame-size;
+    flex-shrink: 0;
+    transition: all 0.3s ease;
+
+    // Modificateurs de couleur des coins
+    &--success { --frame-color: #{$color-success}; }
+    &--error   { --frame-color: #{$color-error}; }
+    &--scanning { --frame-color: #{$color-scanning}; }
+  }
+
+  // ── Coins du cadre (BEM) ──────────────────────────────────────────────────
+  &__frame-corner {
+    position: absolute;
+    width: $corner-size;
+    height: $corner-size;
+    border-color: var(--frame-color, #fff);
+    border-style: solid;
+    border-width: 0;
+    border-radius: 3px;
+    transition: border-color 0.3s;
+
+    &--tl { top: 0; left: 0;
+      border-top-width: $corner-thickness;
+      border-left-width: $corner-thickness;
+    }
+    &--tr { top: 0; right: 0;
+      border-top-width: $corner-thickness;
+      border-right-width: $corner-thickness;
+    }
+    &--bl { bottom: 0; left: 0;
+      border-bottom-width: $corner-thickness;
+      border-left-width: $corner-thickness;
+    }
+    &--br { bottom: 0; right: 0;
+      border-bottom-width: $corner-thickness;
+      border-right-width: $corner-thickness;
+    }
+  }
+
+  // ── Ligne de scan animée ──────────────────────────────────────────────────
+  &__scan-line {
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, $color-scanning, transparent);
+    border-radius: 9999px;
+    animation: scanLine 1.8s ease-in-out infinite;
+  }
+
+  @keyframes scanLine {
+    0%   { top: 8px;    opacity: 0; }
+    10%  { opacity: 1; }
+    90%  { opacity: 1; }
+    100% { top: calc(#{$frame-size} - 16px); opacity: 0; }
+  }
+
+  // ── Hint ──────────────────────────────────────────────────────────────────
+  &__hint {
+    font-size: 0.82rem;
+    color: rgba(255, 255, 255, 0.7);
+    text-align: center;
+    margin: 0;
+    letter-spacing: 0.01em;
+  }
+
+  // ── Feedback ─────────────────────────────────────────────────────────────
+  &__feedback {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem 1.5rem;
+    margin: 0.75rem 1.25rem;
+    border-radius: $border-radius-lg;
+    border: 1px solid;
+    animation: fadeSlideIn 0.25s ease;
+    text-align: center;
+
+    &--success {
+      background: rgba($color-success, 0.12);
+      border-color: rgba($color-success, 0.4);
+      color: $color-success;
+    }
+
+    &--error {
+      background: rgba($color-error, 0.12);
+      border-color: rgba($color-error, 0.4);
+      color: $color-error;
+    }
+  }
+
+  @keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  &__feedback-icon {
+    width: 2.25rem;
+    height: 2.25rem;
+    svg { width: 100%; height: 100%; }
+  }
+
+  &__feedback-text {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+  }
+
+  // ── Détails du billet ─────────────────────────────────────────────────────
+  &__ticket-details {
+    width: 100%;
+    border-top: 1px solid currentColor;
+    padding-top: 0.5rem;
+    margin-top: 0.25rem;
+    font-size: 0.82rem;
+    opacity: 0.8;
+
+    p {
+      margin: 0.2rem 0;
+      span { font-weight: 600; }
+    }
+  }
+
+  // ── Saisie manuelle ───────────────────────────────────────────────────────
+  &__manual {
+    padding: 0.75rem 1.25rem 1.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  &__manual-label {
+    font-size: 0.75rem;
+    color: $color-text-muted;
+    margin: 0 0 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  &__manual-form {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  &__manual-input {
+    flex: 1;
+    padding: 0.625rem 0.875rem;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    color: $color-text-primary;
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.2s;
+    font-family: inherit;
+
+    &::placeholder { color: $color-text-muted; }
+    &:focus { border-color: $color-scanning; }
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
+  }
+
+  &__manual-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 1.25rem;
+    background: $color-scanning;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    min-width: 5rem;
+    font-family: inherit;
+
+    &:hover:not(:disabled) { opacity: 0.85; }
+    &:disabled { opacity: 0.45; cursor: not-allowed; }
+  }
+
+  // ── Spinner ───────────────────────────────────────────────────────────────
+  &__spinner {
+    width: 1.1rem;
+    height: 1.1rem;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: inline-block;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+}

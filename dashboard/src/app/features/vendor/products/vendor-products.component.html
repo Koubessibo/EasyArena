@@ -1,0 +1,177 @@
+<div class="vendor-products">
+
+  <button class="btn-back" (click)="location.back()">
+    <span class="material-symbols-outlined">arrow_back</span>
+    Retour
+  </button>
+
+  <!-- Header -->
+  <div class="vendor-products__header">
+    <div>
+      <h1 class="vendor-products__title">Catalogue & Inventaire</h1>
+      <p class="vendor-products__subtitle">Gérez vos articles par catégorie et surveillez les stocks en temps réel.</p>
+    </div>
+    <button class="btn btn--primary add-product-btn" (click)="openAddModal()">
+      <span class="material-symbols-outlined">add</span>
+      Ajouter un produit
+    </button>
+  </div>
+
+  <!-- Filter tabs bar -->
+  <div class="category-tabs" *ngIf="!isLoading()">
+    <button
+      *ngFor="let tab of filterTabs"
+      class="cat-tab"
+      [class.cat-tab--active]="activeCategory() === tab.value"
+      (click)="activeCategory.set(tab.value)">
+      <span class="material-symbols-outlined">{{ tab.icon }}</span>
+      <span>{{ tab.label }}</span>
+    </button>
+  </div>
+
+  <!-- Loader -->
+  <div class="loader" *ngIf="isLoading()">
+    <div class="spinner spinner--lg"></div>
+  </div>
+
+  <!-- Empty state -->
+  <div class="empty-state" *ngIf="!isLoading() && filteredProducts().length === 0">
+    <span class="material-symbols-outlined">inventory_2</span>
+    <p *ngIf="products().length === 0">Votre catalogue est vide. Ajoutez votre premier produit !</p>
+    <p *ngIf="products().length > 0">Aucun produit trouvé dans cette catégorie.</p>
+  </div>
+
+  <!-- Product Grid -->
+  <div class="product-grid" *ngIf="!isLoading() && filteredProducts().length > 0">
+    <article class="product-card" *ngFor="let product of filteredProducts()">
+      <div class="product-card__cover"
+           [style.backgroundImage]="product.image_url ? 'url(' + product.image_url + ')' : 'url(assets/images/default-product.jpg)'">
+
+        <!-- Stock Badges -->
+        <div class="product-card__badge product-card__badge--danger" *ngIf="product.stock_quantity === 0">
+          Rupture de stock
+        </div>
+        <div class="product-card__badge product-card__badge--warning" *ngIf="product.stock_quantity > 0 && product.stock_quantity < 5">
+          Stock faible ({{ product.stock_quantity }})
+        </div>
+        <div class="product-card__badge product-card__badge--success" *ngIf="product.stock_quantity >= 5">
+          En stock ({{ product.stock_quantity }})
+        </div>
+
+        <!-- Category Tag -->
+        <div class="product-card__cat-tag">
+          <span class="material-symbols-outlined">{{ getCategoryIcon(product.category, product.name) }}</span>
+          {{ getCategoryLabel(product.category, product.name) }}
+        </div>
+      </div>
+
+      <div class="product-card__body">
+        <h2 class="product-card__name">{{ product.name }}</h2>
+        <p class="product-card__desc">{{ product.description }}</p>
+      </div>
+
+      <div class="product-card__footer">
+        <div class="product-card__price">{{ product.price | number:'1.0-0' }} FCFA</div>
+        <div class="product-card__actions" style="display:flex;gap:0.4rem">
+          <button class="btn btn--outline btn--icon" (click)="openEditModal(product)" title="Modifier" aria-label="Modifier le produit">
+            <span class="material-symbols-outlined">edit</span>
+          </button>
+          <button class="btn btn--danger btn--icon" (click)="deleteProduct(product.id)" title="Supprimer" aria-label="Supprimer le produit">
+            <span class="material-symbols-outlined">delete</span>
+          </button>
+        </div>
+      </div>
+    </article>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     AJOUTER / MODIFIER UN PRODUIT (MODAL)
+═══════════════════════════════════════════════ -->
+<div class="modal-overlay" *ngIf="isAddModalOpen()">
+  <div class="modal-content">
+    <button class="modal-close" (click)="closeAddModal()" type="button" aria-label="Fermer">
+      <span class="material-symbols-outlined">close</span>
+    </button>
+
+    <div class="modal-header">
+      <div class="modal-header__icon">
+        <span class="material-symbols-outlined">{{ editingProductId() ? 'edit_note' : 'add_shopping_cart' }}</span>
+      </div>
+      <div>
+        <h2>{{ editingProductId() ? 'Modifier le Produit' : 'Ajouter un Produit' }}</h2>
+        <p class="modal-header__sub">{{ editingProductId() ? 'Mettez à jour les détails de votre article' : 'Remplissez les détails pour publier votre article sur la boutique' }}</p>
+      </div>
+    </div>
+
+    <form class="modal-form" [formGroup]="productForm" (ngSubmit)="saveProduct()">
+
+      <!-- Category selection -->
+      <div class="form-group">
+        <label class="form-label" for="category">Catégorie du produit *</label>
+        <div class="select-wrap">
+          <span class="material-symbols-outlined select-icon">category</span>
+          <select class="form-control select-control" id="category" formControlName="category">
+            <option *ngFor="let cat of categories" [value]="cat.value">
+              {{ cat.label }}
+            </option>
+          </select>
+          <span class="material-symbols-outlined select-arrow">expand_more</span>
+        </div>
+      </div>
+
+      <!-- Product Name -->
+      <div class="form-group">
+        <label class="form-label" for="name">Nom du produit *</label>
+        <input class="form-control" type="text" id="name" formControlName="name" placeholder="Ex: Chaussures Crampons Nike, Bouteille d'eau..." />
+        <span class="form-error" *ngIf="productForm.get('name')?.invalid && productForm.get('name')?.touched">Nom requis (min 3 caractères).</span>
+      </div>
+
+      <!-- Price & Stock -->
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="price">Prix (FCFA) *</label>
+          <input class="form-control" type="number" id="price" formControlName="price" min="0" placeholder="0" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="stock_quantity">Quantité en Stock *</label>
+          <input class="form-control" type="number" id="stock_quantity" formControlName="stock_quantity" min="0" placeholder="0" />
+        </div>
+      </div>
+
+      <!-- Description -->
+      <div class="form-group">
+        <label class="form-label" for="description">Description *</label>
+        <textarea class="form-control" id="description" rows="3" formControlName="description" placeholder="Décrivez l'article (matière, pointures, livraison...)"></textarea>
+        <span class="form-error" *ngIf="productForm.get('description')?.invalid && productForm.get('description')?.touched">Description requise (min 10 caractères).</span>
+      </div>
+
+      <!-- Image upload zone -->
+      <div class="form-group">
+        <label class="form-label">Image du produit</label>
+        <div class="upload-zone" [class.upload-zone--has-file]="imageBase64()">
+          <input type="file" class="upload-zone__input" accept="image/*" (change)="onFileSelected($event)" />
+          <div class="upload-zone__content" *ngIf="!imageBase64()">
+            <span class="material-symbols-outlined">add_photo_alternate</span>
+            <p>Glissez ou cliquez pour ajouter une photo de l'article</p>
+          </div>
+          <div class="upload-zone__preview" *ngIf="imageBase64()">
+            <img [src]="imageBase64()" alt="Aperçu" class="upload-zone__image" />
+            <p>{{ fileName() }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="modal-footer">
+        <button type="button" class="btn btn--outline" (click)="closeAddModal()">Annuler</button>
+        <button type="submit" class="btn btn--primary" [disabled]="isSubmitting()">
+          <span *ngIf="!isSubmitting()">Enregistrer le produit</span>
+          <span *ngIf="isSubmitting()" class="spinner"></span>
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>

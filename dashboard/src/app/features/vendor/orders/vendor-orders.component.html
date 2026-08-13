@@ -1,0 +1,151 @@
+<div class="vendor-orders-container">
+
+  <!-- Header -->
+  <div class="header">
+    <div>
+      <h1 class="title">Gestion des Commandes</h1>
+      <p class="subtitle">Suivez et préparez les commandes de vos clients en temps réel.</p>
+    </div>
+
+    <!-- Quick Stats Chips -->
+    <div class="quick-stats" *ngIf="!isLoading()">
+      <div class="stat-chip stat-chip--warning">
+        <span class="material-symbols-outlined">pending_actions</span>
+        <span>{{ pendingCount() }} à préparer</span>
+      </div>
+      <div class="stat-chip stat-chip--success">
+        <span class="material-symbols-outlined">task_alt</span>
+        <span>{{ deliveredCount() }} livrées</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filter Tabs & Search Bar -->
+  <div class="toolbar" *ngIf="!isLoading()">
+    <div class="tabs-wrap">
+      <button
+        *ngFor="let tab of statusTabs"
+        class="tab-btn"
+        [class.tab-btn--active]="activeStatusTab() === tab.value"
+        (click)="activeStatusTab.set(tab.value)">
+        <span class="material-symbols-outlined">{{ tab.icon }}</span>
+        <span>{{ tab.label }}</span>
+      </button>
+    </div>
+
+    <div class="search-box">
+      <span class="material-symbols-outlined search-icon">search</span>
+      <input
+        type="text"
+        class="search-input"
+        placeholder="Rechercher (produit, n° commande, téléphone...)"
+        [ngModel]="searchQuery()"
+        (ngModelChange)="searchQuery.set($event)" />
+    </div>
+  </div>
+
+  <!-- Loading Spinner -->
+  <div *ngIf="isLoading()" class="loading-state">
+    <div class="spinner spinner--lg"></div>
+    <p>Chargement de vos commandes...</p>
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="!isLoading() && filteredOrders().length === 0" class="empty-state">
+    <div class="empty-state__icon">
+      <span class="material-symbols-outlined">inbox</span>
+    </div>
+    <h3>Aucune commande trouvée</h3>
+    <p *ngIf="orders().length === 0">Vous n'avez pas encore reçu de commande. Vos articles publiés apparaîtront ici !</p>
+    <p *ngIf="orders().length > 0">Aucune commande ne correspond aux filtres de recherche.</p>
+  </div>
+
+  <!-- Orders Grid -->
+  <div *ngIf="!isLoading() && filteredOrders().length > 0" class="orders-list">
+    <article *ngFor="let order of filteredOrders()" class="order-card">
+
+      <!-- Order Header -->
+      <div class="order-card__header">
+        <div class="order-id-group">
+          <span class="order-ref">Commande #{{ (order.reference || order.id).slice(0, 8) | uppercase }}</span>
+          <span class="order-date">
+            <span class="material-symbols-outlined">schedule</span>
+            {{ order.created_at | date:'dd MMM yyyy à HH:mm' }}
+          </span>
+        </div>
+
+        <div class="order-badge" [ngClass]="'order-badge--' + order.status.toLowerCase()">
+          <span class="material-symbols-outlined">{{ getStatusIcon(order.status) }}</span>
+          <span>{{ getStatusLabel(order.status) }}</span>
+        </div>
+      </div>
+
+      <!-- Items list -->
+      <div class="order-card__body">
+        <div class="items-list">
+          <div *ngFor="let item of order.items" class="order-item">
+            
+            <div class="order-item__thumb">
+              <img *ngIf="getProductImage(item.product)"
+                   [src]="getProductImage(item.product)"
+                   [alt]="item.product?.name || 'Produit'" />
+              <div *ngIf="!getProductImage(item.product)" class="order-item__icon-fallback">
+                <span class="material-symbols-outlined">{{ getProductCategoryIcon(item.product?.name) }}</span>
+              </div>
+            </div>
+
+            <div class="order-item__info">
+              <h4 class="order-item__name">{{ item.product?.name || 'Article' }}</h4>
+              <p class="order-item__qty">Quantité : <strong>{{ item.quantity }}</strong></p>
+            </div>
+
+            <div class="order-item__price">
+              {{ item.unit_price | number:'1.0-0' }} FCFA
+            </div>
+
+          </div>
+        </div>
+
+        <div class="order-total-bar">
+          <span class="total-label">Montant Total :</span>
+          <span class="total-value">{{ order.total_amount | number:'1.0-0' }} FCFA</span>
+        </div>
+      </div>
+
+      <!-- Customer & Action Footer -->
+      <div class="order-card__footer">
+        <div class="customer-info">
+          <div class="customer-chip">
+            <span class="material-symbols-outlined">person</span>
+            <span>Client</span>
+          </div>
+
+          <div *ngIf="order.payment_phone" class="customer-chip customer-chip--phone">
+            <span class="material-symbols-outlined">phone_android</span>
+            <span>Paiement / Contact : <strong>{{ order.payment_phone }}</strong></span>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button
+            *ngIf="order.status === 'PAID' || order.status === 'PENDING_PAYMENT'"
+            class="btn btn--deliver"
+            [disabled]="isDelivering() === order.id"
+            (click)="markAsDelivered(order.id)">
+            
+            <span *ngIf="isDelivering() === order.id" class="spinner spinner--sm"></span>
+            <span *ngIf="isDelivering() !== order.id" class="material-symbols-outlined">local_shipping</span>
+            <span>{{ isDelivering() === order.id ? 'Mise à jour...' : 'Marquer comme livrée' }}</span>
+          </button>
+
+          <span *ngIf="order.status === 'DELIVERED'" class="delivered-confirmed">
+            <span class="material-symbols-outlined">check_circle</span>
+            Commande livrée avec succès
+          </span>
+        </div>
+      </div>
+
+    </article>
+  </div>
+
+</div>

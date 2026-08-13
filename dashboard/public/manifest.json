@@ -1,0 +1,22 @@
+{
+  "name": "EasyArena Business Dashboard - Terrains & Vendeurs",
+  "short_name": "EasyArena Pro",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#10b981",
+  "orientation": "any",
+  "description": "Espace de gestion pour Propriétaires de terrains, Vendeurs et Contrôleurs EasyArena.",
+  "icons": [
+    {
+      "src": "/logo-long.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/logo-long.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

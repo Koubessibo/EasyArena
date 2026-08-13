@@ -1,0 +1,217 @@
+@use '../../../../styles/variables' as *;
+
+.confirmation-screen {
+  min-height: 100vh;
+  background: var(--bg-primary);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 2.5rem 1rem 2rem;
+
+  &__container {
+    width: 100%;
+    max-width: 440px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    animation: fadeIn 0.5s ease both;
+  }
+
+  &__title {
+    font-size: var(--font-size-2xl);
+    font-weight: var(--font-weight-extrabold);
+    color: var(--primary-green);
+    text-align: center;
+    margin-bottom: 1.75rem;
+  }
+}
+
+.confirmation-check {
+  margin-bottom: 1.5rem;
+
+  &__circle {
+    width: 88px;
+    height: 88px;
+    border-radius: var(--radius-full);
+    background: var(--primary-green);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-green);
+    animation: scaleIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+  }
+
+  &__icon {
+    font-size: 2.75rem;
+    color: #ffffff;
+    font-variation-settings: 'FILL' 1;
+  }
+}
+
+.confirmation-card {
+  width: 100%;
+  background: var(--bg-card);
+  border-radius: var(--radius-2xl);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-md);
+  margin-bottom: 1.5rem;
+
+  &__field-name {
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--text-primary);
+    text-align: center;
+    margin-bottom: 0.75rem;
+  }
+
+  &__sport {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    margin-bottom: 1.25rem;
+  }
+
+  &__sport-icon {
+    font-size: 1.125rem;
+    color: var(--primary-green);
+  }
+
+  &__sport-label {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  &__divider {
+    height: 1px;
+    background: var(--border-color);
+    margin: 1.25rem 0;
+    background-image: repeating-linear-gradient(
+      to right,
+      var(--border-color) 0,
+      var(--border-color) 8px,
+      transparent 8px,
+      transparent 16px
+    );
+  }
+
+  &__details {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  &__detail-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  &__detail-icon {
+    font-size: 1.25rem;
+    color: var(--primary-green);
+    margin-top: 0.1rem;
+    flex-shrink: 0;
+  }
+
+  &__detail-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+  }
+
+  &__detail-label {
+    font-size: var(--font-size-xs);
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  &__detail-value {
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-primary);
+    text-transform: capitalize;
+  }
+
+  &__reference-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+  }
+
+  &__reference-label {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+  }
+
+  &__reference-chip {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold);
+    color: var(--primary-green-dark);
+    background: var(--primary-green-muted);
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--radius-full);
+    letter-spacing: 0.02em;
+  }
+
+  &__total-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--border-color);
+  }
+
+  &__total-label {
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-medium);
+    color: var(--text-secondary);
+  }
+
+  &__total-amount {
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-extrabold);
+    color: var(--text-primary);
+  }
+}
+
+.confirmation-actions {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+
+  .btn {
+    padding: 0.875rem;
+    font-size: var(--font-size-base);
+  }
+
+  &__link {
+    text-align: center;
+    font-size: var(--font-size-sm);
+    color: var(--primary-blue);
+    text-decoration: none;
+    font-weight: var(--font-weight-medium);
+    padding: 0.5rem;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.5); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}

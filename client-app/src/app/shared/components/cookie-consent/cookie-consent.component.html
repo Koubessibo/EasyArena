@@ -1,0 +1,32 @@
+<div class="cookie-banner" *ngIf="showConsent()" role="region" aria-label="Gestion du consentement des cookies">
+  <div class="cookie-banner__glass">
+    
+    <div class="cookie-banner__header">
+      <div class="cookie-banner__icon">
+        <span class="material-symbols-outlined">cookie</span>
+      </div>
+      <div class="cookie-banner__title-wrap">
+        <strong class="cookie-banner__title">Respect de votre vie privée</strong>
+        <span class="cookie-banner__badge">Confidentialité</span>
+      </div>
+    </div>
+
+    <div class="cookie-banner__body">
+      <p class="cookie-banner__text">
+        Nous utilisons des cookies pour améliorer votre expérience, sécuriser vos paiements et analyser notre trafic.
+        <a routerLink="/terms" class="cookie-banner__link">En savoir plus</a>
+      </p>
+    </div>
+
+    <div class="cookie-banner__actions">
+      <button type="button" class="btn-cookie btn-cookie--essential" (click)="acceptEssential()">
+        Refuser (Essentiels uniquement)
+      </button>
+      <button type="button" class="btn-cookie btn-cookie--accept" (click)="acceptAll()">
+        <span class="material-symbols-outlined btn-cookie__icon">check_circle</span>
+        Tout accepter
+      </button>
+    </div>
+
+  </div>
+</div>

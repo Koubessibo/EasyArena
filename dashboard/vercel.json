@@ -1,0 +1,6 @@
+{
+  "buildCommand": "npm run build -- --configuration staging",
+  "outputDirectory": "dist/dashboard/browser",
+  "installCommand": "npm install --legacy-peer-deps",
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+}

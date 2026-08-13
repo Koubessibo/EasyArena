@@ -1,0 +1,135 @@
+<div class="pwa-page">
+
+  <!-- Hero Header -->
+  <div class="pwa-hero">
+    <div class="pwa-hero__badge">
+      <span class="material-symbols-outlined">install_mobile</span>
+      Application Web Progressive (PWA Exécutive)
+    </div>
+    <h1 class="pwa-hero__title">Installez EasyArena Business sur votre Appareil</h1>
+    <p class="pwa-hero__desc">
+      Gérez vos terrains, vos ventes d'équipements et le scanner de billets directement depuis une application dédiée ultra-rapide.
+    </p>
+
+    <div class="pwa-status-box pwa-status-box--success" *ngIf="isStandalone()">
+      <span class="material-symbols-outlined">check_circle</span>
+      <div>
+        <strong>EasyArena Business est déjà installé !</strong>
+        <p>Vous utilisez actuellement le Dashboard en mode Plein Écran.</p>
+      </div>
+    </div>
+
+    <div class="pwa-hero__action" *ngIf="!isStandalone()">
+      <button class="btn-install-primary" (click)="installPwa()">
+        <span class="material-symbols-outlined">download_for_offline</span>
+        <span>Installer l'application en 1 clic</span>
+      </button>
+      <span class="pwa-hero__hint">Directement sur votre écran d'accueil · 0 Mo d'espace requis</span>
+    </div>
+  </div>
+
+  <!-- Features Grid -->
+  <div class="pwa-features">
+    <div class="feature-card">
+      <div class="feature-icon feature-icon--green">
+        <span class="material-symbols-outlined">qr_code_scanner</span>
+      </div>
+      <h3>Scanner Instantané</h3>
+      <p>Accès ultra-rapide au scanner QR Code des billets pour les contrôleurs sur le terrain.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon feature-icon--blue">
+        <span class="material-symbols-outlined">offline_pin</span>
+      </div>
+      <h3>Consultation du Planning</h3>
+      <p>Vérifiez le planning de réservation de vos terrains même sans réseau mobile.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon feature-icon--purple">
+        <span class="material-symbols-outlined">point_of_sale</span>
+      </div>
+      <h3>Commandes & Revenus</h3>
+      <p>Suivez les notifications de réservations et de retraits de fonds en direct.</p>
+    </div>
+  </div>
+
+  <!-- Device Selection Tabs -->
+  <div class="pwa-guide-section">
+    <h2 class="section-title">Guide d'installation pas-à-pas</h2>
+    <p class="section-subtitle">Sélectionnez votre appareil pour voir la méthode ultra-simple :</p>
+
+    <div class="pwa-tabs">
+      <button class="pwa-tab" [class.pwa-tab--active]="activeTab() === 'android'" (click)="activeTab.set('android')">
+        <span class="material-symbols-outlined">android</span>
+        Android (Chrome)
+      </button>
+      <button class="pwa-tab" [class.pwa-tab--active]="activeTab() === 'ios'" (click)="activeTab.set('ios')">
+        <span class="material-symbols-outlined">phone_iphone</span>
+        iPhone / iPad (Safari)
+      </button>
+      <button class="pwa-tab" [class.pwa-tab--active]="activeTab() === 'desktop'" (click)="activeTab.set('desktop')">
+        <span class="material-symbols-outlined">laptop</span>
+        PC & Mac (Chrome/Edge)
+      </button>
+    </div>
+
+    <!-- 🤖 Android Instructions -->
+    <div class="pwa-instructions card" *ngIf="activeTab() === 'android'">
+      <div class="step-list">
+        <div class="step-item">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <h4>Ouvrez le menu de Chrome</h4>
+            <p>Appuyez sur les <strong>3 petits points verticalisés (⋮)</strong> en haut à droite.</p>
+          </div>
+        </div>
+
+        <div class="step-item">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <h4>Sélectionnez "Installer l'application"</h4>
+            <p>Ou appuyez sur <strong>"Ajouter à l'écran d'accueil"</strong> dans le menu.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 🍏 iOS Instructions -->
+    <div class="pwa-instructions card" *ngIf="activeTab() === 'ios'">
+      <div class="step-list">
+        <div class="step-item">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <h4>Ouvrez ce site sur Safari</h4>
+            <p>Utilisez le navigateur <strong>Safari</strong> d'Apple.</p>
+          </div>
+        </div>
+
+        <div class="step-item">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <h4>Appuyez sur Partager</h4>
+            <p>Touchez l'icône de partage <strong><span class="material-symbols-outlined inline-icon">ios_share</span></strong> en bas puis choisissez <strong>"Sur l'écran d'accueil" ⊞</strong>.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 💻 Desktop Instructions -->
+    <div class="pwa-instructions card" *ngIf="activeTab() === 'desktop'">
+      <div class="step-list">
+        <div class="step-item">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <h4>Barre d'adresse du navigateur</h4>
+            <p>Cliquez sur l'icône d'installation <strong><span class="material-symbols-outlined inline-icon">install_desktop</span></strong> à droite de la barre d'adresse pour créer le raccourci Bureau.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>

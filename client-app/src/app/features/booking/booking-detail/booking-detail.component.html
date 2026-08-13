@@ -1,0 +1,215 @@
+<div class="booking-detail-screen page-container">
+
+  <!-- Header -->
+  <div class="booking-detail-header">
+    <button class="icon-btn" (click)="goBack()" type="button">
+      <span class="material-symbols-outlined">arrow_back</span>
+    </button>
+    <h1 class="booking-detail-header__title">Détails de la réservation</h1>
+    <button class="icon-btn" (click)="share()" type="button">
+      <span class="material-symbols-outlined">share</span>
+    </button>
+  </div>
+
+  <!-- Loading state -->
+  <div *ngIf="loading()" class="booking-detail-loading">
+    <div class="booking-detail-loading__spinner"></div>
+  </div>
+
+  <!-- Booking not found -->
+  <div *ngIf="!loading() && !booking()" class="empty-state">
+    <span class="material-symbols-outlined empty-state-icon">event_busy</span>
+    <p class="empty-state-title">Réservation introuvable</p>
+    <a routerLink="/booking/history" class="btn btn--primary">Voir mes réservations</a>
+  </div>
+
+  <!-- Booking detail content -->
+  <ng-container *ngIf="!loading() && booking() as b">
+
+    <!-- Field hero image -->
+    <div class="booking-detail-hero">
+      <img
+        [src]="b.fieldImageUrl"
+        [alt]="b.fieldName"
+        class="booking-detail-hero__img">
+      <!-- Status badge -->
+      <div class="status-badge" [ngClass]="getStatusClass(b.status)">
+        {{ getStatusLabel(b.status) }}
+      </div>
+    </div>
+
+    <!-- Content -->
+    <div class="content-section">
+
+      <!-- Field info -->
+      <div class="booking-detail-field">
+        <h2 class="booking-detail-field__name">{{ b.fieldName }}</h2>
+        <div class="booking-detail-field__meta">
+          <span class="badge badge--success booking-detail-field__sport">Football</span>
+          <div class="booking-detail-field__location">
+            <span class="material-symbols-outlined">location_on</span>
+            {{ b.fieldAddress }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Dashed separator (ticket style) -->
+      <div class="ticket-separator">
+        <div class="ticket-separator__circle ticket-separator__circle--left"></div>
+        <div class="ticket-separator__line"></div>
+        <div class="ticket-separator__circle ticket-separator__circle--right"></div>
+      </div>
+
+      <!-- Booking details grid -->
+      <div class="booking-detail-grid">
+        <div class="booking-detail-grid__item">
+          <span class="booking-detail-grid__label">Date</span>
+          <span class="booking-detail-grid__value">{{ formatDate(b.date) }}</span>
+        </div>
+        <div class="booking-detail-grid__item">
+          <span class="booking-detail-grid__label">Heure</span>
+          <span class="booking-detail-grid__value">{{ b.startTime }} &mdash; {{ b.endTime }}</span>
+        </div>
+        <div class="booking-detail-grid__item">
+          <span class="booking-detail-grid__label">Durée</span>
+          <span class="booking-detail-grid__value">{{ getDurationHours(b) }}h</span>
+        </div>
+        <div class="booking-detail-grid__item">
+          <span class="booking-detail-grid__label">Terrain</span>
+          <span class="booking-detail-grid__value">{{ b.fieldName }}</span>
+        </div>
+      </div>
+
+      <!-- Price breakdown -->
+      <div class="price-breakdown">
+        <h3 class="price-breakdown__title">Détail du paiement</h3>
+        <div class="price-breakdown__row">
+          <span class="price-breakdown__label">Tarif horaire (×{{ b.pricing.durationHours }}h)</span>
+          <span class="price-breakdown__value">{{ b.pricing.subtotal | fcfa }}</span>
+        </div>
+        <div class="price-breakdown__row">
+          <span class="price-breakdown__label">Frais de service</span>
+          <span class="price-breakdown__value">{{ b.pricing.serviceFee | fcfa }}</span>
+        </div>
+        <div class="price-breakdown__row price-breakdown__row--total">
+          <span class="price-breakdown__label">Total</span>
+          <span class="price-breakdown__value price-breakdown__value--total">{{ b.pricing.total | fcfa }}</span>
+        </div>
+      </div>
+
+      <!-- Reference -->
+      <div class="booking-detail-reference">
+        <span class="booking-detail-reference__label">Référence de réservation</span>
+        <span class="booking-detail-reference__chip">#{{ b.id.toUpperCase() }}</span>
+      </div>
+
+      <!-- QR Code (if confirmed) -->
+      <div *ngIf="b.status === 'confirmed'" class="booking-detail-qr">
+        <div class="booking-detail-qr__placeholder">
+          <span class="material-symbols-outlined booking-detail-qr__icon">qr_code_2</span>
+          <span class="booking-detail-qr__label">QR Code</span>
+        </div>
+        <p class="booking-detail-qr__hint">Présentez ce code à l'entrée du terrain</p>
+      </div>
+
+      <!-- Cancellation request status -->
+      <div *ngIf="cancellationRequest() as cr" class="booking-detail-cancel-status">
+        <div *ngIf="cr.status === 'pending'" class="cancel-status cancel-status--pending">
+          <span class="material-symbols-outlined">hourglass_top</span>
+          Demande d'annulation en cours de traitement
+        </div>
+        <div *ngIf="cr.status === 'approved'" class="cancel-status cancel-status--approved">
+          <span class="material-symbols-outlined">check_circle</span>
+          Demande d'annulation approuvée
+        </div>
+        <div *ngIf="cr.status === 'rejected'" class="cancel-status cancel-status--rejected">
+          <span class="material-symbols-outlined">cancel</span>
+          Demande d'annulation refusée
+          <p *ngIf="cr.rejection_note" class="cancel-status__note">Motif : {{ cr.rejection_note }}</p>
+        </div>
+      </div>
+
+      <!-- Cancel form (inline) -->
+      <div *ngIf="showCancelForm()" class="cancel-form">
+        <h3 class="cancel-form__title">Demander l'annulation</h3>
+        <div class="cancel-form__group">
+          <label class="cancel-form__label">Motif (optionnel)</label>
+          <textarea class="cancel-form__textarea"
+            rows="3"
+            placeholder="Décrivez la raison de votre demande..."
+            [ngModel]="cancelReason()"
+            (ngModelChange)="cancelReason.set($event)"></textarea>
+        </div>
+        <div class="cancel-form__actions">
+          <button class="btn btn--ghost" (click)="closeCancelForm()" type="button">Annuler</button>
+          <button class="btn btn--danger"
+            [disabled]="cancelSubmitting()"
+            (click)="submitCancellationRequest()"
+            type="button">
+            {{ cancelSubmitting() ? 'Envoi...' : 'Envoyer la demande' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Error message -->
+      <div *ngIf="errorMessage()" class="booking-detail-error">
+        <span class="material-symbols-outlined">error</span>
+        {{ errorMessage() }}
+      </div>
+
+      <!-- Action buttons -->
+      <div class="booking-detail-actions">
+        <!-- CONFIRMED actions -->
+        <ng-container *ngIf="b.status === 'confirmed'">
+          <button class="btn btn--outline btn--full" (click)="downloadReceipt()" type="button">
+            <span class="material-symbols-outlined">download</span>
+            Télécharger le reçu
+          </button>
+          <button
+            *ngIf="!cancellationRequest() && !showCancelForm()"
+            class="btn btn--full booking-detail-actions__cancel"
+            (click)="openCancelForm()"
+            type="button">
+            <span class="material-symbols-outlined">cancel</span>
+            Demander l'annulation
+          </button>
+          <button class="btn btn--outline btn--full" (click)="shareWhatsApp()" type="button">
+            Partager via WhatsApp
+          </button>
+          <button class="btn btn--ghost btn--full" (click)="share()" type="button">
+            <span class="material-symbols-outlined">share</span>
+            Partager
+          </button>
+        </ng-container>
+
+        <!-- COMPLETED actions -->
+        <ng-container *ngIf="b.status === 'completed'">
+          <a [routerLink]="['/booking', b.id, 'rate']" class="btn btn--primary btn--full">
+            <span class="material-symbols-outlined">star</span>
+            Évaluer ce terrain
+          </a>
+          <button class="btn btn--outline btn--full" (click)="rebookField()" type="button">
+            <span class="material-symbols-outlined">event_repeat</span>
+            Réserver à nouveau
+          </button>
+        </ng-container>
+
+        <!-- CANCELLED actions -->
+        <ng-container *ngIf="b.status === 'cancelled'">
+          <button class="btn btn--primary btn--full" (click)="rebookField()" type="button">
+            <span class="material-symbols-outlined">event_repeat</span>
+            Réserver à nouveau
+          </button>
+        </ng-container>
+      </div>
+
+      <!-- Cancellation policy -->
+      <p class="booking-detail-policy">
+        <span class="material-symbols-outlined">info</span>
+        L'annulation est soumise à validation par le gestionnaire du terrain. En cas d'approbation, un remboursement automatique de 99% du montant sera envoyé sur votre compte mobile.
+      </p>
+
+    </div>
+  </ng-container>
+
+</div>

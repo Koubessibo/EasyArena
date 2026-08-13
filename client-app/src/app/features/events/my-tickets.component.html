@@ -1,0 +1,155 @@
+<div class="my-tickets-page">
+  <div class="header">
+    <a routerLink="/profile" class="back-btn">
+      <span class="material-symbols-outlined">arrow_back</span>
+    </a>
+    <h1>Mes Billets d'Événements</h1>
+  </div>
+
+  <!-- Verification Message Banner -->
+  <div class="verification-banner" *ngIf="verificationMessage()">
+    <span class="material-symbols-outlined">info</span>
+    <p>{{ verificationMessage() }}</p>
+    <button class="dismiss-btn" (click)="verificationMessage.set(null)">&times;</button>
+  </div>
+
+  <!-- Loading State -->
+  <div class="loading-state" *ngIf="isLoading()">
+    <div class="spinner-large"></div>
+    <p>Chargement de vos billets...</p>
+  </div>
+
+  <!-- Empty State -->
+  <div class="empty-state" *ngIf="!isLoading() && tickets().length === 0">
+    <span class="material-symbols-outlined empty-icon">confirmation_number</span>
+    <h2>Aucun billet trouvé</h2>
+    <p>Vous n'avez pas encore acheté ou réservé de billets d'événements.</p>
+    <a routerLink="/events" class="btn btn--primary">Découvrir les événements</a>
+  </div>
+
+  <!-- Tickets List -->
+  <div class="tickets-grid" *ngIf="!isLoading() && tickets().length > 0">
+    <div class="ticket-card" *ngFor="let ticket of tickets()" (click)="openTicketModal(ticket)">
+      <div class="ticket-card__header">
+        <span class="status-badge" [ngClass]="getStatusBadgeClass(ticket.status)">
+          {{ getStatusLabel(ticket.status) }}
+        </span>
+        <span class="ticket-date">{{ ticket.created_at | date:'dd/MM/yyyy' }}</span>
+      </div>
+
+      <div class="ticket-card__body">
+        <h3 class="event-name">{{ ticket.event?.name || 'Événement Sportif' }}</h3>
+        <p class="event-info" *ngIf="ticket.event?.date">
+          <span class="material-symbols-outlined">calendar_month</span>
+          {{ ticket.event?.date }} {{ ticket.event?.time ? '| ' + ticket.event?.time : '' }}
+        </p>
+        <p class="event-info" *ngIf="ticket.event?.location">
+          <span class="material-symbols-outlined">location_on</span>
+          {{ ticket.event?.location }}
+        </p>
+      </div>
+
+      <div class="ticket-card__footer">
+        <button class="btn btn--qr" *ngIf="ticket.status === 'VALID'">
+          <span class="material-symbols-outlined">qr_code_scanner</span>
+          QR Pass Dynamique
+        </button>
+        <button class="btn btn--qr btn--scanned" *ngIf="ticket.status === 'SCANNED'" disabled>
+          <span class="material-symbols-outlined">check_circle</span>
+          Billet Utilisé
+        </button>
+        <button class="btn btn--pending-pay" *ngIf="ticket.status === 'PENDING_PAYMENT'" (click)="$event.stopPropagation(); confirmOrRecheckPayment(ticket.id)">
+          <span *ngIf="isVerifying() === ticket.id" class="spinner-small"></span>
+          <span *ngIf="isVerifying() !== ticket.id" class="material-symbols-outlined">published_with_changes</span>
+          <span>{{ isVerifying() === ticket.id ? 'Vérification...' : 'Vérifier / Activer mon Pass' }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- QR Code / Ticket Modal Popup -->
+  <div class="modal-backdrop" *ngIf="selectedTicket()" (click)="closeTicketModal()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <button class="close-btn" (click)="closeTicketModal()">&times;</button>
+
+      <div class="ticket-modal-header">
+        <span class="status-badge" [ngClass]="getStatusBadgeClass(selectedTicket()!.status)">
+          {{ getStatusLabel(selectedTicket()!.status) }}
+        </span>
+        <h2>{{ selectedTicket()!.event?.name || 'Pass Événement' }}</h2>
+      </div>
+
+      <!-- CAS 1 : Billet VALIDE → QR Code Dynamique TOTP -->
+      <div *ngIf="selectedTicket()!.status === 'VALID'">
+        <div class="qr-container">
+
+          <!-- Indicateur TOTP dynamique -->
+          <div class="totp-badge">
+            <span class="material-symbols-outlined totp-icon">shield</span>
+            <span class="totp-label">QR Code Dynamique TOTP</span>
+            <span class="totp-timer">{{ totpTimeRemaining() }}s</span>
+          </div>
+
+          <!-- Canvas du QR Code -->
+          <canvas #qrCanvas class="qr-canvas"></canvas>
+
+          <!-- Barre de progression temporelle -->
+          <div class="totp-progress-bar-container">
+            <div
+              class="totp-progress-bar"
+              [style.width.%]="totpProgress()"
+              [class.totp-progress--warning]="totpTimeRemaining() <= 8"
+            ></div>
+          </div>
+
+          <!-- Affichage du token actuel -->
+          <div class="totp-token-display" *ngIf="selectedTicket()!.totp_secret">
+            <span class="token-digits">{{ currentTotpToken() }}</span>
+            <span class="token-subtitle">Ce code se rafraîchit automatiquement</span>
+          </div>
+
+          <!-- Message de chargement si secret pas encore chargé -->
+          <div class="totp-loading" *ngIf="!selectedTicket()!.totp_secret">
+            <div class="spinner-small"></div>
+            <span>Génération du QR sécurisé...</span>
+          </div>
+
+          <p class="qr-hint">
+            <span class="material-symbols-outlined">security</span>
+            Présentez ce QR Code au contrôleur. Il change toutes les 30s.
+          </p>
+          <p class="qr-anti-fraud">
+            <span class="material-symbols-outlined">block</span>
+            Anti-fraude : les captures d'écran sont invalides.
+          </p>
+        </div>
+      </div>
+
+      <!-- CAS 2 : Billet SCANNÉ (déjà utilisé) -->
+      <div *ngIf="selectedTicket()!.status === 'SCANNED'">
+        <div class="scanned-container">
+          <span class="material-symbols-outlined scanned-icon">task_alt</span>
+          <h3>Billet déjà utilisé</h3>
+          <p>Ce billet a été validé et scanné à l'entrée. Il ne peut plus être utilisé.</p>
+        </div>
+      </div>
+
+      <!-- CAS 3 : Billet EN ATTENTE DE PAIEMENT -->
+      <div class="unpaid-warning-box" *ngIf="selectedTicket()!.status === 'PENDING_PAYMENT'">
+        <div class="unpaid-icon">
+          <span class="material-symbols-outlined">credit_card_off</span>
+        </div>
+        <h3>Validation du Paiement</h3>
+        <p>Si vous avez déjà effectué le paiement via Wave ou Orange Money, cliquez ci-dessous pour valider votre billet.</p>
+
+        <div style="margin-top: 1rem; text-align: center;">
+          <button class="btn btn--primary" [disabled]="isVerifying() === selectedTicket()!.id" (click)="confirmOrRecheckPayment(selectedTicket()!.id)">
+            <span *ngIf="isVerifying() === selectedTicket()!.id" class="spinner-small"></span>
+            <span *ngIf="isVerifying() !== selectedTicket()!.id" class="material-symbols-outlined">check_circle</span>
+            <span>{{ isVerifying() === selectedTicket()!.id ? 'Vérification en cours...' : 'Activer mon Billet & Générer le QR Code' }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

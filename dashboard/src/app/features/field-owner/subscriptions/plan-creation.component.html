@@ -1,0 +1,157 @@
+<div class="plan-creation">
+  <button class="btn-back" (click)="location.back()">
+    <span class="material-symbols-outlined">arrow_back</span>
+    Retour
+  </button>
+  <div class="plan-creation__header">
+    <h1 class="plan-creation__title">{{ editingPlanId() ? 'Modifier la formule d\'abonnement' : 'Créer une formule d\'abonnement' }}</h1>
+    <p class="plan-creation__subtitle">Configurez et gérez les offres tarifaires pour vos clients.</p>
+  </div>
+
+  <form class="form" [formGroup]="planForm" (ngSubmit)="onSubmit()">
+    <!-- Infos de base -->
+    <div class="form__card">
+      <h2 class="form__section-title">Informations Générales</h2>
+      
+      <div class="form__grid">
+        <div class="form__group">
+          <label class="form__label">Nom de la formule *</label>
+          <input class="form__input" type="text" formControlName="name" placeholder="Ex: Pass Mensuel Premium">
+          <span class="form__error" *ngIf="planForm.get('name')?.touched && planForm.get('name')?.invalid">
+            Le nom est requis.
+          </span>
+        </div>
+
+        <div class="form__group">
+          <label class="form__label">Prix total (CFA) *</label>
+          <input class="form__input" type="number" formControlName="price" placeholder="Ex: 50000">
+          <span class="form__error" *ngIf="planForm.get('price')?.touched && planForm.get('price')?.invalid">
+            Un prix valide est requis.
+          </span>
+        </div>
+
+        <div class="form__group">
+          <label class="form__label">Nombre de réservations incluses *</label>
+          <input class="form__input" type="number" formControlName="reservations_count" placeholder="Ex: 4">
+          <span class="form__error" *ngIf="planForm.get('reservations_count')?.touched && planForm.get('reservations_count')?.invalid">
+            Minimum 1 réservation.
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toggle Moratoire -->
+    <div class="form__card">
+      <div class="moratorium-toggle">
+        <div class="moratorium-toggle__info">
+          <h2 class="form__section-title" style="margin: 0;">Paiement Moratoire (Échelonné)</h2>
+          <p class="moratorium-toggle__desc">Permettre aux clients de payer cet abonnement en plusieurs fois.</p>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" formControlName="allows_moratorium">
+          <span class="toggle__slider"></span>
+        </label>
+      </div>
+
+      <!-- Zone d'échéances (déployable) -->
+      <div class="moratorium-config" [class.moratorium-config--expanded]="planForm.get('allows_moratorium')?.value">
+        <div class="moratorium-config__inner" formArrayName="moratorium_config">
+          
+          <div class="moratorium-config__header">
+            <h3>Configuration des échéances</h3>
+            <button type="button" class="btn btn--sm btn--outline" (click)="addMoratoriumStep(0, 0)">
+              <span class="material-symbols-outlined">add</span> Ajouter une échéance
+            </button>
+          </div>
+
+          <div class="step-list">
+            <div class="step-item" *ngFor="let step of moratoriumConfig.controls; let i=index" [formGroupName]="i">
+              <div class="step-item__fields">
+                <div class="form__group">
+                  <label class="form__label">Pourcentage (%)</label>
+                  <input class="form__input" type="number" formControlName="percentage" placeholder="Ex: 50">
+                </div>
+                <div class="form__group">
+                  <label class="form__label">Délai (Jours après souscription)</label>
+                  <input class="form__input" type="number" formControlName="daysAfter" placeholder="Ex: 15 (0 = Immédiat)">
+                </div>
+              </div>
+              <button type="button" class="btn-icon btn-icon--danger" (click)="removeMoratoriumStep(i)" title="Supprimer">
+                <span class="material-symbols-outlined">delete</span>
+              </button>
+            </div>
+            <div class="empty-state" *ngIf="moratoriumConfig.length === 0">
+              Aucune échéance configurée. Ajoutez-en une.
+            </div>
+          </div>
+
+          <div class="sum-error" *ngIf="planForm.get('allows_moratorium')?.value && moratoriumConfig.errors?.['invalidSum']">
+            <span class="material-symbols-outlined">error</span>
+            La somme des pourcentages fait actuellement {{ moratoriumConfig.errors?.['invalidSum'].currentSum }}%. Elle doit être strictement égale à 100%.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alertes Globales -->
+    <div class="alert alert--error" *ngIf="submitError()">
+      <span class="material-symbols-outlined">warning</span>
+      {{ submitError() }}
+    </div>
+    
+    <div class="alert alert--success" *ngIf="submitSuccess()">
+      <span class="material-symbols-outlined">check_circle</span>
+      {{ submitSuccess() }}
+    </div>
+
+    <!-- Actions -->
+    <div class="form__actions" style="display:flex;gap:0.75rem">
+      <button type="button" class="btn btn--ghost" [disabled]="isSubmitting()" (click)="cancelEdit()">Annuler</button>
+      <button type="submit" class="btn btn--primary" [disabled]="isSubmitting()">
+        <span *ngIf="!isSubmitting()">{{ editingPlanId() ? 'Enregistrer les modifications' : 'Créer la formule' }}</span>
+        <span *ngIf="isSubmitting()" class="spinner"></span>
+      </button>
+    </div>
+  </form>
+
+  <!-- TABLE DES FORMULES EXISTANTES -->
+  <div class="form__card" style="margin-top: 2rem;" *ngIf="myPlans().length > 0">
+    <h2 class="form__section-title">Mes Formules d'Abonnement ({{ myPlans().length }})</h2>
+
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Nom de la formule</th>
+            <th>Prix Total</th>
+            <th>Réservations incluses</th>
+            <th>Paiement échelonné</th>
+            <th class="text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let plan of myPlans()">
+            <td><strong>{{ plan.name }}</strong></td>
+            <td>{{ plan.price | number:'1.0-0' }} FCFA</td>
+            <td>{{ plan.reservations_count }} séance(s)</td>
+            <td>
+              <span class="badge" [class.badge--success]="plan.allows_moratorium" [class.badge--secondary]="!plan.allows_moratorium">
+                {{ plan.allows_moratorium ? 'Moratoire activé' : 'Paiement comptant' }}
+              </span>
+            </td>
+            <td class="text-right">
+              <div style="display:inline-flex;gap:0.4rem">
+                <button class="btn btn--outline btn--icon" (click)="openEditPlan(plan)" title="Modifier" aria-label="Modifier le plan">
+                  <span class="material-symbols-outlined">edit</span>
+                </button>
+                <button class="btn btn--danger btn--icon" (click)="deletePlan(plan.id)" title="Supprimer" aria-label="Supprimer le plan">
+                  <span class="material-symbols-outlined">delete</span>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

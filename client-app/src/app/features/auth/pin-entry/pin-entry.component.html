@@ -1,0 +1,56 @@
+<div class="pin-entry-screen">
+
+  <!-- Header -->
+  <div class="pin-entry-screen__header">
+    <div class="pin-entry-avatar">
+      <span class="pin-entry-avatar__initials">
+        <span class="material-symbols-outlined">person</span>
+      </span>
+    </div>
+    <h1 class="pin-entry-screen__greeting">Saisir votre PIN</h1>
+    <p class="pin-entry-screen__subtitle">{{ phone() }}</p>
+  </div>
+
+  <!-- Error message -->
+  <div *ngIf="errorMessage()" class="pin-entry-screen__error" [class.shake]="shake()">
+    <span class="material-symbols-outlined">error</span>
+    {{ errorMessage() }}
+  </div>
+
+  <!-- PIN dots -->
+  <div class="pin-dots" [class.pin-dots--shake]="shake()">
+    <div
+      *ngFor="let digit of pinDigits(); let i = index"
+      class="pin-dots__dot"
+      [class.pin-dots__dot--filled]="digit !== ''">
+    </div>
+  </div>
+
+  <!-- Loading spinner -->
+  <div *ngIf="loading()" class="pin-entry-screen__loading">
+    <div class="pin-entry-screen__spinner"></div>
+  </div>
+
+  <!-- Numeric keyboard -->
+  <div class="pin-keyboard" *ngIf="!loading()">
+    <button
+      *ngFor="let key of keys"
+      class="pin-keyboard__key"
+      [class.pin-keyboard__key--empty]="key === ''"
+      [class.pin-keyboard__key--back]="key === 'back'"
+      [disabled]="key === ''"
+      (click)="pressKey(key)"
+      type="button">
+      <ng-container *ngIf="key !== 'back' && key !== ''">{{ key }}</ng-container>
+      <span *ngIf="key === 'back'" class="material-symbols-outlined">backspace</span>
+    </button>
+  </div>
+
+  <!-- Footer links -->
+  <div class="pin-entry-screen__footer">
+    <button class="pin-entry-screen__switch-btn" (click)="switchAccount()" type="button">
+      Utiliser un autre numéro
+    </button>
+  </div>
+
+</div>

@@ -1,0 +1,439 @@
+<div class="auth-wrapper">
+  
+  <!-- Left Side: Brand & Hero Showcase (Desktop) -->
+  <div class="auth-hero">
+    <div class="auth-hero__overlay"></div>
+    <div class="auth-hero__content">
+      <a routerLink="/" class="auth-hero__logo">
+        <img src="/logo-long.png" alt="EasyArena" class="auth-hero__logo-img">
+      </a>
+      <div class="auth-hero__body">
+        <span class="auth-hero__tag">
+          <span class="material-symbols-outlined">how_to_reg</span>
+          Rejoignez la communauté
+        </span>
+        <h2 class="auth-hero__title">Créez votre compte EasyArena gratuitement.</h2>
+        <p class="auth-hero__sub">Que vous soyez joueur passionné, propriétaire de complexe ou vendeur d'équipements sportifs, accédez à des services sur mesure.</p>
+        
+        <div class="auth-hero__features">
+          <div class="auth-feat-item">
+            <span class="material-symbols-outlined">verified</span>
+            <span>Réservation & Vente Instantanées</span>
+          </div>
+          <div class="auth-feat-item">
+            <span class="material-symbols-outlined">payments</span>
+            <span>Retraits Wave & OM à 0% de Frais</span>
+          </div>
+          <div class="auth-feat-item">
+            <span class="material-symbols-outlined">support_agent</span>
+            <span>Support Client Dédié 7j/7</span>
+          </div>
+        </div>
+      </div>
+      <p class="auth-hero__footer">© 2026 EasyArena par AXE DIGITAL SERVICES. Tous droits réservés.</p>
+    </div>
+  </div>
+
+  <!-- Right Side: Auth Card Form -->
+  <div class="auth-card-wrap">
+    <div class="auth-card">
+
+      <!-- Header -->
+      <div class="auth-card__header">
+        <a routerLink="/" class="auth-card__logo-mobile">
+          <img src="/logo-long.png" alt="EasyArena" class="auth-card__logo-img">
+        </a>
+        <h1 class="auth-card__title">
+          {{ step() === 'role-select' ? 'Créer un compte' : step() === 'success' ? 'Demande envoyée !' : 'Informations personnelles' }}
+        </h1>
+        <p class="auth-card__subtitle">
+          {{ step() === 'role-select' ? 'Choisissez votre profil d\'utilisateur' : step() === 'success' ? '' : 'Remplissez le formulaire ci-dessous' }}
+        </p>
+      </div>
+
+      <!-- ─── Step: role-select ─── -->
+      <div *ngIf="step() === 'role-select'" class="role-select-wrap">
+        <div class="role-grid">
+
+          <button type="button" class="role-card" (click)="selectRole('customer')">
+            <div class="role-card__icon-wrap role-card__icon-wrap--emerald">
+              <span class="material-symbols-outlined">sports_soccer</span>
+            </div>
+            <div class="role-card__text">
+              <h3 class="role-card__label">Joueur / Client</h3>
+              <p class="role-card__desc">Je veux réserver des terrains & acheter du matériel</p>
+            </div>
+            <span class="material-symbols-outlined role-card__arrow">chevron_right</span>
+          </button>
+
+          <button type="button" class="role-card" (click)="selectRole('owner')">
+            <div class="role-card__icon-wrap role-card__icon-wrap--amber">
+              <span class="material-symbols-outlined">stadium</span>
+            </div>
+            <div class="role-card__text">
+              <h3 class="role-card__label">Propriétaire de Terrain</h3>
+              <p class="role-card__desc">Je gère un ou plusieurs complexes sportifs</p>
+            </div>
+            <span class="material-symbols-outlined role-card__arrow">chevron_right</span>
+          </button>
+
+          <button type="button" class="role-card" (click)="selectRole('vendor')">
+            <div class="role-card__icon-wrap role-card__icon-wrap--purple">
+              <span class="material-symbols-outlined">storefront</span>
+            </div>
+            <div class="role-card__text">
+              <h3 class="role-card__label">Vendeur Partenaire</h3>
+              <p class="role-card__desc">Je vends des équipements et boissons sportives</p>
+            </div>
+            <span class="material-symbols-outlined role-card__arrow">chevron_right</span>
+          </button>
+
+        </div>
+
+        <div class="auth-card__foot-links">
+          <p class="auth-card__foot-text">
+            Déjà un compte ?
+            <a routerLink="/login" class="auth-card__link">Se connecter</a>
+          </p>
+        </div>
+      </div>
+
+      <!-- ─── Step: customer ─── -->
+      <form *ngIf="step() === 'customer'" class="auth-form" (ngSubmit)="onSubmitCustomer()" novalidate>
+
+        <button type="button" class="back-btn" (click)="goBack()">
+          <span class="material-symbols-outlined">arrow_back</span>
+          Changer de profil
+        </button>
+
+        <div *ngIf="errorMessage()" class="auth-form__error">
+          <span class="material-symbols-outlined">error</span>
+          {{ errorMessage() }}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="firstName">Prénom</label>
+          <div class="form-input-wrapper">
+            <span class="material-symbols-outlined input-icon">badge</span>
+            <input id="firstName" type="text" class="form-input" placeholder="Moussa"
+              [value]="firstName()" (input)="firstName.set($any($event.target).value)"
+              autocomplete="given-name" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="lastName">Nom</label>
+          <div class="form-input-wrapper">
+            <span class="material-symbols-outlined input-icon">badge</span>
+            <input id="lastName" type="text" class="form-input" placeholder="Diallo"
+              [value]="lastName()" (input)="lastName.set($any($event.target).value)"
+              autocomplete="family-name" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Numéro de téléphone</label>
+          <app-phone-input [ngModel]="phone()" (ngModelChange)="phone.set($event)" name="phone"></app-phone-input>
+        </div>
+
+        <div class="cgu-checkbox-group">
+          <label class="cgu-checkbox-label">
+            <input type="checkbox" [checked]="acceptedCgu()" (change)="acceptedCgu.set($any($event.target).checked)">
+            <span>
+              J'ai lu et j'accepte les 
+              <button type="button" class="cgu-modal-btn" (click)="openCguModal('client')">Conditions Générales d'Utilisation (CGU)</button>
+            </span>
+          </label>
+        </div>
+
+        <button type="submit" class="btn btn--primary btn--full auth-submit-btn"
+          [class.loading]="loading()" [disabled]="!acceptedCgu() || loading()">
+          <span *ngIf="!loading()">Créer mon compte</span>
+          <span *ngIf="loading()" class="loading-spinner"></span>
+        </button>
+
+        <div class="auth-card__foot-links">
+          <p class="auth-card__foot-text">
+            Déjà un compte ?
+            <a routerLink="/login" class="auth-card__link">Se connecter</a>
+          </p>
+        </div>
+      </form>
+
+      <!-- ─── Step: owner ─── -->
+      <form *ngIf="step() === 'owner'" class="auth-form" (ngSubmit)="onSubmitOwner()" novalidate>
+
+        <button type="button" class="back-btn" (click)="goBack()">
+          <span class="material-symbols-outlined">arrow_back</span>
+          Changer de profil
+        </button>
+
+        <div *ngIf="errorMessage()" class="auth-form__error">
+          <span class="material-symbols-outlined">error</span>
+          {{ errorMessage() }}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="ownerFirstName">Prénom</label>
+          <div class="form-input-wrapper">
+            <span class="material-symbols-outlined input-icon">badge</span>
+            <input id="ownerFirstName" type="text" class="form-input" placeholder="Moussa"
+              [value]="firstName()" (input)="firstName.set($any($event.target).value)"
+              autocomplete="given-name" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="ownerLastName">Nom</label>
+          <div class="form-input-wrapper">
+            <span class="material-symbols-outlined input-icon">badge</span>
+            <input id="ownerLastName" type="text" class="form-input" placeholder="Diallo"
+              [value]="lastName()" (input)="lastName.set($any($event.target).value)"
+              autocomplete="family-name" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Numéro de téléphone</label>
+          <app-phone-input [ngModel]="phone()" (ngModelChange)="phone.set($event)" name="ownerPhone"></app-phone-input>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="fieldName">Nom du terrain / complexe <span class="required-star">*</span></label>
+          <div class="form-input-wrapper">
+            <span class="material-symbols-outlined input-icon">stadium</span>
+            <input id="fieldName" type="text" class="form-input" placeholder="Complex Sportif Médina"
+              [value]="fieldName()" (input)="fieldName.set($any($event.target).value)" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Mobile Money <span class="optional-label">(optionnel)</span></label>
+          <app-phone-input [ngModel]="mobileMoney()" (ngModelChange)="mobileMoney.set($event)" name="mobileMoney"></app-phone-input>
+        </div>
+
+        <div class="cgu-checkbox-group">
+          <label class="cgu-checkbox-label">
+            <input type="checkbox" [checked]="acceptedCgu()" (change)="acceptedCgu.set($any($event.target).checked)">
+            <span>
+              J'ai lu et j'accepte les 
+              <button type="button" class="cgu-modal-btn" (click)="openCguModal('owner')">Conditions Générales d'Utilisation (CGU)</button>
+            </span>
+          </label>
+        </div>
+
+        <button type="submit" class="btn btn--primary btn--full auth-submit-btn"
+          [class.loading]="loading()" [disabled]="!acceptedCgu() || loading()">
+          <span *ngIf="!loading()">Envoyer ma demande de partenariat</span>
+          <span *ngIf="loading()" class="loading-spinner"></span>
+        </button>
+      </form>
+
+      <!-- ─── Step: vendor ─── -->
+      <form *ngIf="step() === 'vendor'" class="auth-form" (ngSubmit)="onSubmitVendor()" novalidate>
+
+        <button type="button" class="back-btn" (click)="goBack()">
+          <span class="material-symbols-outlined">arrow_back</span>
+          Changer de profil
+        </button>
+
+        <div *ngIf="errorMessage()" class="auth-form__error">
+          <span class="material-symbols-outlined">error</span>
+          {{ errorMessage() }}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="vendorFirstName">Prénom</label>
+          <div class="form-input-wrapper">
+            <span class="material-symbols-outlined input-icon">badge</span>
+            <input id="vendorFirstName" type="text" class="form-input" placeholder="Moussa"
+              [value]="firstName()" (input)="firstName.set($any($event.target).value)"
+              autocomplete="given-name" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="vendorLastName">Nom</label>
+          <div class="form-input-wrapper">
+            <span class="material-symbols-outlined input-icon">badge</span>
+            <input id="vendorLastName" type="text" class="form-input" placeholder="Diallo"
+              [value]="lastName()" (input)="lastName.set($any($event.target).value)"
+              autocomplete="family-name" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Numéro de téléphone</label>
+          <app-phone-input [ngModel]="phone()" (ngModelChange)="phone.set($event)" name="vendorPhone"></app-phone-input>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="shopName">Nom de la boutique <span class="required-star">*</span></label>
+          <div class="form-input-wrapper">
+            <span class="material-symbols-outlined input-icon">storefront</span>
+            <input id="shopName" type="text" class="form-input" placeholder="Dakar Sport Équipements"
+              [value]="shopName()" (input)="shopName.set($any($event.target).value)" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Téléphone boutique <span class="required-star">*</span></label>
+          <app-phone-input [ngModel]="contactPhone()" (ngModelChange)="contactPhone.set($event)" name="contactPhone"></app-phone-input>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="location">Adresse <span class="optional-label">(optionnel)</span></label>
+          <div class="form-input-wrapper">
+            <span class="material-symbols-outlined input-icon">location_on</span>
+            <input id="location" type="text" class="form-input" placeholder="Plateau, Dakar"
+              [value]="location()" (input)="location.set($any($event.target).value)">
+          </div>
+        </div>
+
+        <div class="cgu-checkbox-group">
+          <label class="cgu-checkbox-label">
+            <input type="checkbox" [checked]="acceptedCgu()" (change)="acceptedCgu.set($any($event.target).checked)">
+            <span>
+              J'ai lu et j'accepte les 
+              <button type="button" class="cgu-modal-btn" (click)="openCguModal('vendor')">Conditions Générales d'Utilisation (CGU)</button>
+            </span>
+          </label>
+        </div>
+
+        <button type="submit" class="btn btn--primary btn--full auth-submit-btn"
+          [class.loading]="loading()" [disabled]="!acceptedCgu() || loading()">
+          <span *ngIf="!loading()">Envoyer ma demande de partenariat</span>
+          <span *ngIf="loading()" class="loading-spinner"></span>
+        </button>
+      </form>
+
+      <!-- ─── Step: success ─── -->
+      <div *ngIf="step() === 'success'" class="enrollment-success">
+        <div class="enrollment-success__icon-wrap">
+          <span class="material-symbols-outlined enrollment-success__icon">check_circle</span>
+        </div>
+        <h3 class="enrollment-success__title">Demande envoyée avec succès !</h3>
+        <p class="enrollment-success__message">
+          Votre demande d'inscription partenaire a été transmise. Notre équipe valide votre profil sous 24 heures et vous recevrez un SMS de confirmation.
+        </p>
+        <a routerLink="/login" class="btn btn--primary btn--full auth-submit-btn">
+          Retour à la connexion
+        </a>
+      </div>
+
+      <div class="auth-card__security-badge">
+        <span class="material-symbols-outlined">lock</span>
+        <span>Inscription sécurisée 256-bit SSL · Samir Money Agréé BCEAO</span>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<!-- ─── MODAL CGU PROFESSIONNELLE ─── -->
+<div class="modal-overlay" *ngIf="showCguModal()" (click)="closeCguModal()">
+  <div class="modal-card modal-card--cgu" (click)="$event.stopPropagation()">
+    
+    <div class="modal-cgu__header">
+      <div class="modal-cgu__title-wrap">
+        <span class="material-symbols-outlined modal-cgu__icon">gavel</span>
+        <div>
+          <h2>Conditions Générales d'Utilisation (CGU)</h2>
+          <p class="modal-cgu__subtitle">AXE DIGITAL SERVICES & Samir Money — Plateforme EasyArena</p>
+        </div>
+      </div>
+      <button type="button" class="modal-close-btn" (click)="closeCguModal()">&times;</button>
+    </div>
+
+    <!-- Tabs de navigation dans les CGU -->
+    <div class="modal-cgu__tabs">
+      <button type="button" class="cgu-tab" [class.cgu-tab--active]="cguTab() === 'client'" (click)="cguTab.set('client')">
+        <span class="material-symbols-outlined">person</span>
+        CGU Joueur / Client
+      </button>
+      <button type="button" class="cgu-tab" [class.cgu-tab--active]="cguTab() === 'owner'" (click)="cguTab.set('owner')">
+        <span class="material-symbols-outlined">stadium</span>
+        CGU Propriétaire Terrain
+      </button>
+      <button type="button" class="cgu-tab" [class.cgu-tab--active]="cguTab() === 'vendor'" (click)="cguTab.set('vendor')">
+        <span class="material-symbols-outlined">storefront</span>
+        CGU Vendeur Partenaire
+      </button>
+    </div>
+
+    <!-- Corps scrollable des CGU -->
+    <div class="modal-cgu__body">
+      
+      <!-- TAB CLIENT -->
+      <div *ngIf="cguTab() === 'client'" class="cgu-content">
+        <div class="cgu-section">
+          <h3>Article 1 – Objet & Acceptation</h3>
+          <p>Les présentes CGU régissent l'accès et l'utilisation d'EasyArena par les joueurs et clients. Toute inscription implique l'acceptation sans réserve des présentes conditions.</p>
+        </div>
+
+        <div class="cgu-section">
+          <h3>Article 2 – Protection des Données (CDP Sénégal)</h3>
+          <p>EasyArena garantit la stricte confidentialité de vos données personnelles conformément aux réglementations de la Commission de Protection des Données Personnelles (CDP) du Sénégal. Vos informations ne sont jamais cédées ni vendues à des tiers.</p>
+        </div>
+
+        <div class="cgu-section">
+          <h3>Article 3 – Réservations & Services Financiers</h3>
+          <p>Toutes les transactions financières (Wave, Orange Money) sont traitées par <strong>Samir Money</strong>, établissement de paiement agréé par la BCEAO. Les réservations sont immédiatement confirmées et donnent lieu à un QR Pass unique d'accès au terrain.</p>
+        </div>
+
+        <div class="cgu-section cgu-section--highlight">
+          <h3>Article 4 – Frais de Service (5%) & Politique d'Annulation</h3>
+          <p>Les frais de service d'EasyArena sont de 5 %. En cas d'annulation éligible, le remboursement est exécuté sous déduction des frais de traitement bancaire/Mobile Money (1%).</p>
+        </div>
+      </div>
+
+      <!-- TAB PROPRIÉTAIRE -->
+      <div *ngIf="cguTab() === 'owner'" class="cgu-content">
+        <div class="cgu-section">
+          <h3>Article 1 – Engagement de Confidentialité des Terrains</h3>
+          <p>EasyArena s'engage à maintenir l'étanchéité absolue et la confidentialité des données d'exploitation des propriétaires (chiffre d'affaires, plannings, fichiers clients). Aucun tiers ou concurrent n'a accès à vos statistiques financières.</p>
+        </div>
+
+        <div class="cgu-section cgu-section--highlight">
+          <h3>Article 2 – Retraits à 0 % de Frais</h3>
+          <p>Les reversements vers vos comptes Wave et Orange Money sont pris en charge sans aucun frais d'intermédiation par EasyArena (0 % de frais pour le Propriétaire).</p>
+        </div>
+
+        <div class="cgu-section">
+          <h3>Article 3 – Gestion des Plannings & Annulations</h3>
+          <p>Le Propriétaire s'engage à réserver les créneaux confirmés aux utilisateurs de la plateforme et à maintenir ses équipements dans des conditions de sécurité optimales.</p>
+        </div>
+      </div>
+
+      <!-- TAB VENDEUR -->
+      <div *ngIf="cguTab() === 'vendor'" class="cgu-content">
+        <div class="cgu-section">
+          <h3>Article 1 – Publication d'Équipements & Produits</h3>
+          <p>Le Vendeur Partenaire garantit la conformité, l'authenticité et la disponibilité des produits publiés sur la boutique EasyArena.</p>
+        </div>
+
+        <div class="cgu-section">
+          <h3>Article 2 – Commandes & Notifications d'Expédition</h3>
+          <p>Le Vendeur s'engage à mettre à jour le statut des commandes (Marquer comme livrée), ce qui déclenche un SMS de confirmation automatique à l'acheteur.</p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Actions Modal -->
+    <div class="modal-cgu__footer">
+      <a routerLink="/terms" target="_blank" class="cgu-external-link">
+        <span class="material-symbols-outlined">open_in_new</span> Ouvrir en plein écran
+      </a>
+      <div style="display:flex;gap:0.75rem">
+        <button type="button" class="btn btn--ghost" (click)="closeCguModal()">Fermer</button>
+        <button type="button" class="btn btn--primary" (click)="acceptCguFromModal()">
+          <span class="material-symbols-outlined">check_circle</span>
+          J'ai lu et j'accepte les CGU
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>

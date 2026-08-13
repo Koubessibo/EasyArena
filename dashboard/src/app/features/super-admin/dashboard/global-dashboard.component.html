@@ -1,0 +1,180 @@
+<div class="global-dashboard">
+
+  <!-- Executive Header -->
+  <header class="global-dashboard__header">
+    <div>
+      <h1 class="global-dashboard__title">Vision d'Aigle</h1>
+      <p class="global-dashboard__subtitle">Supervisez l'activité globale, la gestion des utilisateurs et les finances EasyArena.</p>
+    </div>
+
+    <!-- Quick Action Bar -->
+    <div class="action-bar">
+      <a routerLink="/admin/users" class="btn btn--primary">
+        <span class="material-symbols-outlined">person_add</span>
+        Gérer les utilisateurs
+      </a>
+      <a routerLink="/admin/financial" class="btn btn--emerald">
+        <span class="material-symbols-outlined">payments</span>
+        Finances & Retraits
+      </a>
+    </div>
+  </header>
+
+  <!-- Loader -->
+  <div *ngIf="isLoading()" class="loading-state">
+    <div class="spinner spinner--lg"></div>
+    <p>Chargement des statistiques globales...</p>
+  </div>
+
+  <!-- Dashboard Content -->
+  <div *ngIf="!isLoading()" class="dashboard-content">
+    
+    <!-- KPI Grid -->
+    <div class="kpi-grid">
+
+      <div class="kpi-card">
+        <div class="kpi-card__icon kpi-card__icon--blue">
+          <span class="material-symbols-outlined">group</span>
+        </div>
+        <div class="kpi-card__info">
+          <span class="kpi-card__label">Total Utilisateurs</span>
+          <strong class="kpi-card__value">{{ globalStats().totalUsers | number }}</strong>
+        </div>
+        <a routerLink="/admin/users" class="kpi-card__link">Voir liste</a>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-card__icon kpi-card__icon--purple">
+          <span class="material-symbols-outlined">event_available</span>
+        </div>
+        <div class="kpi-card__info">
+          <span class="kpi-card__label">Total Réservations</span>
+          <strong class="kpi-card__value">{{ globalStats().totalReservations | number }}</strong>
+        </div>
+      </div>
+
+      <div class="kpi-card kpi-card--emerald">
+        <div class="kpi-card__bg-glow"></div>
+        <div class="kpi-card__icon kpi-card__icon--white">
+          <span class="material-symbols-outlined">savings</span>
+        </div>
+        <div class="kpi-card__info">
+          <span class="kpi-card__label">Revenus Plateforme (Frais)</span>
+          <strong class="kpi-card__value">{{ globalStats().platformRevenue | number:'1.0-0' }} FCFA</strong>
+        </div>
+      </div>
+
+      <div class="kpi-card kpi-card--warning" [class.kpi-card--has-pending]="globalStats().pendingWithdrawals > 0">
+        <div class="kpi-card__icon kpi-card__icon--amber">
+          <span class="material-symbols-outlined">pending_actions</span>
+        </div>
+        <div class="kpi-card__info">
+          <span class="kpi-card__label">Retraits en attente</span>
+          <strong class="kpi-card__value">{{ globalStats().pendingWithdrawals }}</strong>
+        </div>
+        <a routerLink="/admin/financial" class="btn-action-sm">Valider</a>
+      </div>
+
+    </div>
+
+    <!-- Répartition des utilisateurs (Horizontal Progress) -->
+    <section class="distribution-section">
+      <div class="section-header">
+        <h2 class="section-title">Répartition des Utilisateurs par Rôle</h2>
+        <span class="section-badge">{{ globalStats().totalUsers }} inscrits</span>
+      </div>
+
+      <div class="distribution-bar">
+        <div class="distribution-bar__segment client" [style.width.%]="distClients()" [title]="'Clients (' + distClients() + '%)'"></div>
+        <div class="distribution-bar__segment owner" [style.width.%]="distOwners()" [title]="'Propriétaires (' + distOwners() + '%)'"></div>
+        <div class="distribution-bar__segment vendor" [style.width.%]="distVendors()" [title]="'Vendeurs (' + distVendors() + '%)'"></div>
+      </div>
+
+      <div class="distribution-legend">
+        <div class="legend-item">
+          <span class="legend-dot client"></span>
+          <span>Clients : <strong>{{ globalStats().userDistribution.clients }}</strong> ({{ distClients() }}%)</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot owner"></span>
+          <span>Propriétaires : <strong>{{ globalStats().userDistribution.owners }}</strong> ({{ distOwners() }}%)</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot vendor"></span>
+          <span>Vendeurs Boutique : <strong>{{ globalStats().userDistribution.vendors }}</strong> ({{ distVendors() }}%)</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Grid: Flux d'Activité + Raccourcis Administratifs -->
+    <div class="admin-grid">
+
+      <!-- Flux d'Activité -->
+      <section class="activity-section">
+        <div class="section-header">
+          <h2 class="section-title">Flux d'Activité Récent</h2>
+          <span class="activity-live-badge">En direct</span>
+        </div>
+        
+        <div class="empty-state" *ngIf="globalStats().recentActivity.length === 0">
+          <span class="material-symbols-outlined">history</span>
+          <p>Aucune activité récente enregistrée.</p>
+        </div>
+
+        <div class="activity-list" *ngIf="globalStats().recentActivity.length > 0">
+          <div class="activity-item" *ngFor="let activity of globalStats().recentActivity">
+            <div class="activity-item__icon" [ngClass]="'activity-item__icon--' + (activity.status || 'info').toLowerCase()">
+              <span class="material-symbols-outlined">
+                {{ activity.type === 'NEW_USER' ? 'person_add' : 'book_online' }}
+              </span>
+            </div>
+
+            <div class="activity-item__content">
+              <h4 class="activity-item__title">{{ activity.title }}</h4>
+              <p class="activity-item__desc">{{ activity.description }}</p>
+            </div>
+
+            <div class="activity-item__time">
+              {{ activity.date | date:'dd/MM HH:mm' }}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Raccourcis de Gestion -->
+      <section class="shortcuts-section">
+        <div class="section-header">
+          <h2 class="section-title">Module d'Administration</h2>
+        </div>
+
+        <div class="shortcut-cards">
+
+          <a routerLink="/admin/users" class="shortcut-card">
+            <div class="shortcut-card__icon shortcut-card__icon--blue">
+              <span class="material-symbols-outlined">manage_accounts</span>
+            </div>
+            <div class="shortcut-card__info">
+              <h4>Gestion des Utilisateurs</h4>
+              <p>Créer, approuver, suspendre ou inviter des membres.</p>
+            </div>
+            <span class="material-symbols-outlined arrow">chevron_right</span>
+          </a>
+
+          <a routerLink="/admin/financial" class="shortcut-card">
+            <div class="shortcut-card__icon shortcut-card__icon--green">
+              <span class="material-symbols-outlined">price_check</span>
+            </div>
+            <div class="shortcut-card__info">
+              <h4>Finances & Retraits</h4>
+              <p>Valider les demandes de retrait Wave / OM des propriétaires et vendeurs.</p>
+            </div>
+            <span class="material-symbols-outlined arrow">chevron_right</span>
+          </a>
+
+        </div>
+      </section>
+
+    </div>
+
+  </div>
+</div>

@@ -1,0 +1,52 @@
+<div class="page-content">
+  <app-page-header title="Commandes" subtitle="Suivez et gérez vos commandes clients" [showBack]="true"></app-page-header>
+
+  <div class="filter-chips">
+    <button *ngFor="let f of statusFilters" class="filter-chip"
+      [class.active]="filterStatus() === f.value" (click)="filterStatus.set(f.value)">
+      {{ f.label }}
+    </button>
+  </div>
+
+  <div class="card">
+    <div class="card__header">
+      <h3 class="card__title">{{ filteredOrders().length }} commande(s)</h3>
+    </div>
+    <div class="data-table-wrapper table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Référence</th>
+            <th>Client</th>
+            <th>Produits</th>
+            <th>Montant</th>
+            <th>Statut</th>
+            <th>Date</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let order of filteredOrders()">
+            <td><span class="order-ref">{{ order.reference }}</span></td>
+            <td>
+              <p class="client-name">{{ order.clientName }}</p>
+              <p class="client-phone">{{ order.clientPhone }}</p>
+            </td>
+            <td><p class="products-cell">{{ productsLabel(order.products) }}</p></td>
+            <td><span class="amount-cell">{{ order.amount | fcfa }}</span></td>
+            <td><app-status-badge [status]="order.status"></app-status-badge></td>
+            <td>{{ order.createdAt | date:'dd/MM/yyyy' }}</td>
+            <td>
+              <button class="btn btn--sm btn--outline">
+                <span class="material-symbols-outlined">visibility</span>
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="filteredOrders().length === 0">
+            <td colspan="7" class="empty-row">Aucune commande trouvée</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

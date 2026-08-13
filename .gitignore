@@ -1,0 +1,65 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Build output
+dist/
+**/dist/
+build/
+**/build/
+
+# Angular
+.angular/
+**/.angular/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+!**/.env.example
+
+# Claude Code local settings (may contain machine-specific tokens/keys)
+.claude/settings.local.json
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Coverage / test artifacts
+coverage/
+**/coverage/
+.nyc_output/
+
+# Editors / IDE
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# TypeScript incremental build info
+*.tsbuildinfo
+
+# Package manager locks/cache (keep lockfiles, ignore caches)
+.npm/
+.yarn/cache/
+.pnpm-store/
+
+# Misc
+*.pid
+*.seed
+*.pid.lock
+.cache/
+tmp/
+temp/

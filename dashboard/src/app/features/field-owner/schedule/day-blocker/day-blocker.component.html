@@ -1,0 +1,38 @@
+<div class="day-blocker card">
+  <h3 class="day-blocker__title">
+    <span class="material-symbols-outlined">event_busy</span>
+    Bloquer une journée
+  </h3>
+
+  <div class="day-blocker__form">
+    <div class="form-group">
+      <label class="form-label">Date à bloquer</label>
+      <input class="form-input" type="date" [ngModel]="date()" (ngModelChange)="date.set($event)">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Raison (optionnel)</label>
+      <input class="form-input" type="text" placeholder="Ex: Entretien du terrain" [ngModel]="note()" (ngModelChange)="note.set($event)">
+    </div>
+    <button class="btn btn--danger" (click)="block()" [disabled]="!date() || loading()">
+      <span class="material-symbols-outlined">block</span>
+      Bloquer
+    </button>
+  </div>
+
+  <p *ngIf="error()" class="day-blocker__error">{{ error() }}</p>
+
+  <div class="day-blocker__list" *ngIf="blocks().length > 0">
+    <h4 class="day-blocker__list-title">Jours bloqués</h4>
+    <div class="block-item" *ngFor="let b of blocks()">
+      <div class="block-item__info">
+        <span class="block-item__date">{{ b.blocked_date }}</span>
+        <span *ngIf="b.note" class="block-item__note">{{ b.note }}</span>
+      </div>
+      <button class="btn btn--ghost btn--sm btn--icon" (click)="unblock(b.id)" title="Débloquer">
+        <span class="material-symbols-outlined">lock_open</span>
+      </button>
+    </div>
+  </div>
+
+  <p *ngIf="blocks().length === 0" class="day-blocker__empty">Aucun jour bloqué à venir.</p>
+</div>

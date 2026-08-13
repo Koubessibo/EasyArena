@@ -1,0 +1,160 @@
+<div class="admin-financial">
+
+  <button class="btn-back" (click)="location.back()">
+    <span class="material-symbols-outlined">arrow_back</span>
+    Retour
+  </button>
+
+  <!-- Header -->
+  <div class="admin-financial__header">
+    <div>
+      <h1 class="admin-financial__title">Supervision Financière & Retraits</h1>
+      <p class="admin-financial__subtitle">Gestion des commissions de la plateforme et validation des demandes de transfert marchands.</p>
+    </div>
+  </div>
+
+  <!-- Feedback Alert -->
+  <div *ngIf="actionFeedback()" class="alert" [class.alert--success]="actionFeedback()!.type === 'success'" [class.alert--error]="actionFeedback()!.type === 'error'">
+    <span class="material-symbols-outlined">{{ actionFeedback()!.type === 'success' ? 'check_circle' : 'error' }}</span>
+    <span>{{ actionFeedback()!.message }}</span>
+  </div>
+
+  <!-- Monthly Revenue Bar Chart Card -->
+  <div class="card chart-card">
+    <div class="card__header">
+      <div class="card__header-title">
+        <span class="material-symbols-outlined">analytics</span>
+        <h3>Revenus de la Plateforme par Mois (Commissions)</h3>
+      </div>
+    </div>
+    
+    <div class="card__body">
+      <div class="bar-chart">
+        <div *ngFor="let item of monthlyRevenue()" class="bar-chart__item">
+          <div class="bar-chart__bar-wrap">
+            <div class="bar-chart__bar" [style.height.%]="getBarHeight(item.value)">
+              <span class="bar-chart__tooltip">{{ item.value | fcfa }}</span>
+            </div>
+          </div>
+          <span class="bar-chart__label">{{ item.month }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Demandes de Retrait -->
+  <div class="card">
+    <div class="card__header">
+      <div class="card__header-title">
+        <span class="material-symbols-outlined">account_balance_wallet</span>
+        <h3>Demandes de Retrait à Traiter</h3>
+      </div>
+      <span class="badge badge--warning" *ngIf="withdrawalRequests().length > 0">{{ withdrawalRequests().length }} demandes</span>
+    </div>
+
+    <div class="data-table-wrapper table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Bénéficiaire / Exploitant</th>
+            <th>Montant</th>
+            <th>Méthode de Retrait</th>
+            <th>Statut</th>
+            <th>Date de demande</th>
+            <th class="text-right">Action Administrateur</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let req of withdrawalRequests()">
+            <td>
+              <div class="user-cell">
+                <div class="user-cell__avatar">{{ (req.userName || 'M').charAt(0).toUpperCase() }}</div>
+                <div>
+                  <p class="user-cell__name">{{ req.userName }}</p>
+                  <p class="user-cell__sub">Retrait Marchand</p>
+                </div>
+              </div>
+            </td>
+
+            <td class="amount-cell">{{ req.amount | fcfa }}</td>
+
+            <td>
+              <span class="method-chip" [ngClass]="'method-chip--' + req.method">
+                <span class="material-symbols-outlined">smartphone</span>
+                {{ methodLabel(req.method) }}
+              </span>
+            </td>
+
+            <td><app-status-badge [status]="req.status"></app-status-badge></td>
+
+            <td>{{ req.requestedAt | date:'dd/MM/yyyy à HH:mm' }}</td>
+
+            <td class="text-right">
+              <div class="action-btns" *ngIf="req.status === 'pending'">
+                <button class="btn btn--sm btn--success" (click)="processWithdrawal(req.id, 'approved')">
+                  <span class="material-symbols-outlined">check</span>
+                  Approuver
+                </button>
+                <button class="btn btn--sm btn--danger" (click)="processWithdrawal(req.id, 'rejected')">
+                  <span class="material-symbols-outlined">close</span>
+                  Rejeter
+                </button>
+              </div>
+              <span *ngIf="req.status !== 'pending'" class="status-done">— Traitée —</span>
+            </td>
+          </tr>
+
+          <tr *ngIf="withdrawalRequests().length === 0">
+            <td colspan="6" class="empty-row">Aucune demande de retrait en attente.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Transactions Récentes -->
+  <div class="card">
+    <div class="card__header">
+      <div class="card__header-title">
+        <span class="material-symbols-outlined">receipt_long</span>
+        <h3>Dernières Transactions Financières</h3>
+      </div>
+    </div>
+
+    <div class="data-table-wrapper table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Type d'Opération</th>
+            <th>Description & Référence</th>
+            <th>Statut</th>
+            <th>Horodatage</th>
+            <th class="text-right">Montant (FCFA)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let tx of transactions()">
+            <td>
+              <span class="type-pill">{{ typeLabel(tx.type) }}</span>
+            </td>
+
+            <td class="tx-desc">{{ tx.description }}</td>
+
+            <td><app-status-badge [status]="tx.status"></app-status-badge></td>
+
+            <td class="tx-date">{{ tx.createdAt | date:'dd/MM/yyyy HH:mm' }}</td>
+
+            <td [class.amount--positive]="tx.amount > 0" [class.amount--negative]="tx.amount < 0" class="text-right amount-val">
+              {{ tx.amount > 0 ? '+' : '' }}{{ tx.amount | fcfa }}
+            </td>
+          </tr>
+
+          <tr *ngIf="transactions().length === 0">
+            <td colspan="5" class="empty-row">Aucune transaction enregistrée.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>

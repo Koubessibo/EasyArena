@@ -1,0 +1,155 @@
+<div class="vendor-overview">
+
+  <!-- Header & Quick Action Bar -->
+  <div class="overview-header">
+    <div>
+      <h1 class="title">Tableau de Bord Vendeur</h1>
+      <p class="subtitle">Aperçu global de votre boutique, ventes et stocks sur EasyArena.</p>
+    </div>
+
+    <div class="action-bar">
+      <a routerLink="/vendor/products" class="btn btn--primary">
+        <span class="material-symbols-outlined">add</span>
+        Ajouter un produit
+      </a>
+      <a routerLink="/vendor/orders" class="btn btn--outline">
+        <span class="material-symbols-outlined">shopping_cart</span>
+        Gérer les commandes
+      </a>
+    </div>
+  </div>
+
+  <!-- Loader -->
+  <div class="loader-wrap" *ngIf="loading()">
+    <div class="spinner spinner--lg"></div>
+    <p>Chargement du tableau de bord...</p>
+  </div>
+
+  <!-- Stats Grid -->
+  <div class="stats-grid" *ngIf="!loading()">
+    
+    <div class="stat-card">
+      <div class="stat-card__icon stat-card__icon--green">
+        <span class="material-symbols-outlined">payments</span>
+      </div>
+      <div class="stat-card__info">
+        <span class="stat-card__label">Chiffre d'Affaires</span>
+        <strong class="stat-card__value">{{ totalSalesRevenue() | number:'1.0-0' }} FCFA</strong>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-card__icon stat-card__icon--purple">
+        <span class="material-symbols-outlined">account_balance_wallet</span>
+      </div>
+      <div class="stat-card__info">
+        <span class="stat-card__label">Solde Retirable</span>
+        <strong class="stat-card__value">{{ availableBalance() | number:'1.0-0' }} FCFA</strong>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-card__icon stat-card__icon--blue">
+        <span class="material-symbols-outlined">inventory_2</span>
+      </div>
+      <div class="stat-card__info">
+        <span class="stat-card__label">Produits en Stock</span>
+        <strong class="stat-card__value">{{ activeProductsCount() }} article{{ activeProductsCount() > 1 ? 's' : '' }}</strong>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-card__icon stat-card__icon--orange">
+        <span class="material-symbols-outlined">pending_actions</span>
+      </div>
+      <div class="stat-card__info">
+        <span class="stat-card__label">Commandes à Préparer</span>
+        <strong class="stat-card__value">{{ pendingOrdersCount() }}</strong>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Grid layout (Commandes récentes + Top Produits) -->
+  <div class="content-grid" *ngIf="!loading()">
+
+    <!-- Commandes récentes -->
+    <div class="card">
+      <div class="card__header">
+        <div>
+          <h3 class="card__title">Commandes Récentes</h3>
+          <p class="card__sub">Dernières commandes passées par vos clients</p>
+        </div>
+        <a routerLink="/vendor/orders" class="link-more">
+          Voir tout
+          <span class="material-symbols-outlined">arrow_forward</span>
+        </a>
+      </div>
+
+      <div class="card__body">
+        <div class="empty-state-sm" *ngIf="recentOrders().length === 0">
+          <span class="material-symbols-outlined">inbox</span>
+          <p>Aucune commande récente.</p>
+        </div>
+
+        <div class="order-list" *ngIf="recentOrders().length > 0">
+          <div *ngFor="let order of recentOrders()" class="order-row">
+            <div class="order-row__left">
+              <span class="order-row__ref">#{{ (order.reference || order.id).slice(0, 8) | uppercase }}</span>
+              <span class="order-row__date">{{ order.created_at | date:'dd/MM/yyyy HH:mm' }}</span>
+            </div>
+
+            <div class="order-row__center">
+              <span class="badge" [ngClass]="'badge--' + order.status.toLowerCase()">
+                {{ getStatusLabel(order.status) }}
+              </span>
+            </div>
+
+            <div class="order-row__right">
+              <span class="order-row__amount">{{ order.total_amount | number:'1.0-0' }} FCFA</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Vos Produits -->
+    <div class="card">
+      <div class="card__header">
+        <div>
+          <h3 class="card__title">Aperçu du Catalogue</h3>
+          <p class="card__sub">Vos articles en vente sur la boutique</p>
+        </div>
+        <a routerLink="/vendor/products" class="link-more">
+          Gérer les stocks
+          <span class="material-symbols-outlined">arrow_forward</span>
+        </a>
+      </div>
+
+      <div class="card__body">
+        <div class="empty-state-sm" *ngIf="products().length === 0">
+          <span class="material-symbols-outlined">inventory_2</span>
+          <p>Votre catalogue est vide.</p>
+        </div>
+
+        <div class="product-mini-list" *ngIf="products().length > 0">
+          <div *ngFor="let prod of products().slice(0, 4)" class="prod-mini-item">
+            <div class="prod-mini-item__thumb">
+              <img *ngIf="prod.image_url" [src]="prod.image_url" [alt]="prod.name">
+              <span *ngIf="!prod.image_url" class="material-symbols-outlined">sports_soccer</span>
+            </div>
+
+            <div class="prod-mini-item__info">
+              <h4 class="prod-mini-item__name">{{ prod.name }}</h4>
+              <span class="prod-mini-item__stock">Stock: {{ prod.stock_quantity }}</span>
+            </div>
+
+            <span class="prod-mini-item__price">{{ prod.price | number:'1.0-0' }} FCFA</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>

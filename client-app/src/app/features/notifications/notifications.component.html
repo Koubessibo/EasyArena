@@ -1,0 +1,104 @@
+<div class="notifications-screen page-container">
+
+  <!-- Header -->
+  <div class="notifications-header">
+    <a routerLink="/home" class="icon-btn">
+      <span class="material-symbols-outlined">arrow_back</span>
+    </a>
+    <h1 class="notifications-header__title">
+      Notifications
+      <span *ngIf="unreadCount() > 0" class="notifications-header__badge">{{ unreadCount() }}</span>
+    </h1>
+    <button
+      class="notifications-header__read-all"
+      (click)="markAllRead()"
+      [disabled]="unreadCount() === 0"
+      type="button">
+      Tout lire
+    </button>
+  </div>
+
+  <!-- Filter chips -->
+  <div class="notifications-filters">
+    <button
+      *ngFor="let filter of filters"
+      class="chip"
+      [class.chip--active]="activeFilter() === filter.value"
+      (click)="setFilter(filter.value)"
+      type="button">
+      {{ filter.label }}
+    </button>
+  </div>
+
+  <!-- Empty state -->
+  <div *ngIf="filteredNotifications().length === 0" class="empty-state">
+    <span class="material-symbols-outlined empty-state-icon">notifications_off</span>
+    <p class="empty-state-title">Aucune notification</p>
+    <p class="empty-state-text">Vous n'avez pas encore de notifications pour ce filtre.</p>
+  </div>
+
+  <!-- Notification list -->
+  <div *ngIf="filteredNotifications().length > 0" class="notifications-list">
+
+    <!-- Aujourd'hui -->
+    <ng-container *ngIf="todayNotifs().length > 0">
+      <div class="notifications-group-label">Aujourd'hui</div>
+      <div
+        *ngFor="let notif of todayNotifs()"
+        class="notif-item"
+        [class.notif-item--unread]="!notif.isRead"
+        (click)="markRead(notif.id)">
+        <div class="notif-icon" [ngClass]="getNotifIconClass(notif.type)">
+          <span class="material-symbols-outlined">{{ getNotifIcon(notif.type) }}</span>
+        </div>
+        <div class="notif-item__content">
+          <div class="notif-item__title">{{ notif.title }}</div>
+          <div class="notif-item__message">{{ notif.message }}</div>
+          <div class="notif-item__time">{{ notif.time }}</div>
+        </div>
+        <div *ngIf="!notif.isRead" class="notif-item__unread-dot"></div>
+      </div>
+    </ng-container>
+
+    <!-- Hier -->
+    <ng-container *ngIf="yesterdayNotifs().length > 0">
+      <div class="notifications-group-label">Hier</div>
+      <div
+        *ngFor="let notif of yesterdayNotifs()"
+        class="notif-item"
+        [class.notif-item--unread]="!notif.isRead"
+        (click)="markRead(notif.id)">
+        <div class="notif-icon" [ngClass]="getNotifIconClass(notif.type)">
+          <span class="material-symbols-outlined">{{ getNotifIcon(notif.type) }}</span>
+        </div>
+        <div class="notif-item__content">
+          <div class="notif-item__title">{{ notif.title }}</div>
+          <div class="notif-item__message">{{ notif.message }}</div>
+          <div class="notif-item__time">{{ notif.time }}</div>
+        </div>
+        <div *ngIf="!notif.isRead" class="notif-item__unread-dot"></div>
+      </div>
+    </ng-container>
+
+    <!-- Cette semaine -->
+    <ng-container *ngIf="weekNotifs().length > 0">
+      <div class="notifications-group-label">Cette semaine</div>
+      <div
+        *ngFor="let notif of weekNotifs()"
+        class="notif-item"
+        [class.notif-item--unread]="!notif.isRead"
+        (click)="markRead(notif.id)">
+        <div class="notif-icon" [ngClass]="getNotifIconClass(notif.type)">
+          <span class="material-symbols-outlined">{{ getNotifIcon(notif.type) }}</span>
+        </div>
+        <div class="notif-item__content">
+          <div class="notif-item__title">{{ notif.title }}</div>
+          <div class="notif-item__message">{{ notif.message }}</div>
+          <div class="notif-item__time">{{ notif.time }}</div>
+        </div>
+        <div *ngIf="!notif.isRead" class="notif-item__unread-dot"></div>
+      </div>
+    </ng-container>
+
+  </div>
+</div>

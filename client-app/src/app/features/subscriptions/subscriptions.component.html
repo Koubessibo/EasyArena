@@ -1,0 +1,204 @@
+<div class="subs-page">
+
+  <!-- Header -->
+  <div class="subs-header">
+    <div class="subs-header__inner">
+      <div class="header-titles">
+        <span class="header-badge">
+          <span class="material-symbols-outlined">card_membership</span>
+          Pass VIP & Abonnements
+        </span>
+        <h1>Formules d'Abonnement</h1>
+        <p>Accédez à vos terrains préférés avec des séances incluses et des tarifs privilégiés</p>
+      </div>
+
+      <a routerLink="/profile" class="subs-link">
+        <span class="material-symbols-outlined">person</span>
+        Mes abonnements active
+      </a>
+    </div>
+  </div>
+
+  <div class="subs-container">
+    <!-- Alerts -->
+    <div class="alert alert--success" *ngIf="successMessage()">
+      <span class="material-symbols-outlined">check_circle</span>
+      {{ successMessage() }}
+    </div>
+
+    <div class="alert alert--error" *ngIf="errorMessage() && !successMessage()">
+      <span class="material-symbols-outlined">error</span>
+      {{ errorMessage() }}
+    </div>
+
+    <!-- Gateway Waiting State -->
+    <div class="alert alert--info awaiting-banner" *ngIf="awaitingInstallmentId()">
+      <span class="material-symbols-outlined spinner-icon">sync</span>
+      <div class="awaiting-text">
+        <h3>En attente de la validation du paiement...</h3>
+        <p>Veuillez confirmer la transaction sur votre application Mobile Money.</p>
+      </div>
+      <a *ngIf="paymentGatewayUrls()?.redirect_url" [href]="paymentGatewayUrls().redirect_url" target="_blank" class="btn btn--outline">
+        <span class="material-symbols-outlined">open_in_new</span>
+        Ouvrir le lien de paiement
+      </a>
+    </div>
+
+    <!-- Loading Skeletons -->
+    <div class="loading-state" *ngIf="isLoading()">
+      <div *ngFor="let i of [1,2,3]" class="plan-card skeleton-card">
+        <div class="skeleton sk-title"></div>
+        <div class="skeleton sk-price"></div>
+        <div class="skeleton sk-text"></div>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div class="empty-state" *ngIf="!isLoading() && plans().length === 0 && !errorMessage()">
+      <div class="empty-icon-box">
+        <span class="material-symbols-outlined">card_membership</span>
+      </div>
+      <h2>Aucune formule disponible</h2>
+      <p>Les propriétaires de terrains n'ont pas encore publié de formules d'abonnement.</p>
+    </div>
+
+    <!-- Plans grid -->
+    <div class="plans-grid" *ngIf="!isLoading() && plans().length > 0">
+      <div class="plan-card" *ngFor="let plan of plans()"
+           [class.plan-card--subscribed]="subscribedIds().includes(plan.id)"
+           [class.plan-card--moratorium]="plan.allows_moratorium">
+
+        <!-- Badge moratoire -->
+        <div class="plan-badge" *ngIf="plan.allows_moratorium">
+          <span class="material-symbols-outlined">schedule_send</span>
+          Paiement échelonné autorisé
+        </div>
+
+        <!-- Owner -->
+        <div class="plan-owner">
+          <span class="material-symbols-outlined">stadium</span>
+          {{ ownerName(plan) }}
+        </div>
+
+        <!-- Plan name & price -->
+        <h2 class="plan-name">{{ plan.name }}</h2>
+
+        <div class="plan-price">
+          <span class="plan-price__amount">{{ plan.price | number }}</span>
+          <span class="plan-price__currency">FCFA</span>
+        </div>
+
+        <!-- Reservations count -->
+        <div class="plan-feature">
+          <span class="material-symbols-outlined">sports_soccer</span>
+          <span><strong>{{ plan.reservations_count }}</strong> réservations de terrain incluses</span>
+        </div>
+
+        <!-- Moratorium steps -->
+        <div class="plan-moratorium" *ngIf="plan.allows_moratorium && plan.moratorium_config">
+          <span class="moratorium-title">Échéancier de paiement disponible :</span>
+          <div class="moratorium-step" *ngFor="let step of formatInstallments(plan)">
+            <span class="material-symbols-outlined">payments</span>
+            {{ step }}
+          </div>
+        </div>
+
+        <!-- Already subscribed -->
+        <div class="subscribed-badge" *ngIf="subscribedIds().includes(plan.id)">
+          <span class="material-symbols-outlined">verified</span>
+          Souscription Active ✓
+        </div>
+
+        <!-- CTA button -->
+        <button
+          class="btn btn--subscribe btn--full"
+          [class.btn--subscribed]="subscribedIds().includes(plan.id)"
+          [disabled]="subscribingId() !== null || subscribedIds().includes(plan.id)"
+          (click)="openPaymentModal(plan)"
+          *ngIf="!subscribedIds().includes(plan.id)">
+          <span *ngIf="subscribingId() !== plan.id">
+            <span class="material-symbols-outlined">card_membership</span>
+            Souscrire à cette formule
+          </span>
+          <span class="spinner" *ngIf="subscribingId() === plan.id"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Choix de Paiement Sécurisé -->
+  <div class="modal-backdrop" *ngIf="selectedPlanForPayment()" (click)="closePaymentModal()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-card__header">
+        <div>
+          <span class="modal-subtitle">Souscription Abonnement</span>
+          <h2 class="modal-title">{{ selectedPlanForPayment()?.name }}</h2>
+        </div>
+        <button class="modal-close" (click)="closePaymentModal()">&times;</button>
+      </div>
+
+      <div class="plan-summary-box">
+        <span>Montant total :</span>
+        <strong>{{ selectedPlanForPayment()?.price | number }} FCFA</strong>
+      </div>
+
+      <!-- Choix Opérateur -->
+      <div class="form-group">
+        <label class="form-label">Sélectionnez votre moyen de paiement :</label>
+        <div class="operator-selector">
+          <button
+            type="button"
+            class="operator-card"
+            [class.active]="operator() === 'WAVE'"
+            (click)="operator.set('WAVE')">
+            <div class="operator-badge wave-badge">W</div>
+            <div class="operator-details">
+              <span class="operator-name">Wave</span>
+              <span class="operator-hint">Instant</span>
+            </div>
+            <span class="material-symbols-outlined check-icon" *ngIf="operator() === 'WAVE'">check_circle</span>
+          </button>
+
+          <button
+            type="button"
+            class="operator-card"
+            [class.active]="operator() === 'OM'"
+            (click)="operator.set('OM')">
+            <div class="operator-badge om-badge">OM</div>
+            <div class="operator-details">
+              <span class="operator-name">Orange Money</span>
+              <span class="operator-hint">Code OM</span>
+            </div>
+            <span class="material-symbols-outlined check-icon" *ngIf="operator() === 'OM'">check_circle</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Numéro de téléphone avec prefix -->
+      <div class="form-group">
+        <label class="form-label">Numéro de téléphone (Mobile Money) :</label>
+        <div class="phone-input-group">
+          <span class="phone-prefix">+221</span>
+          <input
+            type="tel"
+            class="phone-input"
+            placeholder="7X XXX XX XX"
+            maxlength="10"
+            [value]="phone()"
+            (input)="phone.set($any($event.target).value)"
+          >
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="modal-actions">
+        <button class="btn btn--secondary" (click)="closePaymentModal()">Annuler</button>
+        <button class="btn btn--primary" (click)="confirmPayment()" [disabled]="subscribingId() !== null || !phone()">
+          <span *ngIf="!subscribingId()">Payer {{ selectedPlanForPayment()?.price | number }} FCFA</span>
+          <span *ngIf="subscribingId()" class="spinner"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>

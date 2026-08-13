@@ -1,0 +1,146 @@
+<div class="owner-overview">
+
+  <!-- Header & Quick Actions -->
+  <div class="owner-overview__header">
+    <div class="owner-overview__title-group">
+      <h1 class="owner-overview__title">Tableau de Bord Propriétaire</h1>
+      <p class="owner-overview__subtitle">Supervisez l'activité de vos terrains, réservations et performances financières.</p>
+    </div>
+    
+    <div class="owner-overview__actions" *ngIf="!isLoading()">
+      <button class="btn btn--outline" (click)="exportToPDF()">
+        <span class="material-symbols-outlined">picture_as_pdf</span>
+        PDF
+      </button>
+      <button class="btn btn--outline" (click)="exportToExcel()">
+        <span class="material-symbols-outlined">table_view</span>
+        Excel
+      </button>
+    </div>
+  </div>
+
+  <!-- Error Alert -->
+  <div class="alert alert--error" *ngIf="errorMessage()">
+    <span class="material-symbols-outlined">error</span>
+    {{ errorMessage() }}
+  </div>
+
+  <!-- Loader -->
+  <div class="loader-wrap" *ngIf="isLoading()">
+    <div class="spinner spinner--lg"></div>
+    <p>Calcul des statistiques financières...</p>
+  </div>
+
+  <ng-container *ngIf="!isLoading() && !errorMessage()">
+
+    <!-- KPI Cards Grid -->
+    <div class="kpi-grid">
+
+      <div class="kpi-card kpi-card--emerald">
+        <div class="kpi-card__bg-glow"></div>
+        <div class="kpi-card__icon kpi-card__icon--white">
+          <span class="material-symbols-outlined">account_balance_wallet</span>
+        </div>
+        <div class="kpi-card__info">
+          <span class="kpi-card__label">Revenus Nets Cumulés</span>
+          <strong class="kpi-card__value">{{ globalStats().netRevenue | number:'1.0-0' }} FCFA</strong>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-card__icon kpi-card__icon--blue">
+          <span class="material-symbols-outlined">book_online</span>
+        </div>
+        <div class="kpi-card__info">
+          <span class="kpi-card__label">Réservations Totales</span>
+          <strong class="kpi-card__value">{{ globalStats().totalBookings }}</strong>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-card__icon kpi-card__icon--amber">
+          <span class="material-symbols-outlined">receipt_long</span>
+        </div>
+        <div class="kpi-card__info">
+          <span class="kpi-card__label">Commissions Prélevées</span>
+          <strong class="kpi-card__value">{{ globalStats().totalCommissions | number:'1.0-0' }} FCFA</strong>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Quick Navigation Shortcuts -->
+    <div class="quick-shortcuts">
+      <a routerLink="/owner/scanner" class="shortcut-pill">
+        <span class="material-symbols-outlined">qr_code_scanner</span>
+        <span>Scanner un Billet</span>
+      </a>
+
+      <a routerLink="/owner/fields" class="shortcut-pill">
+        <span class="material-symbols-outlined">map</span>
+        <span>Mes Terrains</span>
+      </a>
+
+      <a routerLink="/owner/schedule" class="shortcut-pill">
+        <span class="material-symbols-outlined">calendar_month</span>
+        <span>Planning du Jour</span>
+      </a>
+
+      <a routerLink="/owner/withdrawals" class="shortcut-pill shortcut-pill--highlight">
+        <span class="material-symbols-outlined">payments</span>
+        <span>Demander un Retrait</span>
+      </a>
+    </div>
+
+    <!-- Data Table -->
+    <div class="card data-section">
+      <div class="card__header">
+        <div class="card__header-title">
+          <span class="material-symbols-outlined">history</span>
+          <h3>Dernières Transactions & Flux de Revenus</h3>
+        </div>
+        <span class="tx-count-badge" *ngIf="transactions().length > 0">{{ transactions().length }} opérations</span>
+      </div>
+
+      <div class="empty-state" *ngIf="transactions().length === 0">
+        <span class="material-symbols-outlined">receipt</span>
+        <p>Aucune transaction enregistrée pour le moment.</p>
+      </div>
+
+      <div class="table-container table-responsive" *ngIf="transactions().length > 0">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Date & Heure</th>
+              <th>Référence</th>
+              <th>Type d'opération</th>
+              <th>Description</th>
+              <th class="text-right">Montant (FCFA)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let tx of transactions()">
+              <td class="tx-date">
+                <span class="material-symbols-outlined">schedule</span>
+                {{ tx.created_at | date:'dd/MM/yyyy HH:mm' }}
+              </td>
+              <td><span class="ref-badge">#{{ (tx.reference || tx.id).slice(0, 8) | uppercase }}</span></td>
+              <td>
+                <span class="type-pill" [class.type-pill--credit]="tx.direction === 'CREDIT'">
+                  {{ tx.type | titlecase }}
+                </span>
+              </td>
+              <td class="td-description">{{ tx.description || '-' }}</td>
+              <td class="text-right">
+                <span class="tx-amount" [ngClass]="{'tx-amount--credit': tx.direction === 'CREDIT', 'tx-amount--debit': tx.direction === 'DEBIT'}">
+                  {{ tx.direction === 'CREDIT' ? '+' : '-' }}{{ tx.amount | number:'1.0-0' }} FCFA
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </ng-container>
+</div>

@@ -1,0 +1,147 @@
+<div class="page-container summary-page">
+
+  <!-- ── HEADER ─────────────────────────────────────────────── -->
+  <header class="page-header">
+    <button class="page-header__back" routerLink="/home">
+      <span class="material-symbols-outlined">arrow_back</span>
+    </button>
+    <h1 class="page-header__title">Récapitulatif</h1>
+    <div class="page-header__spacer"></div>
+  </header>
+
+  <div class="summary-content" *ngIf="!loading() && booking() as b">
+
+    <!-- ── FIELD HERO CARD ──────────────────────────────────── -->
+    <div class="summary-field-card">
+      <img *ngIf="b.fieldImageUrl"
+           [src]="b.fieldImageUrl"
+           [alt]="b.fieldName"
+           class="summary-field-card__image">
+      <div *ngIf="!b.fieldImageUrl" class="summary-field-card__placeholder">
+        <span class="material-symbols-outlined">stadium</span>
+      </div>
+      <div class="summary-field-card__info">
+        <h2 class="summary-field-card__name">{{ b.fieldName }}</h2>
+        <p class="summary-field-card__address">
+          <span class="material-symbols-outlined">location_on</span>
+          {{ b.fieldAddress }}
+        </p>
+        <span class="summary-field-card__status">Réservation confirmée</span>
+      </div>
+    </div>
+
+    <!-- ── DATE & HEURE ─────────────────────────────────────── -->
+    <div class="summary-section">
+      <h3 class="summary-section__title">
+        <span class="material-symbols-outlined">calendar_today</span>
+        Date & Heure
+      </h3>
+      <div class="summary-datetime">
+        <div class="summary-datetime__row">
+          <span class="summary-datetime__label">Date</span>
+          <span class="summary-datetime__value">{{ formattedDate }}</span>
+        </div>
+        <div class="summary-datetime__row">
+          <span class="summary-datetime__label">Début</span>
+          <span class="summary-datetime__value">{{ b.startTime }}</span>
+        </div>
+        <div class="summary-datetime__row">
+          <span class="summary-datetime__label">Fin</span>
+          <span class="summary-datetime__value">{{ b.endTime }}</span>
+        </div>
+        <div class="summary-datetime__row">
+          <span class="summary-datetime__label">Durée</span>
+          <span class="summary-datetime__value">{{ b.pricing.durationHours }} heure(s)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── DÉTAIL DES FRAIS ────────────────────────────────── -->
+    <div class="summary-section">
+      <h3 class="summary-section__title">
+        <span class="material-symbols-outlined">receipt_long</span>
+        Détail des frais
+      </h3>
+      <div class="price-breakdown">
+        <div class="price-breakdown__row">
+          <span>Tarif horaire</span>
+          <span>{{ b.pricing.hourlyRate | fcfa }}</span>
+        </div>
+        <div class="price-breakdown__row">
+          <span>Durée</span>
+          <span>× {{ b.pricing.durationHours }}h</span>
+        </div>
+        <div class="price-breakdown__row">
+          <span>Sous-total</span>
+          <span>{{ b.pricing.subtotal | fcfa }}</span>
+        </div>
+        <div class="price-breakdown__row price-breakdown__row--fee">
+          <span>Frais de service</span>
+          <span>{{ b.pricing.serviceFee | fcfa }}</span>
+        </div>
+        <div class="price-breakdown__divider"></div>
+        <div class="price-breakdown__row price-breakdown__row--total">
+          <span>Total à payer</span>
+          <span class="price-breakdown__total-amount">{{ b.pricing.total | fcfa }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── MODE DE PAIEMENT ────────────────────────────────── -->
+    <div class="summary-section" *ngIf="minDeposit !== null">
+      <h3 class="summary-section__title">
+        <span class="material-symbols-outlined">account_balance_wallet</span>
+        Mode de paiement
+      </h3>
+      <div class="payment-choice">
+        <label class="payment-choice__option" [class.active]="paymentChoice() === 'full'">
+          <input type="radio" value="full" [ngModel]="paymentChoice()" (ngModelChange)="paymentChoice.set($event)">
+          <div class="payment-choice__label">
+            <span>Payer la totalité</span>
+            <strong>{{ totalAmount | fcfa }}</strong>
+          </div>
+        </label>
+        <label class="payment-choice__option" [class.active]="paymentChoice() === 'deposit'">
+          <input type="radio" value="deposit" [ngModel]="paymentChoice()" (ngModelChange)="paymentChoice.set($event)">
+          <div class="payment-choice__label">
+            <span>Payer un acompte</span>
+            <span class="payment-choice__min">Min. {{ minDeposit | fcfa }}</span>
+          </div>
+        </label>
+        <div *ngIf="paymentChoice() === 'deposit'" class="deposit-input-block">
+          <label class="deposit-input-block__label">Montant de l'acompte (FCFA)</label>
+          <input class="form-input" type="number" [min]="minDeposit" [max]="totalAmount"
+            [ngModel]="depositInput()" (ngModelChange)="depositInput.set(+$event)"
+            placeholder="Entrez le montant">
+          <p *ngIf="!depositValid" class="deposit-input-block__error">
+            <span class="material-symbols-outlined">warning</span>
+            Montant minimum : {{ minDeposit | fcfa }}
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── ACTIONS ─────────────────────────────────────────── -->
+    <div class="summary-actions">
+      <button class="summary-confirm-btn btn--primary" (click)="confirmBooking()" [disabled]="!depositValid">
+        <span class="material-symbols-outlined">payment</span>
+        Procéder au paiement
+        <span *ngIf="paymentChoice() === 'deposit' && minDeposit !== null">
+          ({{ depositInput() | fcfa }})
+        </span>
+      </button>
+      <button class="btn--ghost btn--full" routerLink="/home">
+        Annuler la réservation
+      </button>
+    </div>
+
+  </div>
+
+  <!-- ── LOADING ─────────────────────────────────────────────── -->
+  <div *ngIf="loading()" class="summary-loading">
+    <div class="skeleton--text" style="width: 100%; height: 110px; border-radius: 22px;"></div>
+    <div class="skeleton--text" style="width: 100%; height: 160px; border-radius: 20px;"></div>
+    <div class="skeleton--text" style="width: 100%; height: 200px; border-radius: 20px;"></div>
+  </div>
+
+</div>
