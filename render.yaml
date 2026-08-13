@@ -43,6 +43,8 @@ services:
         sync: false
       - key: SMS_PROVIDER_NAME
         value: mock
+      - key: API_BASE_URL
+        value: https://easyarena-api-jcf2.onrender.com
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY
