@@ -6,7 +6,6 @@ services:
     dockerContext: ./api
     region: frankfurt
     plan: free
-    healthCheckPath: /api/v1
     envVars:
       - key: NODE_ENV
         value: production
