@@ -16,6 +16,7 @@ import { PaymentGateway } from './payment.gateway';
 
 import { Owner } from '../users/entities/owner.entity';
 import { ReconciliationService } from './reconciliation.service';
+import { SponsorshipModule } from '../sponsorship/sponsorship.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { ReconciliationService } from './reconciliation.service';
     NotificationsModule,
     UsersModule,
     IotModule,
+    SponsorshipModule,
   ],
   providers: [PaymentsService, SamirpayProvider, MockPaymentProvider, PaymentProviderFactory, PaymentGateway, ReconciliationService],
   controllers: [PaymentsController],

@@ -1,0 +1,294 @@
+<div class="ambassador-wallet">
+
+  <!-- Header -->
+  <header class="wallet-header">
+    <a routerLink="/profile" class="wallet-header__back">
+      <span class="material-symbols-outlined">arrow_back</span>
+    </a>
+    <h1 class="wallet-header__title">Mon Espace Parrainage</h1>
+  </header>
+
+  <!-- Loading -->
+  <div *ngIf="loading()" class="loading-state">
+    <div class="spinner"></div>
+    <p>Chargement...</p>
+  </div>
+
+  <!-- Error -->
+  <div *ngIf="error()" class="error-state">
+    <span class="material-symbols-outlined">error</span>
+    <p>{{ error() }}</p>
+  </div>
+
+  <!-- Content -->
+  <ng-container *ngIf="!loading() && !error() && stats() as s">
+
+    <!-- Status Badge -->
+    <div class="status-badge" [class.status-badge--ambassador]="s.is_ambassador">
+      <span class="material-symbols-outlined">{{ s.is_ambassador ? 'star' : 'person' }}</span>
+      <span>{{ s.is_ambassador ? 'Ambassadeur' : 'Client Parrain' }}</span>
+    </div>
+
+    <!-- Balance Card -->
+    <div class="balance-card">
+      <span class="balance-card__label">Solde Disponible</span>
+      <strong class="balance-card__amount">{{ formatCFA(s.wallet_balance) }}</strong>
+      <span class="balance-card__sub">Gains totaux générés : {{ formatCFA(s.total_earned) }}</span>
+
+      <div class="balance-card__actions">
+        <!-- BOUTON DE DÉCAISSEMENT AUTOMATISÉ -->
+        <button class="btn-withdraw" [disabled]="s.wallet_balance <= 0"
+          (click)="openWithdrawModal()">
+          <span class="material-symbols-outlined">payments</span>
+          Demander un retrait Mobile Money
+        </button>
+
+        <!-- LIEN SUPPORT OFFICIEL WHATSAPP -->
+        <a [href]="supportWhatsappUrl" target="_blank" rel="noopener" class="btn-support-whatsapp">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+            <path
+              d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
+            <path
+              d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492l4.597-1.472A11.94 11.94 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818c-2.17 0-4.188-.588-5.938-1.608l-.424-.254-2.727.874.874-2.636-.279-.442A9.77 9.77 0 012.182 12c0-5.414 4.404-9.818 9.818-9.818S21.818 6.586 21.818 12 17.414 21.818 12 21.818z" />
+          </svg>
+          <span>Contacter le support (WhatsApp)</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <span class="stat-card__value">{{ s.n1_count }}</span>
+        <span class="stat-card__label">Filleuls N1</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-card__value">{{ s.n2_count }}</span>
+        <span class="stat-card__label">Filleuls N2</span>
+      </div>
+    </div>
+
+    <!-- Referral Link Section -->
+    <div class="referral-section">
+      <h3 class="referral-section__title">Mon lien de parrainage</h3>
+      <div class="referral-link-box">
+        <input #linkInput type="text" readonly class="referral-link-box__input" [value]="referralLink"
+          (click)="linkInput.select()" />
+        <button class="referral-link-box__btn" (click)="copyLink()">
+          <span class="material-symbols-outlined">{{ copied() ? 'check' : 'content_copy' }}</span>
+        </button>
+      </div>
+      <p *ngIf="copied()" class="copied-feedback">Lien copié !</p>
+
+      <!-- Share Buttons -->
+      <div class="share-buttons">
+        <a [href]="whatsappUrl" target="_blank" rel="noopener" class="share-btn share-btn--whatsapp">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+            <path
+              d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
+            <path
+              d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492l4.597-1.472A11.94 11.94 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818c-2.17 0-4.188-.588-5.938-1.608l-.424-.254-2.727.874.874-2.636-.279-.442A9.77 9.77 0 012.182 12c0-5.414 4.404-9.818 9.818-9.818S21.818 6.586 21.818 12 17.414 21.818 12 21.818z" />
+          </svg>
+          <span>WhatsApp</span>
+        </a>
+        <a [href]="smsUrl" class="share-btn share-btn--sms">
+          <span class="material-symbols-outlined">sms</span>
+          <span>SMS</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Commission Grid Info -->
+    <div class="grid-info">
+      <h3 class="grid-info__title">Grille de Commissions</h3>
+      <div class="grid-info__table">
+        <div class="grid-info__row grid-info__row--header">
+          <span>Type</span>
+          <span>N1</span>
+          <span>N2</span>
+          <span>Durée</span>
+        </div>
+        <div class="grid-info__row" *ngIf="!s.is_ambassador">
+          <span>Client &rarr; Client</span>
+          <span>5%</span>
+          <span>2%</span>
+          <span>12 mois</span>
+        </div>
+        <div class="grid-info__row" *ngIf="s.is_ambassador">
+          <span>Ambassadeur &rarr; Client</span>
+          <span>7%</span>
+          <span>2%</span>
+          <span>24 mois</span>
+        </div>
+        <div class="grid-info__row" *ngIf="s.is_ambassador">
+          <span>Ambassadeur &rarr; Pro</span>
+          <span>10%</span>
+          <span>3%</span>
+          <span>36 mois</span>
+        </div>
+      </div>
+      <p class="grid-info__note">
+        Les pourcentages s'appliquent sur le <strong>Revenu Net EasyArena</strong>
+        (marge de la plateforme après frais de paiement), et non sur le prix du terrain.
+      </p>
+    </div>
+
+    <!-- Empty State (no referrals yet) -->
+    <div class="empty-cta" *ngIf="s.n1_count === 0 && s.recent_commissions.length === 0">
+      <div class="empty-cta__icon">
+        <span class="material-symbols-outlined">diversity_3</span>
+      </div>
+      <h3 class="empty-cta__title">Invitez vos amis !</h3>
+      <p class="empty-cta__desc">
+        Partagez votre lien ci-dessus et gagnez des commissions sur chaque
+        réservation de vos filleuls. Plus vous parrainez, plus vous gagnez !
+      </p>
+    </div>
+
+    <!-- Recent Commissions -->
+    <div class="recent-section" *ngIf="s.recent_commissions.length > 0">
+      <h3 class="recent-section__title">Dernières Commissions</h3>
+      <div class="commission-list">
+        <div class="commission-item" *ngFor="let c of s.recent_commissions">
+          <div class="commission-item__info">
+            <span class="commission-item__level">N{{ c.level }}</span>
+            <span class="commission-item__date">{{ c.created_at | date:'dd/MM/yyyy' }}</span>
+          </div>
+          <span class="commission-item__amount">+{{ formatCFA(c.amount) }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Referrals List with CSV Export Button (N1 + N2) -->
+    <div class="referrals-section" *ngIf="s.referrals.length > 0">
+      <div class="referrals-section__header">
+        <h3 class="referrals-section__title">Mes Filleuls N1 & N2 ({{ s.referrals.length }})</h3>
+        <button class="btn-export-csv" (click)="exportReferralsCsv()" title="Télécharger la liste complète au format CSV">
+          <span class="material-symbols-outlined">download</span>
+          <span>Exporter en CSV (N1+N2)</span>
+        </button>
+      </div>
+
+      <div class="referral-list">
+        <div class="referral-item" *ngFor="let r of s.referrals">
+          <div class="referral-item__avatar" [class.referral-item__avatar--n2]="r.level === 2">{{ r.referee_name.charAt(0) }}</div>
+          <div class="referral-item__info">
+            <div class="referral-item__top">
+              <span class="referral-item__name">{{ r.referee_name }}</span>
+              <span class="referral-badge" [class.referral-badge--n2]="r.level === 2">N{{ r.level }}</span>
+            </div>
+            <span class="referral-item__role">{{ r.referee_role }}</span>
+          </div>
+          <span class="referral-item__date">{{ r.created_at | date:'dd/MM/yy' }}</span>
+        </div>
+      </div>
+    </div>
+
+  </ng-container>
+
+  <!-- MODAL DE RETRAIT MOBILE MONEY AVEC OTP -->
+  <div class="modal-backdrop" *ngIf="showWithdrawModal()" (click)="closeWithdrawModal()">
+    <div class="withdraw-modal" (click)="$event.stopPropagation()">
+      <div class="withdraw-modal__header">
+        <div class="withdraw-modal__icon">
+          <span class="material-symbols-outlined">payments</span>
+        </div>
+        <div>
+          <h2 class="withdraw-modal__title">Demande de Retrait</h2>
+          <p class="withdraw-modal__subtitle">Transférez vos commissions vers votre compte Mobile Money.</p>
+        </div>
+        <button class="withdraw-modal__close" (click)="closeWithdrawModal()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <div class="withdraw-modal__body">
+
+        <div class="alert alert--success" *ngIf="withdrawSuccessMessage()">
+          <span class="material-symbols-outlined">check_circle</span>
+          {{ withdrawSuccessMessage() }}
+        </div>
+
+        <div class="alert alert--error" *ngIf="withdrawErrorMessage()">
+          <span class="material-symbols-outlined">error</span>
+          {{ withdrawErrorMessage() }}
+        </div>
+
+        <div *ngIf="!withdrawSuccessMessage()">
+          <!-- Choix de l'Opérateur -->
+          <div class="form-group">
+            <label class="form-label">Opérateur Mobile Money</label>
+            <div class="operator-selector">
+              <button type="button" class="operator-btn" [class.operator-btn--active]="withdrawOperator() === 'Wave'"
+                (click)="withdrawOperator.set('Wave')">
+                <span class="material-symbols-outlined">account_balance_wallet</span>
+                Wave
+              </button>
+              <button type="button" class="operator-btn" [class.operator-btn--active]="withdrawOperator() === 'Orange Money'"
+                (click)="withdrawOperator.set('Orange Money')">
+                <span class="material-symbols-outlined">smartphone</span>
+                Orange Money
+              </button>
+              <button type="button" class="operator-btn" [class.operator-btn--active]="withdrawOperator() === 'Free Money'"
+                (click)="withdrawOperator.set('Free Money')">
+                <span class="material-symbols-outlined">send_to_mobile</span>
+                Free Money
+              </button>
+            </div>
+          </div>
+
+          <!-- Montant -->
+          <div class="form-group">
+            <div class="form-label-row">
+              <label class="form-label">Montant à retirer (FCFA)</label>
+              <button type="button" class="btn-max" (click)="setMaxAmount()">Max ({{ formatCFA(stats()?.wallet_balance ?? 0) }})</button>
+            </div>
+            <div class="input-with-suffix">
+              <input type="number" class="form-input" [ngModel]="withdrawAmount()" (ngModelChange)="withdrawAmount.set($event)"
+                placeholder="Ex: 5000" min="1" [max]="stats()?.wallet_balance ?? 0" />
+              <span class="input-suffix">FCFA</span>
+            </div>
+          </div>
+
+          <!-- Numéro de réception -->
+          <div class="form-group">
+            <label class="form-label">Numéro de Téléphone de réception</label>
+            <input type="tel" class="form-input" [ngModel]="withdrawPhone()" (ngModelChange)="withdrawPhone.set($event)"
+              placeholder="Ex: 771234567" />
+          </div>
+
+          <!-- Sécurité OTP -->
+          <div class="form-group otp-group">
+            <div class="form-label-row">
+              <label class="form-label">Code de confirmation OTP (SMS)</label>
+              <button type="button" class="btn-otp" (click)="requestOtp()" [disabled]="isSendingOtp() || otpCountdown() > 0">
+                <span class="spinner spinner--xs" *ngIf="isSendingOtp()"></span>
+                <span *ngIf="!isSendingOtp() && otpCountdown() === 0">{{ otpSent() ? 'Renvoyer le code' : 'Envoyer le code OTP' }}</span>
+                <span *ngIf="otpCountdown() > 0">Renvoyer ({{ otpCountdown() }}s)</span>
+              </button>
+            </div>
+            <input type="text" maxlength="6" class="form-input otp-input" [ngModel]="withdrawOtp()" (ngModelChange)="withdrawOtp.set($event)"
+              placeholder="Code à 6 chiffres" />
+            <p class="otp-help" *ngIf="otpSent()">Un SMS contenant le code à 6 chiffres a été envoyé sur le numéro de votre compte.</p>
+          </div>
+
+          <p class="withdraw-note">
+            <span class="material-symbols-outlined">security</span>
+            Sécurisé : le montant est débité de votre solde et transféré sur votre compte après validation du code OTP.
+          </p>
+        </div>
+      </div>
+
+      <div class="withdraw-modal__footer" *ngIf="!withdrawSuccessMessage()">
+        <button class="btn btn--secondary" (click)="closeWithdrawModal()" [disabled]="isSubmittingWithdraw()">
+          Annuler
+        </button>
+        <button class="btn btn--primary" (click)="submitWithdrawal()" [disabled]="isSubmittingWithdraw() || !withdrawOtp() || withdrawOtp().length !== 6">
+          <span class="spinner spinner--sm" *ngIf="isSubmittingWithdraw()"></span>
+          <span>{{ isSubmittingWithdraw() ? 'Vérification & Retrait...' : 'Confirmer le retrait' }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>

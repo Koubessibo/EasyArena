@@ -372,6 +372,7 @@ export class HomeComponent implements OnInit, OnDestroy, AfterViewInit {
     this.goToSlide(prev);
   }
 
+
   isFavorite(fieldId: string): boolean {
     return this.fieldService.isFavorite(fieldId);
   }

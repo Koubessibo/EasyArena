@@ -9,6 +9,7 @@ export interface User {
   avatarUrl?: string;
   isVerified: boolean;
   createdAt: string;
+  is_ambassador?: boolean;
 }
 
 export interface AuthCredentials {

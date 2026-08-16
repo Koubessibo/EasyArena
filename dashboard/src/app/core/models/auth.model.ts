@@ -11,4 +11,5 @@ export interface DashboardUser {
   isVerified: boolean;
   createdAt: string;
   can_withdraw?: boolean;
+  is_ambassador?: boolean;
 }

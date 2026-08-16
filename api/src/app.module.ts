@@ -32,6 +32,7 @@ import { TicketsModule } from './modules/tickets/tickets.module';
 import { ProductsModule } from './modules/products/products.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { VendorEarningsModule } from './modules/vendor-earnings/vendor-earnings.module';
+import { SponsorshipModule } from './modules/sponsorship/sponsorship.module';
 
 @Module({
   imports: [
@@ -80,6 +81,7 @@ import { VendorEarningsModule } from './modules/vendor-earnings/vendor-earnings.
     ProductsModule,
     OrdersModule,
     VendorEarningsModule,
+    SponsorshipModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },

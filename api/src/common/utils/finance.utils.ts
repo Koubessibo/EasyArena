@@ -69,3 +69,71 @@ export function assertFinancialIntegrity(
     );
   }
 }
+
+// ══════════════════════════════════════════════════════════════════
+// Sponsorship / MLM Engine Constants & Utilities
+// ══════════════════════════════════════════════════════════════════
+
+export const GATEWAY_INGRESS_PERCENT = 0.015; // 1.5% frais encaissement
+export const GATEWAY_EGRESS_PERCENT = 0.01;   // 1% frais retrait
+
+export interface SponsorshipGrid {
+  n1_percent: number;
+  n2_percent: number;
+  duration_months: number;
+}
+
+export const SPONSORSHIP_GRIDS = {
+  CLIENT_TO_CLIENT: { n1_percent: 0.05, n2_percent: 0.02, duration_months: 12 },
+  AMBASSADOR_TO_CLIENT: { n1_percent: 0.07, n2_percent: 0.02, duration_months: 24 },
+  AMBASSADOR_TO_PRO: { n1_percent: 0.10, n2_percent: 0.03, duration_months: 36 },
+} as const;
+
+/**
+ * Computes the Net Revenue for EasyArena from a transaction.
+ * NetRevenue = GrossPlatformFee(5%) - GatewayIngress(1.5%) - GatewayEgress(1%)
+ * All calculations are on the PRINCIPAL AMOUNT (Option A).
+ */
+export function computeNetRevenue(principalAmount: number): {
+  principalAmount: number;
+  grossPlatformFee: number;
+  gatewayIngress: number;
+  gatewayEgress: number;
+  netRevenue: number;
+} {
+  const principal = Math.round(principalAmount);
+  const grossPlatformFee = Math.round(principal * PLATFORM_FEE_PERCENT);
+  const gatewayIngress = Math.round(principal * GATEWAY_INGRESS_PERCENT);
+  const gatewayEgress = Math.round(principal * GATEWAY_EGRESS_PERCENT);
+  const netRevenue = grossPlatformFee - gatewayIngress - gatewayEgress;
+  return { principalAmount: principal, grossPlatformFee, gatewayIngress, gatewayEgress, netRevenue };
+}
+
+/**
+ * Computes sponsorship commissions (N1 and N2) from a net revenue amount.
+ * Returns integer amounts (Math.round).
+ */
+export function computeSponsorshipCommissions(
+  netRevenue: number,
+  grid: SponsorshipGrid,
+): { n1_commission: number; n2_commission: number } {
+  const n1_commission = Math.round(netRevenue * grid.n1_percent);
+  const n2_commission = Math.round(netRevenue * grid.n2_percent);
+  return { n1_commission, n2_commission };
+}
+
+/**
+ * Determines which sponsorship grid to apply based on sponsor type and referee role.
+ */
+export function getSponsorshipGrid(
+  sponsorIsAmbassador: boolean,
+  refereeRole: string,
+): SponsorshipGrid {
+  if (sponsorIsAmbassador) {
+    if (refereeRole === 'client') {
+      return SPONSORSHIP_GRIDS.AMBASSADOR_TO_CLIENT;
+    }
+    return SPONSORSHIP_GRIDS.AMBASSADOR_TO_PRO;
+  }
+  return SPONSORSHIP_GRIDS.CLIENT_TO_CLIENT;
+}

@@ -36,6 +36,7 @@ import { UserSubscription } from '../subscriptions/entities/user-subscription.en
 import { InitiatePaymentDto } from './dto/initiate-payment.dto';
 import { WebhookPayloadDto } from './dto/webhook-payload.dto';
 import { User } from '../users/entities/user.entity';
+import { SponsorshipService } from '../sponsorship/sponsorship.service';
 
 const SERVICE_FEE_PERCENT = 0.05;
 
@@ -54,6 +55,7 @@ export class PaymentsService {
     private readonly dataSource: DataSource,
     private readonly paymentGateway: PaymentGateway,
     private readonly iotService: IotService,
+    private readonly sponsorshipService: SponsorshipService,
   ) {}
 
   async initiatePayment(user: User, bookingId: string, dto: InitiatePaymentDto) {
@@ -225,6 +227,18 @@ export class PaymentsService {
             qr.manager,
           );
         }
+        // Sponsorship commission distribution (N1/N2)
+        if (booking.client?.user) {
+          const principalAmount = Number(booking.total_amount);
+          try {
+            await this.sponsorshipService.distributeCommissions(
+              booking.client.user.id, principalAmount, payment.id, qr.manager,
+            );
+          } catch (e) {
+            this.logger.warn(`[Sponsorship] Distribution failed: ${e.message}`);
+          }
+        }
+
         await qr.commitTransaction();
         this.logger.debug(`[DEV] Auto-confirmed booking ${booking.id}`);
         if (owner?.user) {
@@ -449,6 +463,18 @@ export class PaymentsService {
               owner.user.phone,
               ownerMsg,
             );
+          }
+        }
+
+        // Sponsorship commission distribution (N1/N2)
+        if (booking.client?.user) {
+          const principalAmount = Number(booking.total_amount);
+          try {
+            await this.sponsorshipService.distributeCommissions(
+              booking.client.user.id, principalAmount, payment.id, qr.manager,
+            );
+          } catch (e) {
+            this.logger.warn(`[Sponsorship] Distribution failed in webhook: ${e.message}`);
           }
         }
 

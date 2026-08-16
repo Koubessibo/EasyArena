@@ -17,11 +17,13 @@ export class AdminFinancialComponent {
   public location = inject(Location);
   transactions = this.adminService.transactions;
   withdrawalRequests = this.adminService.withdrawalRequests;
+  sponsorshipWithdrawals = this.adminService.sponsorshipWithdrawals;
   monthlyRevenue = this.adminService.monthlyRevenue;
 
   constructor() {
     this.adminService.loadTransactions();
     this.adminService.loadWithdrawals();
+    this.adminService.loadSponsorshipWithdrawals();
     this.adminService.loadMonthlyRevenue();
   }
 
@@ -47,6 +49,32 @@ export class AdminFinancialComponent {
           id,
           type: 'success',
           message: action === 'approved' ? 'Retrait approuvé avec succès.' : 'Retrait rejeté.',
+        });
+        setTimeout(() => this.actionFeedback.set(null), 4000);
+      },
+      error: (err: any) => {
+        this.actionFeedback.set({
+          id,
+          type: 'error',
+          message: err?.error?.message ?? 'Une erreur est survenue.',
+        });
+      },
+    });
+  }
+
+  processSponsorshipWithdrawal(id: string, action: 'APPROVE' | 'REJECT'): void {
+    this.actionFeedback.set(null);
+    this.adminService.processSponsorshipWithdrawal(id, action).subscribe({
+      next: () => {
+        this.adminService.sponsorshipWithdrawals.update(list =>
+          list.map(w => w.id === id ? { ...w, status: action === 'APPROVE' ? 'PROCESSED' : 'REJECTED' } : w)
+        );
+        this.actionFeedback.set({
+          id,
+          type: 'success',
+          message: action === 'APPROVE'
+            ? 'Retrait ambassadeur approuvé et validé.'
+            : 'Retrait ambassadeur rejeté et solde recrédité à l\'utilisateur.',
         });
         setTimeout(() => this.actionFeedback.set(null), 4000);
       },

@@ -1,33 +1,20 @@
 import { Component, inject, signal } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { AdminService, ContentItem, CreateOwnerData, CreateVendorData, EnrollmentRequestItem } from '../../../core/services/admin.service';
-import { AuthService } from '../../../core/services/auth.service';
 import { ApiService } from '../../../core/services/api.service';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 
-export type InvitationRole = 'client' | 'owner' | 'vendor';
-
-export interface InvitationForm {
-  firstName: string;
-  lastName: string;
-  phone: string;
-  email: string;
-  role: InvitationRole;
-}
-
 @Component({
   selector: 'app-user-management',
   standalone: true,
-  imports: [CommonModule, FormsModule, PageHeaderComponent, StatusBadgeComponent],
+  imports: [CommonModule, PageHeaderComponent, StatusBadgeComponent],
   templateUrl: './user-management.component.html',
   styleUrl: './user-management.component.scss',
 })
 export class UserManagementComponent {
   private adminService = inject(AdminService);
   public location = inject(Location);
-  private authService  = inject(AuthService);
   private api          = inject(ApiService);
 
   pendingUsers       = this.adminService.pendingUsers;
@@ -46,19 +33,6 @@ export class UserManagementComponent {
   createLoading = signal(false);
   createError = signal('');
 
-  // ── Invitation / Parrainage modal ────────────────────────────────────────
-  isInvitationModalOpen = signal(false);
-  inviteLoading         = signal(false);
-  inviteError           = signal<string | null>(null);
-  inviteSuccess         = signal<string | null>(null);
-
-  inviteForm: InvitationForm = {
-    firstName: '',
-    lastName: '',
-    phone: '',
-    email: '',
-    role: 'client',
-  };
 
   // Owner fields
   ownerPhone = signal('');
@@ -111,55 +85,6 @@ export class UserManagementComponent {
     });
   }
 
-  // ── Invitation / Parrainage ──────────────────────────────────────────────
-
-  openInvitationModal(): void {
-    this.inviteForm = { firstName: '', lastName: '', phone: '', email: '', role: 'client' };
-    this.inviteError.set(null);
-    this.inviteSuccess.set(null);
-    this.isInvitationModalOpen.set(true);
-  }
-
-  closeInvitationModal(): void {
-    this.isInvitationModalOpen.set(false);
-  }
-
-  inviteUser(): void {
-    const { firstName, lastName, phone, email, role } = this.inviteForm;
-
-    if (!firstName.trim() || !lastName.trim() || !phone.trim()) {
-      this.inviteError.set('Prénom, nom et téléphone sont obligatoires.');
-      return;
-    }
-
-    // Règle métier : inclure l'id de l'admin connecté comme referrerId (parrain)
-    const referrerId = this.authService.currentUser()?.id ?? null;
-
-    const payload = {
-      first_name: firstName.trim(),
-      last_name:  lastName.trim(),
-      phone:      phone.trim(),
-      email:      email.trim() || undefined,
-      role,
-      referrer_id: referrerId,   // Programme de parrainage
-    };
-
-    this.inviteLoading.set(true);
-    this.inviteError.set(null);
-
-    this.api.post<unknown>('/admin/users/invite', payload).subscribe({
-      next: () => {
-        this.inviteLoading.set(false);
-        this.inviteSuccess.set(`Invitation envoyée à ${firstName} ${lastName} avec succès.`);
-        // Ferme la modale après 2 secondes
-        setTimeout(() => this.closeInvitationModal(), 2000);
-      },
-      error: (err: Error) => {
-        this.inviteLoading.set(false);
-        this.inviteError.set(err.message);
-      },
-    });
-  }
 
   confirmDeleteUser(user: { id: string; name: string }): void {
     if (!confirm(`Supprimer le compte de ${user.name} ? Cette action est irréversible.`)) return;
@@ -277,6 +202,25 @@ export class UserManagementComponent {
 
   enrollmentRoleLabel(role: 'owner' | 'vendor'): string {
     return role === 'owner' ? 'Propriétaire' : 'Vendeur';
+  }
+
+  // ── Ambassadeur Toggle ────────────────────────────────────────────────────
+  toggleAmbassador(user: { id: string; name: string; is_ambassador?: boolean }): void {
+    const newStatus = !user.is_ambassador;
+    const action = newStatus ? 'Promouvoir Ambassadeur' : 'Rétrograder Client';
+    if (!confirm(`${action} : ${user.name} ?`)) return;
+
+    this.api.patch<unknown>(`/sponsorship/users/${user.id}/ambassador-status`, {
+      is_ambassador: newStatus,
+    }).subscribe({
+      next: () => {
+        this.adminService.allUsers.update(list =>
+          list.map(u => u.id === user.id ? { ...u, is_ambassador: newStatus } : u)
+        );
+        this.createSuccess.set(`${user.name} ${newStatus ? 'promu Ambassadeur' : 'rétrogradé Client'}`);
+      },
+      error: (err: Error) => alert(err.message),
+    });
   }
 
   private resetFields(): void {

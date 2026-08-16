@@ -1,5 +1,5 @@
-import { Component, signal, inject } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Component, signal, inject, OnInit } from '@angular/core';
+import { RouterLink, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { NgIf } from '@angular/common';
 import { AuthService } from '../../../core/services/auth.service';
@@ -14,8 +14,9 @@ type RegisterStep = 'role-select' | 'customer' | 'owner' | 'vendor' | 'success';
   templateUrl: './register.component.html',
   styleUrl: './register.component.scss',
 })
-export class RegisterComponent {
+export class RegisterComponent implements OnInit {
   private authService = inject(AuthService);
+  private route = inject(ActivatedRoute);
 
   step = signal<RegisterStep>('role-select');
 
@@ -35,9 +36,17 @@ export class RegisterComponent {
   contactPhone = signal('');
   location = signal('');
 
+  // Referral code from URL
+  referrerCode = signal('');
+
   // CGU Modal state
   showCguModal = signal(false);
   cguTab = signal<'client' | 'owner' | 'vendor'>('client');
+
+  ngOnInit(): void {
+    const ref = this.route.snapshot.queryParamMap.get('ref');
+    if (ref) this.referrerCode.set(ref);
+  }
 
   get loading() {
     return this.authService.loading;
@@ -81,7 +90,7 @@ export class RegisterComponent {
     }
 
     this.errorMessage.set('');
-    this.authService.register({ firstName, lastName, phone }).subscribe({
+    this.authService.register({ firstName, lastName, phone, referrerCode: this.referrerCode() || undefined }).subscribe({
       error: (err: Error) => this.errorMessage.set(err.message),
     });
   }

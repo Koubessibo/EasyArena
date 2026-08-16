@@ -136,3 +136,13 @@ export enum InstallmentStatus {
   FAILED = 'failed',
   OVERDUE = 'overdue',
 }
+
+export enum SponsorType {
+  CLIENT = 'CLIENT',
+  AMBASSADOR = 'AMBASSADOR',
+}
+
+export enum SponsorshipCommissionStatus {
+  PENDING = 'PENDING',
+  CREDITED = 'CREDITED',
+}

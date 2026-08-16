@@ -207,6 +207,12 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/profile/transactions/transactions.component').then(m => m.TransactionsComponent),
       },
+      {
+        path: 'profile/ambassador-wallet',
+        canActivate: [authGuard],
+        loadComponent: () =>
+          import('./features/profile/ambassador-wallet/ambassador-wallet.component').then(m => m.AmbassadorWalletComponent),
+      },
     ],
   },
   // Catch-all

@@ -83,14 +83,16 @@ export class AuthService {
     );
   }
 
-  register(data: { firstName: string; lastName: string; phone: string }): Observable<any> {
+  register(data: { firstName: string; lastName: string; phone: string; referrerCode?: string }): Observable<any> {
     this.loading.set(true);
     this.error.set(null);
-    return this.api.post<any>('/auth/register', {
+    const payload: any = {
       first_name: data.firstName,
       last_name: data.lastName,
       phone: data.phone,
-    }).pipe(
+    };
+    if (data.referrerCode) payload.referrer_code = data.referrerCode;
+    return this.api.post<any>('/auth/register', payload).pipe(
       tap({
         next: () => {
           this.pendingPhone.set(data.phone);

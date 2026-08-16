@@ -18,10 +18,6 @@
         <span class="material-symbols-outlined">person_add</span>
         Créer un compte
       </button>
-      <button class="btn btn--secondary" (click)="openInvitationModal()">
-        <span class="material-symbols-outlined">send</span>
-        Inviter par parrainage
-      </button>
     </div>
   </div>
 
@@ -249,6 +245,13 @@
                   </span>
                   <span class="toggle-btn__label">{{ user.status === 'active' ? 'Actif' : 'Inactif' }}</span>
                 </button>
+                <button
+                  class="btn btn--sm"
+                  [class.btn--ambassador]="user.is_ambassador"
+                  (click)="toggleAmbassador(user)"
+                  [title]="user.is_ambassador ? 'Rétrograder Client' : 'Promouvoir Ambassadeur'">
+                  <span class="material-symbols-outlined">{{ user.is_ambassador ? 'star' : 'star_border' }}</span>
+                </button>
                 <button class="btn btn--sm btn--danger-icon" (click)="confirmDeleteUser(user)" title="Supprimer">
                   <span class="material-symbols-outlined">delete</span>
                 </button>
@@ -296,63 +299,3 @@
 
 </div>
 
-<!-- Modal d'invitation avec Parrainage -->
-<div class="modal-overlay" *ngIf="isInvitationModalOpen()">
-  <div class="modal">
-    <div class="modal__header">
-      <div class="modal__header-icon">
-        <span class="material-symbols-outlined">send</span>
-      </div>
-      <div>
-        <h2 class="modal__title">Inviter un Utilisateur par Parrainage</h2>
-        <p class="modal__subtitle">Envoi direct d'une invitation avec code parrain Super Admin</p>
-      </div>
-      <button class="modal__close" (click)="closeInvitationModal()">×</button>
-    </div>
-
-    <div class="modal__body" *ngIf="!inviteSuccess()">
-      <div class="modal__referrer-info">
-        <span class="material-symbols-outlined">info</span>
-        <p>Le compte sera rattaché à votre profil administrateur <strong>(EasyArena Parrainage)</strong>.</p>
-      </div>
-
-      <div class="form-grid">
-        <div class="form-group">
-          <label class="form-label">Prénom *</label>
-          <input class="form-control" type="text" [(ngModel)]="inviteForm.firstName" placeholder="Ex: Moussa">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Nom *</label>
-          <input class="form-control" type="text" [(ngModel)]="inviteForm.lastName" placeholder="Ex: Ndiaye">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Téléphone *</label>
-          <input class="form-control" type="tel" [(ngModel)]="inviteForm.phone" placeholder="+221770000000">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Rôle attribué *</label>
-          <select class="form-control" [(ngModel)]="inviteForm.role">
-            <option value="client">Client</option>
-            <option value="owner">Propriétaire de terrain</option>
-            <option value="vendor">Vendeur Boutique</option>
-          </select>
-        </div>
-      </div>
-
-      <p class="form-error" *ngIf="inviteError()">{{ inviteError() }}</p>
-
-      <div class="modal__footer">
-        <button class="btn btn--ghost" (click)="closeInvitationModal()">Annuler</button>
-        <button class="btn btn--primary" [disabled]="inviteLoading()" (click)="inviteUser()">
-          <span *ngIf="!inviteLoading()">Envoyer l'invitation</span>
-          <span *ngIf="inviteLoading()" class="modal__spinner"></span>
-        </button>
-      </div>
-    </div>
-
-    <div class="modal__success" *ngIf="inviteSuccess()">
-      <span class="material-symbols-outlined">check_circle</span>
-      <p>{{ inviteSuccess() }}</p>
-    </div>
-  </div>
-</div>

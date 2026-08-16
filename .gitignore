@@ -18,8 +18,9 @@ build/
 !.env.example
 !**/.env.example
 
-# Claude Code local settings (may contain machine-specific tokens/keys)
-.claude/settings.local.json
+# IDE & AI Assistant metadata
+.claude/
+.gemini/
 
 # Logs
 *.log

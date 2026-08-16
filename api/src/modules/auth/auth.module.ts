@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -11,6 +11,7 @@ import { Staff } from '../users/entities/staff.entity';
 import { OtpCode } from '../../otp/entities/otp-code.entity';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { OtpModule } from '../../otp/otp.module';
+import { SponsorshipModule } from '../sponsorship/sponsorship.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { OtpModule } from '../../otp/otp.module';
     JwtModule.register({}),
     NotificationsModule,
     OtpModule,
+    forwardRef(() => SponsorshipModule),
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, JwtRefreshStrategy],

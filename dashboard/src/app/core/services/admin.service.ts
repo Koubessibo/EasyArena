@@ -38,6 +38,19 @@ export interface CreateVendorData {
   location?: string;
 }
 
+export interface SponsorshipWithdrawalItem {
+  id: string;
+  userId: string;
+  userName: string;
+  userPhone: string;
+  amount: number;
+  phone: string;
+  operator: string;
+  status: 'PENDING' | 'PROCESSED' | 'REJECTED';
+  rejectionNote?: string;
+  createdAt: string;
+}
+
 const ROLE_MAP: Record<string, UserRole> = {
   admin: 'super_admin',
   owner: 'field_owner',
@@ -69,6 +82,7 @@ function mapUser(u: any): DashboardUser {
     status: u.status ?? '',
     isVerified: u.status === 'active',
     createdAt: u.created_at ?? '',
+    is_ambassador: u.is_ambassador ?? false,
   };
 }
 
@@ -120,6 +134,7 @@ export class AdminService {
   readonly allUsers = signal<DashboardUser[]>([]);
   readonly transactions = signal<Transaction[]>([]);
   readonly withdrawalRequests = signal<AdminWithdrawalRequest[]>([]);
+  readonly sponsorshipWithdrawals = signal<SponsorshipWithdrawalItem[]>([]);
 
   readonly monthlyRevenue = signal<{ month: string; value: number }[]>([]);
   readonly contentItems = signal<ContentItem[]>([]);
@@ -229,6 +244,35 @@ export class AdminService {
       next: (res) => this.withdrawalRequests.set((res.data ?? []).map(mapWithdrawal)),
       error: (err: Error) => this.error.set(err.message),
     });
+  }
+
+  loadSponsorshipWithdrawals(): void {
+    this.api.get<any[]>('/admin/sponsorship-withdrawals').subscribe({
+      next: (res) => {
+        const list: SponsorshipWithdrawalItem[] = (Array.isArray(res) ? res : []).map((item: any) => ({
+          id: item.id,
+          userId: item.user_id,
+          userName: item.user ? `${item.user.first_name ?? ''} ${item.user.last_name ?? ''}`.trim() || 'Ambassadeur' : 'Ambassadeur',
+          userPhone: item.user?.phone ?? item.phone ?? '',
+          amount: Number(item.amount ?? 0),
+          phone: item.phone,
+          operator: item.operator,
+          status: item.status,
+          rejectionNote: item.rejection_note,
+          createdAt: item.created_at,
+        }));
+        this.sponsorshipWithdrawals.set(list);
+      },
+      error: (err: Error) => this.error.set(err.message),
+    });
+  }
+
+  processSponsorshipWithdrawal(id: string, action: 'APPROVE' | 'REJECT', rejectionNote?: string): Observable<any> {
+    if (action === 'APPROVE') {
+      return this.api.put<any>(`/admin/sponsorship-withdrawals/${id}/validate`, {});
+    } else {
+      return this.api.put<any>(`/admin/sponsorship-withdrawals/${id}/reject`, { rejection_note: rejectionNote });
+    }
   }
 
   approveUser(userId: string): void {

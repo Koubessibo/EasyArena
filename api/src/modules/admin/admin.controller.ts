@@ -23,6 +23,7 @@ import { InviteUserDto } from '../users/dto/invite-user.dto';
 import { UpdateUserStatusDto } from '../users/dto/update-user-status.dto';
 import { ValidateWithdrawalDto } from '../withdrawals/dto/validate-withdrawal.dto';
 import { EnrollmentService } from '../enrollment/enrollment.service';
+import { SponsorshipService } from '../sponsorship/sponsorship.service';
 import { IsEnum, IsOptional, IsString } from 'class-validator';
 
 class UpdateFieldStatusDto { @IsEnum(FieldStatus) status: FieldStatus; }
@@ -37,6 +38,7 @@ export class AdminController {
     private readonly adminService: AdminService,
     private readonly usersService: UsersService,
     private readonly enrollmentService: EnrollmentService,
+    private readonly sponsorshipService: SponsorshipService,
   ) {}
 
   @Get('stats')
@@ -145,6 +147,29 @@ export class AdminController {
     @Body() dto: ValidateWithdrawalDto,
   ) {
     return this.adminService.validateWithdrawal(admin, id, dto);
+  }
+
+  // ── RETRAITS PARRAINAGE / AMBASSADEUR (MLM) ────────────────────────
+  @Get('sponsorship-withdrawals')
+  listSponsorshipWithdrawals() {
+    return this.sponsorshipService.listPendingWithdrawals();
+  }
+
+  @Put('sponsorship-withdrawals/:id/validate')
+  validateSponsorshipWithdrawal(
+    @CurrentUser() admin: User,
+    @Param('id') id: string,
+  ) {
+    return this.sponsorshipService.validateWithdrawal(admin.id, id, 'APPROVE');
+  }
+
+  @Put('sponsorship-withdrawals/:id/reject')
+  rejectSponsorshipWithdrawal(
+    @CurrentUser() admin: User,
+    @Param('id') id: string,
+    @Body() body: { rejection_note?: string },
+  ) {
+    return this.sponsorshipService.validateWithdrawal(admin.id, id, 'REJECT', body?.rejection_note);
   }
 
   @Get('fields')

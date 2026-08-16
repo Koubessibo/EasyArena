@@ -47,10 +47,16 @@ export class User {
   @Column({ default: false })
   must_change_pin: boolean;
 
-  /**
-   * UUID de l'administrateur qui a invité cet utilisateur (programme de parrainage).
-   * Nullable — absent sur les comptes créés directement ou via inscription publique.
-   */
+  @Column({ default: false })
+  is_ambassador: boolean;
+
+  @Index({ unique: true })
+  @Column({ nullable: true, length: 10 })
+  referral_code: string;
+
+  @Column({ type: 'int', default: 0 })
+  wallet_balance: number;
+
   @Column({ nullable: true, type: 'uuid', name: 'referrer_id' })
   referrer_id: string | null;
 

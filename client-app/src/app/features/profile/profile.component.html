@@ -143,7 +143,7 @@
     </div>
     <!-- /HUB ACCÈS RAPIDE -->
 
-    <ng-container *ngFor="let section of menuSections">
+    <ng-container *ngFor="let section of menuSections()">
       <div class="prof-section">
         <p *ngIf="section.title" class="prof-section__title">{{ section.title }}</p>
         <div class="prof-menu-card">

@@ -9,7 +9,7 @@
   <div class="admin-financial__header">
     <div>
       <h1 class="admin-financial__title">Supervision Financière & Retraits</h1>
-      <p class="admin-financial__subtitle">Gestion des commissions de la plateforme et validation des demandes de transfert marchands.</p>
+      <p class="admin-financial__subtitle">Gestion des commissions de la plateforme, validation des transferts marchands et décaissements ambassadeurs MLM.</p>
     </div>
   </div>
 
@@ -42,12 +42,12 @@
     </div>
   </div>
 
-  <!-- Demandes de Retrait -->
+  <!-- Demandes de Retrait Marchands / Propriétaires -->
   <div class="card">
     <div class="card__header">
       <div class="card__header-title">
         <span class="material-symbols-outlined">account_balance_wallet</span>
-        <h3>Demandes de Retrait à Traiter</h3>
+        <h3>Demandes de Retrait Marchands & Propriétaires</h3>
       </div>
       <span class="badge badge--warning" *ngIf="withdrawalRequests().length > 0">{{ withdrawalRequests().length }} demandes</span>
     </div>
@@ -105,7 +105,81 @@
           </tr>
 
           <tr *ngIf="withdrawalRequests().length === 0">
-            <td colspan="6" class="empty-row">Aucune demande de retrait en attente.</td>
+            <td colspan="6" class="empty-row">Aucune demande de retrait marchand en attente.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Demandes de Retrait Ambassadeurs & Parrainage (MLM) -->
+  <div class="card">
+    <div class="card__header">
+      <div class="card__header-title">
+        <span class="material-symbols-outlined">diversity_3</span>
+        <h3>Demandes de Retrait Ambassadeurs & MLM (Wallet Client)</h3>
+      </div>
+      <span class="badge badge--warning" *ngIf="sponsorshipWithdrawals().length > 0">{{ sponsorshipWithdrawals().length }} demandes</span>
+    </div>
+
+    <div class="data-table-wrapper table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Ambassadeur / Client</th>
+            <th>Montant</th>
+            <th>Opérateur & Numéro</th>
+            <th>Statut</th>
+            <th>Date de demande</th>
+            <th class="text-right">Action Administrateur</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let req of sponsorshipWithdrawals()">
+            <td>
+              <div class="user-cell">
+                <div class="user-cell__avatar">{{ (req.userName || 'A').charAt(0).toUpperCase() }}</div>
+                <div>
+                  <p class="user-cell__name">{{ req.userName }}</p>
+                  <p class="user-cell__sub">{{ req.userPhone }}</p>
+                </div>
+              </div>
+            </td>
+
+            <td class="amount-cell">{{ req.amount | fcfa }}</td>
+
+            <td>
+              <span class="method-chip method-chip--wave">
+                <span class="material-symbols-outlined">payments</span>
+                {{ req.operator }} ({{ req.phone }})
+              </span>
+            </td>
+
+            <td>
+              <span class="status-badge" [ngClass]="'status-badge--' + req.status.toLowerCase()">
+                {{ req.status === 'PENDING' ? 'En attente' : req.status === 'PROCESSED' ? 'Validé' : 'Rejeté' }}
+              </span>
+            </td>
+
+            <td>{{ req.createdAt | date:'dd/MM/yyyy à HH:mm' }}</td>
+
+            <td class="text-right">
+              <div class="action-btns" *ngIf="req.status === 'PENDING'">
+                <button class="btn btn--sm btn--success" (click)="processSponsorshipWithdrawal(req.id, 'APPROVE')">
+                  <span class="material-symbols-outlined">check</span>
+                  Approuver
+                </button>
+                <button class="btn btn--sm btn--danger" (click)="processSponsorshipWithdrawal(req.id, 'REJECT')">
+                  <span class="material-symbols-outlined">close</span>
+                  Rejeter & Recréditer
+                </button>
+              </div>
+              <span *ngIf="req.status !== 'PENDING'" class="status-done">— Traitée —</span>
+            </td>
+          </tr>
+
+          <tr *ngIf="sponsorshipWithdrawals().length === 0">
+            <td colspan="6" class="empty-row">Aucune demande de retrait ambassadeur en attente.</td>
           </tr>
         </tbody>
       </table>

@@ -13,6 +13,7 @@ import * as bcrypt from 'bcrypt';
 import { DataSource, MoreThan, Repository } from 'typeorm';
 import { Role, UserStatus } from '../../common/enums';
 import { NotificationsService } from '../notifications/notifications.service';
+import { SponsorshipService } from '../sponsorship/sponsorship.service';
 import { Client } from '../users/entities/client.entity';
 import { User } from '../users/entities/user.entity';
 import { Staff } from '../users/entities/staff.entity';
@@ -45,13 +46,23 @@ export class AuthService {
     private readonly notificationsService: NotificationsService,
     private readonly otpService: OtpService,
     private readonly dataSource: DataSource,
+    private readonly sponsorshipService: SponsorshipService,
   ) {}
 
   async register(dto: RegisterDto): Promise<{ message: string; expires_in: number }> {
     const existing = await this.userRepo.findOne({ where: { phone: dto.phone } });
     if (existing) throw new ConflictException('Phone number already registered');
 
+    let sponsorUser: User | null = null;
+    if (dto.referrer_code) {
+      sponsorUser = await this.userRepo.findOne({
+        where: { referral_code: dto.referrer_code.toUpperCase() },
+      });
+    }
+
+    let savedUser: User;
     await this.dataSource.transaction(async (manager) => {
+      const referralCode = await this.generateUniqueReferralCode(dto.first_name, manager);
       const user = manager.create(User, {
         phone: dto.phone,
         first_name: dto.first_name,
@@ -59,18 +70,49 @@ export class AuthService {
         email: dto.email,
         role: Role.CLIENT,
         status: UserStatus.PENDING,
+        referral_code: referralCode,
+        referrer_id: sponsorUser?.id ?? null,
       });
-      const savedUser = await manager.save(User, user);
+      savedUser = await manager.save(User, user);
 
       const client = manager.create(Client, { user: savedUser });
       await manager.save(Client, client);
+
+      if (sponsorUser) {
+        await this.sponsorshipService.createSponsorshipWithManager(
+          sponsorUser.id,
+          savedUser.id,
+          'client',
+          manager,
+        );
+      }
     });
 
-    const user = await this.userRepo.findOneOrFail({ where: { phone: dto.phone } });
-    await this.sendOtp(user);
+    await this.sendOtp(savedUser!);
 
     const expiresIn = this.configService.get<number>('otp.expiresInSeconds') ?? 300;
     return { message: 'OTP sent to your phone', expires_in: expiresIn };
+  }
+
+  private async generateUniqueReferralCode(firstName: string, manager: any): Promise<string> {
+    const MAX_RETRIES = 5;
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+      const code = this.buildReferralCode(firstName);
+      const exists = await manager.findOne(User, { where: { referral_code: code } });
+      if (!exists) return code;
+    }
+    const fallbackCode = this.buildReferralCode('EA' + Date.now().toString(36).slice(-2));
+    return fallbackCode;
+  }
+
+  private buildReferralCode(firstName: string): string {
+    const prefix = (firstName || 'EA').slice(0, 3).toUpperCase().replace(/[^A-Z]/g, 'X');
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let suffix = '';
+    for (let i = 0; i < 4; i++) {
+      suffix += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return `${prefix}-${suffix}`;
   }
 
   async forgotPin(dto: ForgotPinDto): Promise<{ message: string; expires_in: number }> {

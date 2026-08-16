@@ -24,6 +24,12 @@ export interface GlobalStats {
   }>;
 }
 
+export interface SponsorshipTotals {
+  total_commissions_paid: number;
+  total_net_revenue_base: number;
+  gateway_fees_ratio: number;
+}
+
 @Component({
   selector: 'app-global-dashboard',
   standalone: true,
@@ -36,6 +42,13 @@ export class GlobalDashboardComponent implements OnInit {
 
   isLoading = signal(true);
   errorMessage = signal<string | null>(null);
+
+  sponsorshipTotals = signal<SponsorshipTotals>({
+    total_commissions_paid: 0,
+    total_net_revenue_base: 0,
+    gateway_fees_ratio: 0.025,
+  });
+  sponsorshipError = signal(false);
 
   globalStats = signal<GlobalStats>({
     totalUsers: 0,
@@ -50,8 +63,23 @@ export class GlobalDashboardComponent implements OnInit {
   distOwners = computed(() => this.calculatePercentage(this.globalStats().userDistribution.owners));
   distVendors = computed(() => this.calculatePercentage(this.globalStats().userDistribution.vendors));
 
+  netMarginEasyArena = computed(() => {
+    const revenue = this.globalStats().platformRevenue;
+    const ratio = this.sponsorshipTotals().gateway_fees_ratio;
+    const gatewayFees = Math.round(revenue * (ratio / 0.05));
+    const commissions = this.sponsorshipTotals().total_commissions_paid;
+    return revenue - gatewayFees - commissions;
+  });
+
+  totalGatewayFees = computed(() => {
+    const revenue = this.globalStats().platformRevenue;
+    const ratio = this.sponsorshipTotals().gateway_fees_ratio;
+    return Math.round(revenue * (ratio / 0.05));
+  });
+
   ngOnInit(): void {
     this.fetchStats();
+    this.fetchSponsorshipTotals();
   }
 
   fetchStats(): void {
@@ -102,6 +130,23 @@ export class GlobalDashboardComponent implements OnInit {
         });
         this.isLoading.set(false);
       }
+    });
+  }
+
+  private fetchSponsorshipTotals(): void {
+    this.api.get<any>('/sponsorship/platform-totals').subscribe({
+      next: (res) => {
+        const data = res?.data ?? res;
+        this.sponsorshipTotals.set({
+          total_commissions_paid: Number(data?.total_commissions_paid ?? 0),
+          total_net_revenue_base: Number(data?.total_net_revenue_base ?? 0),
+          gateway_fees_ratio: Number(data?.gateway_fees_ratio ?? 0.025),
+        });
+        this.sponsorshipError.set(false);
+      },
+      error: () => {
+        this.sponsorshipError.set(true);
+      },
     });
   }
 

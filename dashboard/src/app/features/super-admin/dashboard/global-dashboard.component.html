@@ -77,6 +77,53 @@
 
     </div>
 
+    <!-- KPI Financiers MLM -->
+    <div class="kpi-grid kpi-grid--financial" *ngIf="!sponsorshipError()">
+
+      <div class="kpi-card">
+        <div class="kpi-card__icon kpi-card__icon--teal">
+          <span class="material-symbols-outlined">trending_up</span>
+        </div>
+        <div class="kpi-card__info">
+          <span class="kpi-card__label">Revenu Net Marge EasyArena</span>
+          <strong class="kpi-card__value">{{ netMarginEasyArena() | number:'1.0-0' }} FCFA</strong>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-card__icon kpi-card__icon--orange">
+          <span class="material-symbols-outlined">swap_horiz</span>
+        </div>
+        <div class="kpi-card__info">
+          <span class="kpi-card__label">Total Frais Agregateur (2.5%)</span>
+          <strong class="kpi-card__value">{{ totalGatewayFees() | number:'1.0-0' }} FCFA</strong>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-card__icon kpi-card__icon--pink">
+          <span class="material-symbols-outlined">group_work</span>
+        </div>
+        <div class="kpi-card__info">
+          <span class="kpi-card__label">Total Commissions Parrainage</span>
+          <strong class="kpi-card__value">{{ sponsorshipTotals().total_commissions_paid | number:'1.0-0' }} FCFA</strong>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="kpi-grid kpi-grid--financial" *ngIf="sponsorshipError()">
+      <div class="kpi-card" style="border-color:#fbbf24; background:#fffbeb;">
+        <div class="kpi-card__icon kpi-card__icon--amber">
+          <span class="material-symbols-outlined">warning</span>
+        </div>
+        <div class="kpi-card__info">
+          <span class="kpi-card__label">Données Parrainage</span>
+          <strong class="kpi-card__value" style="font-size:0.9rem; color:#92400e;">Indisponibles — vérifiez la connexion</strong>
+        </div>
+      </div>
+    </div>
+
     <!-- Répartition des utilisateurs (Horizontal Progress) -->
     <section class="distribution-section">
       <div class="section-header">

@@ -1,8 +1,9 @@
-import { Component, signal, inject, OnInit, OnDestroy } from '@angular/core';
+import { Component, signal, inject, OnInit, OnDestroy, computed } from '@angular/core';
 import { RouterLink, Router } from '@angular/router';
 import { NgIf, NgFor, CommonModule } from '@angular/common';
 import { AuthService } from '../../core/services/auth.service';
 import { BookingService } from '../../core/services/booking.service';
+import { SponsorshipService } from '../../core/services/sponsorship.service';
 
 interface ProfileMenuSection {
   title: string;
@@ -28,6 +29,7 @@ interface ProfileMenuItem {
 export class ProfileComponent implements OnInit, OnDestroy {
   private authService = inject(AuthService);
   private bookingService = inject(BookingService);
+  private sponsorshipService = inject(SponsorshipService);
   private router = inject(Router);
 
   readonly currentUser = this.authService.currentUser;
@@ -37,6 +39,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
   readonly bookingsCount = signal(0);
   statsLoading = signal(true);
   isUploading = signal(false);
+  showSponsorshipMenu = signal(false);
 
   private _deferredPrompt = signal<any>(null);
 
@@ -50,39 +53,56 @@ export class ProfileComponent implements OnInit, OnDestroy {
     this._deferredPrompt.set(e);
   };
 
-  readonly menuSections: ProfileMenuSection[] = [
-    {
-      title: 'Mon activité',
-      items: [
-        { label: 'Mes réservations', icon: 'calendar_today', route: '/booking/history' },
-        { label: 'Mes billets', icon: 'confirmation_number', route: '/my-tickets' },
-        { label: 'Mes commandes', icon: 'shopping_bag', route: '/orders' },
-        { label: 'Historique des transactions', icon: 'receipt_long', route: '/profile/transactions' },
-      ],
-    },
-    {
-      title: 'Paramètres',
-      items: [
-        { label: 'Modifier mon profil', icon: 'edit', route: '/profile/edit' },
-        { label: 'Notifications', icon: 'notifications', route: '/notifications' },
-      ],
-    },
-    {
-      title: 'Légal',
-      items: [
-        { label: 'Conditions d\'utilisation', icon: 'description', route: '/terms' },
-      ],
-    },
-    {
-      title: '',
-      items: [
-        { label: 'Se déconnecter', icon: 'logout', action: 'logout', danger: true },
-      ],
-    },
-  ];
+  sponsorshipChecked = signal(false);
+
+  readonly menuSections = computed<ProfileMenuSection[]>(() => {
+    const activityItems: ProfileMenuItem[] = [
+      { label: 'Mes réservations', icon: 'calendar_today', route: '/booking/history' },
+      { label: 'Mes billets', icon: 'confirmation_number', route: '/my-tickets' },
+      { label: 'Mes commandes', icon: 'shopping_bag', route: '/orders' },
+      { label: 'Historique des transactions', icon: 'receipt_long', route: '/profile/transactions' },
+    ];
+    if (this.sponsorshipChecked() && this.showSponsorshipMenu()) {
+      activityItems.push({ label: 'Parrainage & Gains', icon: 'group_add', route: '/profile/ambassador-wallet' });
+    }
+    return [
+      { title: 'Mon activité', items: activityItems },
+      {
+        title: 'Paramètres',
+        items: [
+          { label: 'Modifier mon profil', icon: 'edit', route: '/profile/edit' },
+          { label: 'Notifications', icon: 'notifications', route: '/notifications' },
+        ],
+      },
+      {
+        title: 'Légal',
+        items: [
+          { label: 'Conditions d\'utilisation', icon: 'description', route: '/terms' },
+        ],
+      },
+      {
+        title: '',
+        items: [
+          { label: 'Se déconnecter', icon: 'logout', action: 'logout', danger: true },
+        ],
+      },
+    ];
+  });
 
   ngOnInit(): void {
     window.addEventListener('beforeinstallprompt', this.beforeInstallCapture);
+
+    this.sponsorshipService.getMyStats().subscribe({
+      next: (stats) => {
+        if (stats.is_ambassador || stats.n1_count > 0) {
+          this.showSponsorshipMenu.set(true);
+        }
+        this.sponsorshipChecked.set(true);
+      },
+      error: () => {
+        this.sponsorshipChecked.set(true);
+      },
+    });
 
     this.bookingService.getBookings().subscribe({
       next: (bookings) => {

@@ -11,6 +11,7 @@ import { UsersModule } from '../users/users.module';
 import { WithdrawalsModule } from '../withdrawals/withdrawals.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { EnrollmentModule } from '../enrollment/enrollment.module';
+import { SponsorshipModule } from '../sponsorship/sponsorship.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { EnrollmentModule } from '../enrollment/enrollment.module';
     WithdrawalsModule,
     NotificationsModule,
     EnrollmentModule,
+    SponsorshipModule,
   ],
   providers: [AdminService],
   controllers: [AdminController],
