@@ -34,7 +34,9 @@ async function bootstrap() {
   app.useGlobalFilters(new GlobalExceptionFilter());
   app.useGlobalInterceptors(new ResponseInterceptor(), new LoggingInterceptor());
 
-  app.setGlobalPrefix('api/v1');
+  app.setGlobalPrefix('api/v1', {
+    exclude: ['/', 'health'],
+  });
 
   const config = app.get(ConfigService);
   const port = config.get<number>('port') ?? 3000;
@@ -43,4 +45,3 @@ async function bootstrap() {
   console.log(`🚀 XEWEUL API running on http://localhost:${port}/api/v1`);
 }
 bootstrap();
-// Trigger recompile
