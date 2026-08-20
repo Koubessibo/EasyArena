@@ -50,11 +50,10 @@ export class UserManagementComponent {
   vendorLocation = signal('');
 
   // ── VIP Sponsorship Modal State ──────────────────────────────────────────
-  showVipModal = signal(false);
   selectedUserForVip = signal<DashboardUser | null>(null);
-  vipN1Rate = signal<number | null>(null);
-  vipN2Rate = signal<number | null>(null);
-  vipDurationMonths = signal<number | null>(null);
+  vipN1 = signal<number | null>(null);
+  vipN2 = signal<number | null>(null);
+  vipDuration = signal<number | null>(null);
   vipLoading = signal(false);
   vipSuccessMessage = signal<string | null>(null);
   vipErrorMessage = signal<string | null>(null);
@@ -235,16 +234,14 @@ export class UserManagementComponent {
   // ── GESTION DES PARAMÈTRES PARRAINAGE VIP ──────────────────────────────
   openVipModal(user: DashboardUser): void {
     this.selectedUserForVip.set(user);
-    this.vipN1Rate.set(user.custom_n1_rate ?? null);
-    this.vipN2Rate.set(user.custom_n2_rate ?? null);
-    this.vipDurationMonths.set(user.custom_duration_months ?? null);
+    this.vipN1.set(user.custom_n1_rate ?? null);
+    this.vipN2.set(user.custom_n2_rate ?? null);
+    this.vipDuration.set(user.custom_duration_months ?? null);
     this.vipSuccessMessage.set(null);
     this.vipErrorMessage.set(null);
-    this.showVipModal.set(true);
   }
 
   closeVipModal(): void {
-    this.showVipModal.set(false);
     this.selectedUserForVip.set(null);
     this.vipSuccessMessage.set(null);
     this.vipErrorMessage.set(null);
@@ -258,10 +255,14 @@ export class UserManagementComponent {
     this.vipErrorMessage.set(null);
     this.vipSuccessMessage.set(null);
 
+    const valN1 = this.vipN1();
+    const valN2 = this.vipN2();
+    const valDur = this.vipDuration();
+
     const payload = {
-      custom_n1_rate: this.vipN1Rate() !== null && this.vipN1Rate() !== undefined ? Number(this.vipN1Rate()) : null,
-      custom_n2_rate: this.vipN2Rate() !== null && this.vipN2Rate() !== undefined ? Number(this.vipN2Rate()) : null,
-      custom_duration_months: this.vipDurationMonths() !== null && this.vipDurationMonths() !== undefined ? Number(this.vipDurationMonths()) : null,
+      custom_n1_rate: valN1 !== null && valN1 !== undefined && (valN1 as any) !== '' ? Number(valN1) : null,
+      custom_n2_rate: valN2 !== null && valN2 !== undefined && (valN2 as any) !== '' ? Number(valN2) : null,
+      custom_duration_months: valDur !== null && valDur !== undefined && (valDur as any) !== '' ? Number(valDur) : null,
     };
 
     this.adminService.updateUserSponsorshipSettings(user.id, payload).subscribe({
@@ -304,9 +305,9 @@ export class UserManagementComponent {
     this.adminService.updateUserSponsorshipSettings(user.id, payload).subscribe({
       next: () => {
         this.vipLoading.set(false);
-        this.vipN1Rate.set(null);
-        this.vipN2Rate.set(null);
-        this.vipDurationMonths.set(null);
+        this.vipN1.set(null);
+        this.vipN2.set(null);
+        this.vipDuration.set(null);
         this.vipSuccessMessage.set('Taux réinitialisés aux valeurs par défaut !');
 
         this.adminService.allUsers.update(list =>

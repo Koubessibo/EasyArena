@@ -226,7 +226,7 @@
                 <div>
                   <div style="display:flex; align-items:center; gap:0.4rem;">
                     <p class="user-cell__name">{{ user.name }}</p>
-                    <span *ngIf="user.custom_n1_rate || user.custom_n2_rate || user.custom_duration_months" class="badge-vip-pill" title="Privilèges VIP actifs">VIP</span>
+                    <span *ngIf="user.custom_n1_rate || user.custom_n2_rate || user.custom_duration_months" class="badge-vip-pill" title="Privilèges VIP actifs">👑 VIP</span>
                   </div>
                   <p class="user-cell__email">{{ user.phone }}</p>
                 </div>
@@ -238,13 +238,15 @@
             <td><app-status-badge [status]="user.status"></app-status-badge></td>
             <td class="text-right">
               <div class="action-btns">
+                <!-- BOUTON PARAMÈTRES VIP -->
                 <button
                   class="btn btn--sm btn--vip-action"
                   (click)="openVipModal(user)"
                   title="Paramètres de parrainage VIP (surcharges)">
                   <span class="material-symbols-outlined">workspace_premium</span>
-                  VIP
+                  <span>Paramètres VIP</span>
                 </button>
+
                 <button
                   class="toggle-btn"
                   [class.toggle-btn--active]="user.status === 'active'"
@@ -255,6 +257,7 @@
                   </span>
                   <span class="toggle-btn__label">{{ user.status === 'active' ? 'Actif' : 'Inactif' }}</span>
                 </button>
+
                 <button
                   class="btn btn--sm"
                   [class.btn--ambassador]="user.is_ambassador"
@@ -262,6 +265,7 @@
                   [title]="user.is_ambassador ? 'Rétrograder Client' : 'Promouvoir Ambassadeur'">
                   <span class="material-symbols-outlined">{{ user.is_ambassador ? 'star' : 'star_border' }}</span>
                 </button>
+
                 <button class="btn btn--sm btn--danger-icon" (click)="confirmDeleteUser(user)" title="Supprimer">
                   <span class="material-symbols-outlined">delete</span>
                 </button>
@@ -307,8 +311,8 @@
     </div>
   </div>
 
-  <!-- MODAL PARAMÈTRES DE PARRAINAGE VIP -->
-  <div class="modal-backdrop" *ngIf="showVipModal()" (click)="closeVipModal()">
+  <!-- MODAL PARAMÈTRES DE PARRAINAGE VIP (SUPERPOSÉ) -->
+  <div class="modal-backdrop" *ngIf="selectedUserForVip()" (click)="closeVipModal()">
     <div class="vip-modal card" (click)="$event.stopPropagation()">
       <div class="card__header">
         <div class="card__header-title">
@@ -338,19 +342,19 @@
         <div class="form-grid" *ngIf="!vipSuccessMessage()">
           <div class="form-group">
             <label class="form-label">Commission N1 (%)</label>
-            <input type="number" class="form-control" [ngModel]="vipN1Rate()" (ngModelChange)="vipN1Rate.set($event)" placeholder="Par défaut : 7%" min="0" max="100" />
+            <input type="number" class="form-control" [ngModel]="vipN1()" (ngModelChange)="vipN1.set($event)" placeholder="Par défaut : 7%" min="0" max="100" />
             <small class="form-help">Laissez vide pour utiliser le taux par défaut (7%).</small>
           </div>
 
           <div class="form-group">
             <label class="form-label">Commission N2 (%)</label>
-            <input type="number" class="form-control" [ngModel]="vipN2Rate()" (ngModelChange)="vipN2Rate.set($event)" placeholder="Par défaut : 2%" min="0" max="100" />
+            <input type="number" class="form-control" [ngModel]="vipN2()" (ngModelChange)="vipN2.set($event)" placeholder="Par défaut : 2%" min="0" max="100" />
             <small class="form-help">Laissez vide pour utiliser le taux par défaut (2%).</small>
           </div>
 
           <div class="form-group">
-            <label class="form-label">Durée de validité (mois)</label>
-            <input type="number" class="form-control" [ngModel]="vipDurationMonths()" (ngModelChange)="vipDurationMonths.set($event)" placeholder="Par défaut : 24 mois" min="1" max="120" />
+            <label class="form-label">Durée de validité (en mois)</label>
+            <input type="number" class="form-control" [ngModel]="vipDuration()" (ngModelChange)="vipDuration.set($event)" placeholder="Par défaut : 24 mois" min="1" max="120" />
             <small class="form-help">Laissez vide pour utiliser la durée par défaut (24 mois).</small>
           </div>
         </div>
@@ -358,12 +362,12 @@
         <div class="vip-modal-footer">
           <button class="btn btn--secondary" (click)="resetVipSettings()" [disabled]="vipLoading()">
             <span class="material-symbols-outlined">restart_alt</span>
-            Rétablir les taux par défaut
+            <span>Rétablir les valeurs par défaut (Null)</span>
           </button>
 
           <button class="btn btn--primary" (click)="saveVipSettings()" [disabled]="vipLoading()">
             <span class="material-symbols-outlined">save</span>
-            {{ vipLoading() ? 'Enregistrement...' : 'Enregistrer Privilèges VIP' }}
+            <span>{{ vipLoading() ? 'Sauvegarde...' : 'Sauvegarder les privilèges' }}</span>
           </button>
         </div>
       </div>
