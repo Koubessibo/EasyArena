@@ -82,7 +82,10 @@ function mapUser(u: any): DashboardUser {
     status: u.status ?? '',
     isVerified: u.status === 'active',
     createdAt: u.created_at ?? '',
-    is_ambassador: u.is_ambassador ?? false,
+    is_ambassador: u.is_ambassador !== false,
+    custom_n1_rate: u.custom_n1_rate ?? null,
+    custom_n2_rate: u.custom_n2_rate ?? null,
+    custom_duration_months: u.custom_duration_months ?? null,
   };
 }
 
@@ -318,4 +321,17 @@ export class AdminService {
   rejectEnrollmentRequest(id: string, note?: string): Observable<any> {
     return this.api.put<any>(`/admin/enrollment-requests/${id}/reject`, { rejection_note: note });
   }
+
+  updateUserSponsorshipSettings(
+    userId: string,
+    data: {
+      custom_n1_rate?: number | null;
+      custom_n2_rate?: number | null;
+      custom_duration_months?: number | null;
+      is_ambassador?: boolean;
+    },
+  ): Observable<any> {
+    return this.api.patch<any>(`/admin/users/${userId}/sponsorship-settings`, data);
+  }
 }
+

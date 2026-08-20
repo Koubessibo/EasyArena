@@ -884,3 +884,48 @@
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
 }
+
+.status-badge--vip {
+  background: linear-gradient(135deg, #fef3c7, #fde68a, #f59e0b) !important;
+  color: #78350f !important;
+  border: 1px solid #f59e0b !important;
+  box-shadow: 0 2px 4px rgba(245, 158, 11, 0.2);
+}
+
+.grid-info--vip {
+  .grid-info__table {
+    border-color: #f59e0b !important;
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.15);
+  }
+}
+
+.grid-info__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.vip-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.6rem;
+  background: #fef3c7;
+  color: #b45309;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 1rem;
+  border: 1px solid #fcd34d;
+
+  .material-symbols-outlined {
+    font-size: 0.9rem;
+  }
+}
+
+.rate-highlight {
+  font-weight: 800;
+  color: #059669;
+  font-size: 0.85rem;
+}
+

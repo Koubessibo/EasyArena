@@ -47,8 +47,17 @@ export class User {
   @Column({ default: false })
   must_change_pin: boolean;
 
-  @Column({ default: false })
+  @Column({ default: true })
   is_ambassador: boolean;
+
+  @Column({ type: 'float', nullable: true })
+  custom_n1_rate: number | null;
+
+  @Column({ type: 'float', nullable: true })
+  custom_n2_rate: number | null;
+
+  @Column({ type: 'int', nullable: true })
+  custom_duration_months: number | null;
 
   @Index({ unique: true })
   @Column({ nullable: true, length: 10 })

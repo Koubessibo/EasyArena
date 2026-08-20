@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  Patch,
   Post,
   Put,
   Query,
@@ -24,6 +25,7 @@ import { UpdateUserStatusDto } from '../users/dto/update-user-status.dto';
 import { ValidateWithdrawalDto } from '../withdrawals/dto/validate-withdrawal.dto';
 import { EnrollmentService } from '../enrollment/enrollment.service';
 import { SponsorshipService } from '../sponsorship/sponsorship.service';
+import { UpdateSponsorshipSettingsDto } from './dto/update-sponsorship-settings.dto';
 import { IsEnum, IsOptional, IsString } from 'class-validator';
 
 class UpdateFieldStatusDto { @IsEnum(FieldStatus) status: FieldStatus; }
@@ -90,6 +92,14 @@ export class AdminController {
   @Put('users/:id/status')
   updateUserStatus(@Param('id') id: string, @Body() dto: UpdateUserStatusDto) {
     return this.adminService.updateUserStatus(id, dto);
+  }
+
+  @Patch('users/:id/sponsorship-settings')
+  updateUserSponsorshipSettings(
+    @Param('id') id: string,
+    @Body() dto: UpdateSponsorshipSettingsDto,
+  ) {
+    return this.sponsorshipService.updateUserSponsorshipSettings(id, dto);
   }
 
   /**

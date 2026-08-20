@@ -33,6 +33,7 @@ import { TransactionsService } from '../transactions/transactions.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { OtpService } from '../../otp/otp.service';
 import { WithdrawSponsorshipDto } from './dto/withdraw-sponsorship.dto';
+import { UpdateSponsorshipSettingsDto } from '../admin/dto/update-sponsorship-settings.dto';
 
 @Injectable()
 export class SponsorshipService {
@@ -63,12 +64,14 @@ export class SponsorshipService {
     const sponsor = await this.userRepo.findOne({ where: { id: sponsorId } });
     if (!sponsor) throw new Error('Sponsor not found');
 
-    const sponsorIsAmbassador = sponsor.is_ambassador;
+    const sponsorIsAmbassador = sponsor.is_ambassador !== false;
     const sponsorType = sponsorIsAmbassador ? SponsorType.AMBASSADOR : SponsorType.CLIENT;
 
     const grid = getSponsorshipGrid(sponsorIsAmbassador, refereeRole);
+    const durationMonths = sponsor.custom_duration_months ?? grid.duration_months;
+
     const expiresAt = new Date();
-    expiresAt.setMonth(expiresAt.getMonth() + grid.duration_months);
+    expiresAt.setMonth(expiresAt.getMonth() + durationMonths);
 
     const sponsorship = this.sponsorshipRepo.create({
       sponsor_id: sponsorId,
@@ -93,12 +96,14 @@ export class SponsorshipService {
     const sponsor = await manager.findOne(User, { where: { id: sponsorId } });
     if (!sponsor) throw new Error('Sponsor not found');
 
-    const sponsorIsAmbassador = sponsor.is_ambassador;
+    const sponsorIsAmbassador = sponsor.is_ambassador !== false;
     const sponsorType = sponsorIsAmbassador ? SponsorType.AMBASSADOR : SponsorType.CLIENT;
 
     const grid = getSponsorshipGrid(sponsorIsAmbassador, refereeRole);
+    const durationMonths = sponsor.custom_duration_months ?? grid.duration_months;
+
     const expiresAt = new Date();
-    expiresAt.setMonth(expiresAt.getMonth() + grid.duration_months);
+    expiresAt.setMonth(expiresAt.getMonth() + durationMonths);
 
     const sponsorship = manager.create(Sponsorship, {
       sponsor_id: sponsorId,
@@ -113,12 +118,7 @@ export class SponsorshipService {
 
   /**
    * Core MLM engine: distributes commissions when a payment is confirmed.
-   * MUST be called ONLY on Booking/Order payments, NEVER on Withdrawals.
-   *
-   * @param buyerUserId - The user who made the payment
-   * @param principalAmount - The base amount (before fees)
-   * @param sourceId - Payment/Order ID for traceability
-   * @param manager - Transaction EntityManager for atomicity
+   * Universal VIP logic: Custom sponsor rates override standard Ambassador rates if set.
    */
   async distributeCommissions(
     buyerUserId: string,
@@ -149,13 +149,14 @@ export class SponsorshipService {
     }
 
     const n1Sponsor = n1Sponsorship.sponsor;
-    const n1Grid = getSponsorshipGrid(n1Sponsor.is_ambassador, n1Sponsorship.referee_role);
-    const { n1_commission } = computeSponsorshipCommissions(netRevenue, n1Grid);
+    const n1Grid = getSponsorshipGrid(n1Sponsor.is_ambassador !== false, n1Sponsorship.referee_role);
+    const n1Percent = n1Sponsor.custom_n1_rate != null ? n1Sponsor.custom_n1_rate / 100 : n1Grid.n1_percent;
+    const n1_commission = Math.round(netRevenue * n1Percent);
 
     // Credit N1 sponsor
     if (n1_commission > 0) {
       await this.creditSponsor(n1Sponsor.id, n1_commission, sourceId, 1, n1Sponsorship.id, netRevenue, manager);
-      this.logger.log(`[Sponsorship] N1 commission ${n1_commission} FCFA → ${n1Sponsor.phone}`);
+      this.logger.log(`[Sponsorship] N1 commission ${n1_commission} FCFA (${n1Percent * 100}%) → ${n1Sponsor.phone}`);
 
       // Async SMS notification for N1 sponsor (non-blocking)
       this.notificationsService
@@ -184,13 +185,14 @@ export class SponsorshipService {
     }
 
     const n2Sponsor = n2Sponsorship.sponsor;
-    const n2Grid = getSponsorshipGrid(n2Sponsor.is_ambassador, n2Sponsorship.referee_role);
-    const { n2_commission } = computeSponsorshipCommissions(netRevenue, n2Grid);
+    const n2Grid = getSponsorshipGrid(n2Sponsor.is_ambassador !== false, n2Sponsorship.referee_role);
+    const n2Percent = n2Sponsor.custom_n2_rate != null ? n2Sponsor.custom_n2_rate / 100 : n2Grid.n2_percent;
+    const n2_commission = Math.round(netRevenue * n2Percent);
 
     // Credit N2 sponsor
     if (n2_commission > 0) {
       await this.creditSponsor(n2Sponsor.id, n2_commission, sourceId, 2, n2Sponsorship.id, netRevenue, manager);
-      this.logger.log(`[Sponsorship] N2 commission ${n2_commission} FCFA → ${n2Sponsor.phone}`);
+      this.logger.log(`[Sponsorship] N2 commission ${n2_commission} FCFA (${n2Percent * 100}%) → ${n2Sponsor.phone}`);
 
       // Async SMS notification for N2 sponsor (non-blocking)
       this.notificationsService
@@ -406,6 +408,41 @@ export class SponsorshipService {
   }
 
   /**
+   * Super Admin : Mettre à jour les privilèges de parrainage VIP d'un utilisateur.
+   */
+  async updateUserSponsorshipSettings(
+    userId: string,
+    dto: UpdateSponsorshipSettingsDto,
+  ) {
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user) throw new NotFoundException('Utilisateur introuvable');
+
+    user.custom_n1_rate = dto.custom_n1_rate !== undefined ? dto.custom_n1_rate : user.custom_n1_rate;
+    user.custom_n2_rate = dto.custom_n2_rate !== undefined ? dto.custom_n2_rate : user.custom_n2_rate;
+    user.custom_duration_months = dto.custom_duration_months !== undefined ? dto.custom_duration_months : user.custom_duration_months;
+
+    if (dto.is_ambassador !== undefined) {
+      user.is_ambassador = dto.is_ambassador;
+    }
+
+    await this.userRepo.save(user);
+
+    return {
+      success: true,
+      message: 'Paramètres de parrainage VIP mis à jour avec succès',
+      user: {
+        id: user.id,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        is_ambassador: user.is_ambassador !== false,
+        custom_n1_rate: user.custom_n1_rate,
+        custom_n2_rate: user.custom_n2_rate,
+        custom_duration_months: user.custom_duration_months,
+      },
+    };
+  }
+
+  /**
    * Promote or demote a user's ambassador status.
    */
   async setAmbassadorStatus(userId: string, isAmbassador: boolean): Promise<void> {
@@ -499,8 +536,22 @@ export class SponsorshipService {
       })),
     ];
 
+    const defaultGrid = getSponsorshipGrid(user.is_ambassador !== false, 'client');
+    const isVip = user.custom_n1_rate != null || user.custom_n2_rate != null || user.custom_duration_months != null;
+
+    const effectiveN1Rate = user.custom_n1_rate ?? Math.round(defaultGrid.n1_percent * 100);
+    const effectiveN2Rate = user.custom_n2_rate ?? Math.round(defaultGrid.n2_percent * 100);
+    const effectiveDurationMonths = user.custom_duration_months ?? defaultGrid.duration_months;
+
     return {
-      is_ambassador: user.is_ambassador,
+      is_ambassador: user.is_ambassador !== false,
+      is_vip: isVip,
+      effective_n1_rate: effectiveN1Rate,
+      effective_n2_rate: effectiveN2Rate,
+      effective_duration_months: effectiveDurationMonths,
+      custom_n1_rate: user.custom_n1_rate,
+      custom_n2_rate: user.custom_n2_rate,
+      custom_duration_months: user.custom_duration_months,
       referral_code: user.referral_code,
       wallet_balance: user.wallet_balance,
       n1_count: n1Referrals.length,

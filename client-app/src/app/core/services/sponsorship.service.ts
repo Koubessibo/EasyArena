@@ -4,6 +4,13 @@ import { ApiService } from './api.service';
 
 export interface SponsorshipMyStats {
   is_ambassador: boolean;
+  is_vip?: boolean;
+  effective_n1_rate?: number;
+  effective_n2_rate?: number;
+  effective_duration_months?: number;
+  custom_n1_rate?: number | null;
+  custom_n2_rate?: number | null;
+  custom_duration_months?: number | null;
   referral_code: string;
   wallet_balance: number;
   n1_count: number;

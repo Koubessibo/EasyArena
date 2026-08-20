@@ -39,7 +39,6 @@ export class ProfileComponent implements OnInit, OnDestroy {
   readonly bookingsCount = signal(0);
   statsLoading = signal(true);
   isUploading = signal(false);
-  showSponsorshipMenu = signal(false);
 
   private _deferredPrompt = signal<any>(null);
 
@@ -53,18 +52,15 @@ export class ProfileComponent implements OnInit, OnDestroy {
     this._deferredPrompt.set(e);
   };
 
-  sponsorshipChecked = signal(false);
-
   readonly menuSections = computed<ProfileMenuSection[]>(() => {
     const activityItems: ProfileMenuItem[] = [
       { label: 'Mes réservations', icon: 'calendar_today', route: '/booking/history' },
       { label: 'Mes billets', icon: 'confirmation_number', route: '/my-tickets' },
       { label: 'Mes commandes', icon: 'shopping_bag', route: '/orders' },
       { label: 'Historique des transactions', icon: 'receipt_long', route: '/profile/transactions' },
+      // UNIVERSAL ACCESS: Sponsorship & Gains is accessible to 100% of logged-in users!
+      { label: 'Parrainage & Gains', icon: 'group_add', route: '/profile/ambassador-wallet' },
     ];
-    if (this.sponsorshipChecked() && this.showSponsorshipMenu()) {
-      activityItems.push({ label: 'Parrainage & Gains', icon: 'group_add', route: '/profile/ambassador-wallet' });
-    }
     return [
       { title: 'Mon activité', items: activityItems },
       {
@@ -91,18 +87,6 @@ export class ProfileComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     window.addEventListener('beforeinstallprompt', this.beforeInstallCapture);
-
-    this.sponsorshipService.getMyStats().subscribe({
-      next: (stats) => {
-        if (stats.is_ambassador || stats.n1_count > 0) {
-          this.showSponsorshipMenu.set(true);
-        }
-        this.sponsorshipChecked.set(true);
-      },
-      error: () => {
-        this.sponsorshipChecked.set(true);
-      },
-    });
 
     this.bookingService.getBookings().subscribe({
       next: (bookings) => {

@@ -1,25 +1,27 @@
 import { Component, inject, signal } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { AdminService, ContentItem, CreateOwnerData, CreateVendorData, EnrollmentRequestItem } from '../../../core/services/admin.service';
 import { ApiService } from '../../../core/services/api.service';
+import { DashboardUser } from '../../../core/models/auth.model';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 
 @Component({
   selector: 'app-user-management',
   standalone: true,
-  imports: [CommonModule, PageHeaderComponent, StatusBadgeComponent],
+  imports: [CommonModule, FormsModule, PageHeaderComponent, StatusBadgeComponent],
   templateUrl: './user-management.component.html',
   styleUrl: './user-management.component.scss',
 })
 export class UserManagementComponent {
   private adminService = inject(AdminService);
   public location = inject(Location);
-  private api          = inject(ApiService);
+  private api = inject(ApiService);
 
-  pendingUsers       = this.adminService.pendingUsers;
-  allUsers           = this.adminService.allUsers;
-  contentItems       = this.adminService.contentItems;
+  pendingUsers = this.adminService.pendingUsers;
+  allUsers = this.adminService.allUsers;
+  contentItems = this.adminService.contentItems;
   enrollmentRequests = this.adminService.enrollmentRequests;
 
   // ── Tab state ────────────────────────────────────────────────────────────
@@ -32,7 +34,6 @@ export class UserManagementComponent {
   acceptedCgu = signal(false);
   createLoading = signal(false);
   createError = signal('');
-
 
   // Owner fields
   ownerPhone = signal('');
@@ -47,6 +48,16 @@ export class UserManagementComponent {
   vendorShopName = signal('');
   vendorContactPhone = signal('');
   vendorLocation = signal('');
+
+  // ── VIP Sponsorship Modal State ──────────────────────────────────────────
+  showVipModal = signal(false);
+  selectedUserForVip = signal<DashboardUser | null>(null);
+  vipN1Rate = signal<number | null>(null);
+  vipN2Rate = signal<number | null>(null);
+  vipDurationMonths = signal<number | null>(null);
+  vipLoading = signal(false);
+  vipSuccessMessage = signal<string | null>(null);
+  vipErrorMessage = signal<string | null>(null);
 
   constructor() {
     this.adminService.loadPendingUsers();
@@ -69,7 +80,6 @@ export class UserManagementComponent {
   reject(id: string): void  { this.adminService.rejectUser(id); }
 
   // ── Toggle Actif / Inactif ───────────────────────────────────────────────
-
   toggleUserStatus(user: { id: string; name: string; status: string }): void {
     const newStatus = user.status === 'active' ? 'inactive' : 'active';
     this.adminService.updateUserStatus(user.id, newStatus).subscribe({
@@ -84,7 +94,6 @@ export class UserManagementComponent {
       error: (err: Error) => alert(err.message),
     });
   }
-
 
   confirmDeleteUser(user: { id: string; name: string }): void {
     if (!confirm(`Supprimer le compte de ${user.name} ? Cette action est irréversible.`)) return;
@@ -193,7 +202,7 @@ export class UserManagementComponent {
 
   rejectEnrollment(item: EnrollmentRequestItem): void {
     const note = prompt(`Motif de rejet pour ${item.name} (optionnel) :`);
-    if (note === null) return; // cancelled
+    if (note === null) return;
     this.adminService.rejectEnrollmentRequest(item.id, note || undefined).subscribe({
       next: () => this.adminService.enrollmentRequests.update(list => list.filter(r => r.id !== item.id)),
       error: (err: Error) => alert(err.message),
@@ -220,6 +229,101 @@ export class UserManagementComponent {
         this.createSuccess.set(`${user.name} ${newStatus ? 'promu Ambassadeur' : 'rétrogradé Client'}`);
       },
       error: (err: Error) => alert(err.message),
+    });
+  }
+
+  // ── GESTION DES PARAMÈTRES PARRAINAGE VIP ──────────────────────────────
+  openVipModal(user: DashboardUser): void {
+    this.selectedUserForVip.set(user);
+    this.vipN1Rate.set(user.custom_n1_rate ?? null);
+    this.vipN2Rate.set(user.custom_n2_rate ?? null);
+    this.vipDurationMonths.set(user.custom_duration_months ?? null);
+    this.vipSuccessMessage.set(null);
+    this.vipErrorMessage.set(null);
+    this.showVipModal.set(true);
+  }
+
+  closeVipModal(): void {
+    this.showVipModal.set(false);
+    this.selectedUserForVip.set(null);
+    this.vipSuccessMessage.set(null);
+    this.vipErrorMessage.set(null);
+  }
+
+  saveVipSettings(): void {
+    const user = this.selectedUserForVip();
+    if (!user) return;
+
+    this.vipLoading.set(true);
+    this.vipErrorMessage.set(null);
+    this.vipSuccessMessage.set(null);
+
+    const payload = {
+      custom_n1_rate: this.vipN1Rate() !== null && this.vipN1Rate() !== undefined ? Number(this.vipN1Rate()) : null,
+      custom_n2_rate: this.vipN2Rate() !== null && this.vipN2Rate() !== undefined ? Number(this.vipN2Rate()) : null,
+      custom_duration_months: this.vipDurationMonths() !== null && this.vipDurationMonths() !== undefined ? Number(this.vipDurationMonths()) : null,
+    };
+
+    this.adminService.updateUserSponsorshipSettings(user.id, payload).subscribe({
+      next: (res) => {
+        this.vipLoading.set(false);
+        this.vipSuccessMessage.set(res?.message || 'Privilèges VIP enregistrés avec succès !');
+
+        this.adminService.allUsers.update(list =>
+          list.map(u => u.id === user.id ? {
+            ...u,
+            custom_n1_rate: payload.custom_n1_rate,
+            custom_n2_rate: payload.custom_n2_rate,
+            custom_duration_months: payload.custom_duration_months,
+          } : u)
+        );
+
+        setTimeout(() => this.closeVipModal(), 1500);
+      },
+      error: (err: Error) => {
+        this.vipLoading.set(false);
+        this.vipErrorMessage.set(err.message || 'Erreur lors de l\'enregistrement des privilèges VIP.');
+      },
+    });
+  }
+
+  resetVipSettings(): void {
+    const user = this.selectedUserForVip();
+    if (!user) return;
+
+    this.vipLoading.set(true);
+    this.vipErrorMessage.set(null);
+    this.vipSuccessMessage.set(null);
+
+    const payload = {
+      custom_n1_rate: null,
+      custom_n2_rate: null,
+      custom_duration_months: null,
+    };
+
+    this.adminService.updateUserSponsorshipSettings(user.id, payload).subscribe({
+      next: () => {
+        this.vipLoading.set(false);
+        this.vipN1Rate.set(null);
+        this.vipN2Rate.set(null);
+        this.vipDurationMonths.set(null);
+        this.vipSuccessMessage.set('Taux réinitialisés aux valeurs par défaut !');
+
+        this.adminService.allUsers.update(list =>
+          list.map(u => u.id === user.id ? {
+            ...u,
+            custom_n1_rate: null,
+            custom_n2_rate: null,
+            custom_duration_months: null,
+          } : u)
+        );
+
+        setTimeout(() => this.closeVipModal(), 1500);
+      },
+      error: (err: Error) => {
+        this.vipLoading.set(false);
+        this.vipErrorMessage.set(err.message || 'Erreur lors de la réinitialisation.');
+      },
     });
   }
 

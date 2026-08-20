@@ -8,8 +8,11 @@ export interface DashboardUser {
   role: UserRole;
   status: string;
   avatarUrl?: string;
-  isVerified: boolean;
+  isVerified?: boolean;
   createdAt: string;
   can_withdraw?: boolean;
   is_ambassador?: boolean;
+  custom_n1_rate?: number | null;
+  custom_n2_rate?: number | null;
+  custom_duration_months?: number | null;
 }

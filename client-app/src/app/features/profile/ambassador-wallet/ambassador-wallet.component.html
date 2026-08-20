@@ -24,9 +24,9 @@
   <ng-container *ngIf="!loading() && !error() && stats() as s">
 
     <!-- Status Badge -->
-    <div class="status-badge" [class.status-badge--ambassador]="s.is_ambassador">
-      <span class="material-symbols-outlined">{{ s.is_ambassador ? 'star' : 'person' }}</span>
-      <span>{{ s.is_ambassador ? 'Ambassadeur' : 'Client Parrain' }}</span>
+    <div class="status-badge" [class.status-badge--vip]="s.is_vip">
+      <span class="material-symbols-outlined">{{ s.is_vip ? 'workspace_premium' : 'star' }}</span>
+      <span>{{ s.is_vip ? 'Ambassadeur VIP (Privilège)' : 'Ambassadeur EasyArena' }}</span>
     </div>
 
     <!-- Balance Card -->
@@ -98,33 +98,30 @@
       </div>
     </div>
 
-    <!-- Commission Grid Info -->
-    <div class="grid-info">
-      <h3 class="grid-info__title">Grille de Commissions</h3>
+    <!-- Dynamic Commission Grid Info -->
+    <div class="grid-info" [class.grid-info--vip]="s.is_vip">
+      <div class="grid-info__header">
+        <h3 class="grid-info__title">Vos Taux de Commissions Effectifs</h3>
+        <span class="vip-badge" *ngIf="s.is_vip">
+          <span class="material-symbols-outlined">verified</span>
+          Taux VIP Privilégié
+        </span>
+      </div>
       <div class="grid-info__table">
         <div class="grid-info__row grid-info__row--header">
-          <span>Type</span>
-          <span>N1</span>
-          <span>N2</span>
-          <span>Durée</span>
+          <span>Niveau</span>
+          <span>Taux Effectif</span>
+          <span>Validité</span>
         </div>
-        <div class="grid-info__row" *ngIf="!s.is_ambassador">
-          <span>Client &rarr; Client</span>
-          <span>5%</span>
-          <span>2%</span>
-          <span>12 mois</span>
+        <div class="grid-info__row">
+          <span>Niveau 1 (Direct)</span>
+          <span class="rate-highlight">{{ s.effective_n1_rate ?? 7 }}%</span>
+          <span>{{ s.effective_duration_months ?? 24 }} mois</span>
         </div>
-        <div class="grid-info__row" *ngIf="s.is_ambassador">
-          <span>Ambassadeur &rarr; Client</span>
-          <span>7%</span>
-          <span>2%</span>
-          <span>24 mois</span>
-        </div>
-        <div class="grid-info__row" *ngIf="s.is_ambassador">
-          <span>Ambassadeur &rarr; Pro</span>
-          <span>10%</span>
-          <span>3%</span>
-          <span>36 mois</span>
+        <div class="grid-info__row">
+          <span>Niveau 2 (Indirect)</span>
+          <span class="rate-highlight">{{ s.effective_n2_rate ?? 2 }}%</span>
+          <span>{{ s.effective_duration_months ?? 24 }} mois</span>
         </div>
       </div>
       <p class="grid-info__note">
