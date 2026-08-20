@@ -238,13 +238,13 @@
             <td><app-status-badge [status]="user.status"></app-status-badge></td>
             <td class="text-right">
               <div class="action-btns">
-                <!-- BOUTON PARAMÈTRES VIP -->
+                <!-- BOUTON PARAMÈTRES VIP TRÈS VISIBLE -->
                 <button
                   class="btn btn--sm btn--vip-action"
                   (click)="openVipModal(user)"
                   title="Paramètres de parrainage VIP (surcharges)">
-                  <span class="material-symbols-outlined">workspace_premium</span>
-                  <span>Paramètres VIP</span>
+                  <span class="material-symbols-outlined" style="color: #d97706; font-weight: bold;">workspace_premium</span>
+                  <span style="font-weight: 700;">👑 Paramètres VIP</span>
                 </button>
 
                 <button
