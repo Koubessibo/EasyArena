@@ -13,6 +13,7 @@ export interface SponsorshipMyStats {
   custom_duration_months?: number | null;
   referral_code: string;
   wallet_balance: number;
+  pending_balance?: number;
   n1_count: number;
   n2_count: number;
   total_earned: number;
@@ -20,6 +21,7 @@ export interface SponsorshipMyStats {
     id: string;
     amount: number;
     level: number;
+    status?: 'PENDING' | 'AVAILABLE' | 'CANCELLED' | 'CREDITED';
     net_revenue_base: number;
     created_at: string;
   }>;

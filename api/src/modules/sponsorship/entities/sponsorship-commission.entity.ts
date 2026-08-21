@@ -26,8 +26,15 @@ export class SponsorshipCommission {
   @Column({ type: 'int' })
   level: number;
 
-  @Column({ type: 'enum', enum: SponsorshipCommissionStatus, default: SponsorshipCommissionStatus.CREDITED })
+  @Column({ type: 'uuid', nullable: true })
+  booking_id: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  order_id: string | null;
+
+  @Column({ type: 'enum', enum: SponsorshipCommissionStatus, default: SponsorshipCommissionStatus.PENDING })
   status: SponsorshipCommissionStatus;
+
 
   @Column({ type: 'int' })
   net_revenue_base: number;

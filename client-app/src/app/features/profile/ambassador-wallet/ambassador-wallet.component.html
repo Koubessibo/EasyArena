@@ -31,8 +31,22 @@
 
     <!-- Balance Card -->
     <div class="balance-card">
-      <span class="balance-card__label">Solde Disponible</span>
-      <strong class="balance-card__amount">{{ formatCFA(s.wallet_balance) }}</strong>
+      <div class="balance-card__row">
+        <div class="balance-card__col">
+          <span class="balance-card__label">Solde Disponible</span>
+          <strong class="balance-card__amount">{{ formatCFA(s.wallet_balance) }}</strong>
+        </div>
+
+        <div class="balance-card__col balance-card__col--pending">
+          <span class="balance-card__label">
+            <span class="material-symbols-outlined balance-icon-pending">schedule</span>
+            Gains en attente
+          </span>
+          <strong class="balance-card__amount balance-card__amount--pending">{{ formatCFA(s.pending_balance ?? 0) }}</strong>
+          <small class="balance-card__tooltip">Disponibles après l'événement</small>
+        </div>
+      </div>
+
       <span class="balance-card__sub">Gains totaux générés : {{ formatCFA(s.total_earned) }}</span>
 
       <div class="balance-card__actions">
@@ -151,7 +165,18 @@
             <span class="commission-item__level">N{{ c.level }}</span>
             <span class="commission-item__date">{{ c.created_at | date:'dd/MM/yyyy' }}</span>
           </div>
-          <span class="commission-item__amount">+{{ formatCFA(c.amount) }}</span>
+
+          <div class="commission-item__right">
+            <span class="comm-status-badge" [ngClass]="{
+              'comm-status-badge--pending': c.status === 'PENDING',
+              'comm-status-badge--available': c.status === 'AVAILABLE' || c.status === 'CREDITED',
+              'comm-status-badge--cancelled': c.status === 'CANCELLED'
+            }">
+              <span class="material-symbols-outlined comm-status-icon">{{ c.status === 'PENDING' ? 'schedule' : c.status === 'CANCELLED' ? 'cancel' : 'check_circle' }}</span>
+              <span>{{ c.status === 'PENDING' ? 'En attente' : c.status === 'CANCELLED' ? 'Annulé' : 'Validé' }}</span>
+            </span>
+            <span class="commission-item__amount">+{{ formatCFA(c.amount) }}</span>
+          </div>
         </div>
       </div>
     </div>

@@ -120,11 +120,17 @@ export class SponsorshipService {
    * Core MLM engine: distributes commissions when a payment is confirmed.
    * Universal VIP logic: Custom sponsor rates override standard Ambassador rates if set.
    */
+  /**
+   * Core MLM engine: distributes commissions in PENDING state (Escrow / Séquestre).
+   * Commissions are recorded with status 'PENDING'. Wallet balance is NOT incremented until unlockCommissions() is triggered.
+   */
   async distributeCommissions(
     buyerUserId: string,
     principalAmount: number,
     sourceId: string,
     manager: EntityManager,
+    bookingId?: string,
+    orderId?: string,
   ): Promise<void> {
     const now = new Date();
 
@@ -153,20 +159,29 @@ export class SponsorshipService {
     const n1Percent = n1Sponsor.custom_n1_rate != null ? n1Sponsor.custom_n1_rate / 100 : n1Grid.n1_percent;
     const n1_commission = Math.round(netRevenue * n1Percent);
 
-    // Credit N1 sponsor
+    // Record N1 commission in PENDING state (Escrow)
     if (n1_commission > 0) {
-      await this.creditSponsor(n1Sponsor.id, n1_commission, sourceId, 1, n1Sponsorship.id, netRevenue, manager);
-      this.logger.log(`[Sponsorship] N1 commission ${n1_commission} FCFA (${n1Percent * 100}%) → ${n1Sponsor.phone}`);
+      await this.recordPendingCommission(
+        n1Sponsorship.id,
+        sourceId,
+        n1_commission,
+        1,
+        netRevenue,
+        manager,
+        bookingId,
+        orderId,
+      );
+      this.logger.log(`[Sponsorship] N1 commission ${n1_commission} FCFA (${n1Percent * 100}%) [PENDING] → ${n1Sponsor.phone}`);
 
       // Async SMS notification for N1 sponsor (non-blocking)
       this.notificationsService
         .sendSms(
           n1Sponsor.id,
           n1Sponsor.phone,
-          `Félicitations ! Vous venez de recevoir +${n1_commission} FCFA de commission grâce à votre filleul sur EasyArena.`,
+          `Félicitations ! Vous avez une commission de +${n1_commission} FCFA en attente (disponible après l'événement).`,
         )
         .catch((err) =>
-          this.logger.warn(`[Sponsorship] Failed to send N1 commission SMS: ${err.message}`),
+          this.logger.warn(`[Sponsorship] Failed to send N1 pending SMS: ${err.message}`),
         );
     }
 
@@ -189,70 +204,158 @@ export class SponsorshipService {
     const n2Percent = n2Sponsor.custom_n2_rate != null ? n2Sponsor.custom_n2_rate / 100 : n2Grid.n2_percent;
     const n2_commission = Math.round(netRevenue * n2Percent);
 
-    // Credit N2 sponsor
+    // Record N2 commission in PENDING state (Escrow)
     if (n2_commission > 0) {
-      await this.creditSponsor(n2Sponsor.id, n2_commission, sourceId, 2, n2Sponsorship.id, netRevenue, manager);
-      this.logger.log(`[Sponsorship] N2 commission ${n2_commission} FCFA (${n2Percent * 100}%) → ${n2Sponsor.phone}`);
+      await this.recordPendingCommission(
+        n2Sponsorship.id,
+        sourceId,
+        n2_commission,
+        2,
+        netRevenue,
+        manager,
+        bookingId,
+        orderId,
+      );
+      this.logger.log(`[Sponsorship] N2 commission ${n2_commission} FCFA (${n2Percent * 100}%) [PENDING] → ${n2Sponsor.phone}`);
 
       // Async SMS notification for N2 sponsor (non-blocking)
       this.notificationsService
         .sendSms(
           n2Sponsor.id,
           n2Sponsor.phone,
-          `Félicitations ! Vous venez de recevoir +${n2_commission} FCFA de commission grâce à votre filleul sur EasyArena.`,
+          `Félicitations ! Vous avez une commission de +${n2_commission} FCFA en attente (disponible après l'événement).`,
         )
         .catch((err) =>
-          this.logger.warn(`[Sponsorship] Failed to send N2 commission SMS: ${err.message}`),
+          this.logger.warn(`[Sponsorship] Failed to send N2 pending SMS: ${err.message}`),
         );
     }
   }
 
-  private async creditSponsor(
-    sponsorUserId: string,
-    amount: number,
-    sourceId: string,
-    level: number,
+  private async recordPendingCommission(
     sponsorshipId: string,
+    sourceId: string,
+    amount: number,
+    level: number,
     netRevenueBase: number,
     manager: EntityManager,
-  ): Promise<void> {
-    const { Owner } = await import('../users/entities/owner.entity');
-    const ownerProfile = await manager.findOne(Owner, {
-      where: { user: { id: sponsorUserId } },
-    });
-
-    if (ownerProfile) {
-      // Owner/Vendor: credit ONLY via transaction ledger (withdrawable balance)
-      const balanceBefore = await this.transactionsService.computeOwnerBalance(ownerProfile.id, manager);
-      await this.transactionsService.createTransaction(
-        {
-          owner_id: ownerProfile.id,
-          type: TransactionType.BOOKING_CREDIT,
-          direction: TransactionDirection.CREDIT,
-          amount,
-          balance_before: balanceBefore,
-          source_id: sourceId,
-          source_type: TransactionSourceType.PAYMENT,
-          description: `Commission parrainage N${level}`,
-        },
-        manager,
-      );
-    } else {
-      // Client: credit ONLY wallet_balance (no ledger)
-      await manager.increment(User, { id: sponsorUserId }, 'wallet_balance', amount);
-    }
-
-    // Record the commission
+    bookingId?: string,
+    orderId?: string,
+  ): Promise<SponsorshipCommission> {
     const commission = manager.create(SponsorshipCommission, {
       sponsorship_id: sponsorshipId,
       transaction_source_id: sourceId,
+      booking_id: bookingId ?? null,
+      order_id: orderId ?? null,
       amount,
       level,
-      status: SponsorshipCommissionStatus.CREDITED,
+      status: SponsorshipCommissionStatus.PENDING,
       net_revenue_base: netRevenueBase,
     });
-    await manager.save(SponsorshipCommission, commission);
+    return manager.save(SponsorshipCommission, commission);
   }
+
+  /**
+   * Unlock Commissions (Déblocage du Séquestre)
+   * Converts 'PENDING' commissions linked to reservationId/orderId to 'AVAILABLE' and credits wallet_balance.
+   */
+  async unlockCommissions(sourceId: string, customManager?: EntityManager): Promise<number> {
+    const mgr = customManager ?? this.commissionRepo.manager;
+
+    const pendingCommissions = await mgr.find(SponsorshipCommission, {
+      where: [
+        { booking_id: sourceId, status: SponsorshipCommissionStatus.PENDING },
+        { order_id: sourceId, status: SponsorshipCommissionStatus.PENDING },
+        { transaction_source_id: sourceId, status: SponsorshipCommissionStatus.PENDING },
+      ],
+      relations: ['sponsorship', 'sponsorship.sponsor'],
+    });
+
+    if (pendingCommissions.length === 0) {
+      this.logger.debug(`[Sponsorship] No pending commissions found for sourceId ${sourceId}`);
+      return 0;
+    }
+
+    let unlockedCount = 0;
+    const { Owner } = await import('../users/entities/owner.entity');
+
+    for (const commission of pendingCommissions) {
+      commission.status = SponsorshipCommissionStatus.AVAILABLE;
+      await mgr.save(SponsorshipCommission, commission);
+
+      const sponsor = commission.sponsorship?.sponsor;
+      if (sponsor) {
+        const ownerProfile = await mgr.findOne(Owner, {
+          where: { user: { id: sponsor.id } },
+        });
+
+        if (ownerProfile) {
+          const balanceBefore = await this.transactionsService.computeOwnerBalance(ownerProfile.id, mgr);
+          await this.transactionsService.createTransaction(
+            {
+              owner_id: ownerProfile.id,
+              type: TransactionType.BOOKING_CREDIT,
+              direction: TransactionDirection.CREDIT,
+              amount: commission.amount,
+              balance_before: balanceBefore,
+              source_id: sourceId,
+              source_type: TransactionSourceType.PAYMENT,
+              description: `Commission parrainage N${commission.level} débloquée (Escrow)`,
+            },
+            mgr,
+          );
+        } else {
+          // Client: credit wallet_balance
+          await mgr.increment(User, { id: sponsor.id }, 'wallet_balance', commission.amount);
+        }
+
+        unlockedCount++;
+        this.logger.log(`[Sponsorship] Unlocked ${commission.amount} FCFA for sponsor ${sponsor.phone}`);
+
+        // Async SMS notification
+        this.notificationsService
+          .sendSms(
+            sponsor.id,
+            sponsor.phone,
+            `Bonne nouvelle ! Votre commission de +${commission.amount} FCFA est désormais disponible dans votre solde EasyArena.`,
+          )
+          .catch((err) =>
+            this.logger.warn(`[Sponsorship] Failed to send unlocked SMS: ${err.message}`),
+          );
+      }
+    }
+
+    return unlockedCount;
+  }
+
+  /**
+   * Cancel Commissions (Annulation du Séquestre)
+   * Converts 'PENDING' commissions linked to reservationId/orderId to 'CANCELLED'.
+   */
+  async cancelCommissions(sourceId: string, customManager?: EntityManager): Promise<number> {
+    const mgr = customManager ?? this.commissionRepo.manager;
+
+    const pendingCommissions = await mgr.find(SponsorshipCommission, {
+      where: [
+        { booking_id: sourceId, status: SponsorshipCommissionStatus.PENDING },
+        { order_id: sourceId, status: SponsorshipCommissionStatus.PENDING },
+        { transaction_source_id: sourceId, status: SponsorshipCommissionStatus.PENDING },
+      ],
+    });
+
+    if (pendingCommissions.length === 0) {
+      this.logger.debug(`[Sponsorship] No pending commissions to cancel for sourceId ${sourceId}`);
+      return 0;
+    }
+
+    for (const commission of pendingCommissions) {
+      commission.status = SponsorshipCommissionStatus.CANCELLED;
+      await mgr.save(SponsorshipCommission, commission);
+    }
+
+    this.logger.log(`[Sponsorship] Cancelled ${pendingCommissions.length} pending commissions for source ${sourceId}`);
+    return pendingCommissions.length;
+  }
+
 
   /**
    * Envoi du code OTP pour sécuriser la demande de retrait Mobile Money.
@@ -506,8 +609,19 @@ export class SponsorshipService {
       .createQueryBuilder('sc')
       .innerJoin('sc.sponsorship', 's')
       .where('s.sponsor_id = :userId', { userId })
+      .andWhere('sc.status IN (:...statuses)', { statuses: [SponsorshipCommissionStatus.AVAILABLE, SponsorshipCommissionStatus.CREDITED] })
       .select('SUM(sc.amount)', 'total')
       .getRawOne();
+
+    const pendingEarned = await this.commissionRepo
+      .createQueryBuilder('sc')
+      .innerJoin('sc.sponsorship', 's')
+      .where('s.sponsor_id = :userId', { userId })
+      .andWhere('sc.status = :status', { status: SponsorshipCommissionStatus.PENDING })
+      .select('SUM(sc.amount)', 'total')
+      .getRawOne();
+
+    const pendingBalance = Number(pendingEarned?.total ?? 0);
 
     const recentCommissions = await this.commissionRepo
       .createQueryBuilder('sc')
@@ -554,10 +668,18 @@ export class SponsorshipService {
       custom_duration_months: user.custom_duration_months,
       referral_code: user.referral_code,
       wallet_balance: user.wallet_balance,
+      pending_balance: pendingBalance,
       n1_count: n1Referrals.length,
       n2_count: n2Referrals.length,
       total_earned: Number(totalEarned?.total ?? 0),
-      recent_commissions: recentCommissions,
+      recent_commissions: recentCommissions.map(c => ({
+        id: c.id,
+        amount: c.amount,
+        level: c.level,
+        status: c.status,
+        net_revenue_base: c.net_revenue_base,
+        created_at: c.created_at,
+      })),
       referrals: combinedReferrals,
     };
   }

@@ -144,5 +144,8 @@ export enum SponsorType {
 
 export enum SponsorshipCommissionStatus {
   PENDING = 'PENDING',
+  AVAILABLE = 'AVAILABLE',
+  CANCELLED = 'CANCELLED',
   CREDITED = 'CREDITED',
 }
+

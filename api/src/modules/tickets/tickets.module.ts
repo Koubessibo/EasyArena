@@ -10,12 +10,15 @@ import { UsersModule } from '../users/users.module';
 import { PaymentsModule } from '../payments/payments.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 
+import { SponsorshipModule } from '../sponsorship/sponsorship.module';
+
 @Module({
   imports: [
     TypeOrmModule.forFeature([EventTicket, SportEvent, Client]),
     UsersModule,
     PaymentsModule,
     NotificationsModule,
+    SponsorshipModule,
   ],
   controllers: [TicketsController],
   providers: [TicketsService, TotpService],

@@ -5,12 +5,15 @@ import { Booking } from '../bookings/entities/booking.entity';
 import { BookingStatus, TransactionType, TransactionDirection, TransactionSourceType } from '../../common/enums';
 import { Transaction } from '../transactions/entities/transaction.entity';
 
+import { SponsorshipService } from '../sponsorship/sponsorship.service';
+
 @Injectable()
 export class CancellationsService {
   constructor(
     @InjectRepository(Booking)
     private readonly bookingRepo: Repository<Booking>,
     private readonly dataSource: DataSource,
+    private readonly sponsorshipService: SponsorshipService,
   ) {}
 
   /**
@@ -125,6 +128,14 @@ export class CancellationsService {
       // Mise à jour de la réservation
       booking.status = BookingStatus.CANCELLED;
       const savedBooking = await manager.save(booking);
+
+      // Annulation des commissions en attente (Escrow)
+      try {
+        await this.sponsorshipService.cancelCommissions(booking.id, manager);
+      } catch (e) {
+        console.warn(`[Cancellations] Failed to cancel commissions for booking ${booking.id}: ${e.message}`);
+      }
+
 
       return {
         message: 'Annulation acceptée et remboursement traité',

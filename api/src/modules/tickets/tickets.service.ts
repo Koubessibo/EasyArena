@@ -17,6 +17,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { NotificationsService } from '../notifications/notifications.service';
 import { TotpService } from './totp.service';
 
+import { SponsorshipService } from '../sponsorship/sponsorship.service';
+
 @Injectable()
 export class TicketsService {
   private readonly logger = new Logger(TicketsService.name);
@@ -32,6 +34,7 @@ export class TicketsService {
     private readonly paymentProvider: IPaymentProvider,
     private readonly notificationsService: NotificationsService,
     private readonly totpService: TotpService,
+    private readonly sponsorshipService: SponsorshipService,
   ) {}
 
   async buyTicket(eventId: string, clientId: string, operator?: string, phone?: string) {
@@ -247,6 +250,16 @@ export class TicketsService {
     const holderName = `${firstName} ${lastName}`.trim() || 'Client EasyArena';
 
     this.logger.log(`✅ BILLET VALIDÉ : ${ticketId} | Porteur : ${holderName} | Événement : ${ticket.event?.name}`);
+
+    // ── 6. Déblocage des commissions de parrainage (Escrow / Séquestre) ────
+    try {
+      await this.sponsorshipService.unlockCommissions(ticket.id);
+      if (ticket.event_id) {
+        await this.sponsorshipService.unlockCommissions(ticket.event_id);
+      }
+    } catch (err: any) {
+      this.logger.warn(`[Tickets] Failed to unlock commissions for ticket ${ticketId}: ${err.message}`);
+    }
 
     return {
       ticketId: ticket.id,
