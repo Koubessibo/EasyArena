@@ -354,11 +354,12 @@ export class AdminService {
 
   /**
    * Super Admin : Effectuer un retrait sans frais (0% de frais) depuis la trésorerie.
-   * Exécute d'abord l'ordre de virement physique via la passerelle de paiement (SamirPay / Wave / Orange Money)
-   * et n'enregistre la transaction SQL en base de données QUE si l'API répond avec succès (200 OK / success: true).
+   * Exécute d'abord l'ordre de virement physique via la passerelle de paiement (SamirPay / Wave / Orange Money).
+   * En cas d'échec API ou solde opérateur insuffisant, un Rollback strict est effectué (aucun débit en base).
+   * Si le transfert réussit (Status 200), la transaction SQL est commitée et un SMS de confirmation est envoyé au Super Admin.
    */
-  async withdrawPlatformTreasury(dto: CreatePlatformWithdrawalDto) {
-    // 1. Vérification préalable du solde de trésorerie disponible
+  async withdrawPlatformTreasury(dto: CreatePlatformWithdrawalDto, adminUser?: User) {
+    // 1. Vérification préalable du solde de trésorerie interne EasyArena
     const currentBalanceData = await this.getPlatformTreasuryBalance();
     const currentBalance = currentBalanceData.treasury_balance;
 
@@ -375,7 +376,7 @@ export class AdminService {
 
     const reference = `PLAT-TREASURY-${Date.now()}`;
 
-    // 3. Appel HTTP RÉEL à l'API de paiement (SamirPay / Wave / OM)
+    // 3. Appel HTTP RÉEL à l'API SamirPay / Passerelle de paiement avec gestion de Rollback
     let payoutResult;
     try {
       payoutResult = await this.paymentProvider.cashOut({
@@ -385,20 +386,22 @@ export class AdminService {
         reference: reference,
       });
     } catch (apiError: any) {
+      // ROLLBACK STRICT : Aucune ligne de base de données n'est créée
       throw new BadRequestException(
-        `Échec de la connexion à l'API de paiement : ${apiError.message || 'Le serveur de virement est indisponible'}`,
+        `Échec du transfert : Solde insuffisant ou indisponible sur le compte opérateur SamirPay (${apiError.message || 'Erreur passerelle'})`,
       );
     }
 
-    // 4. Validation impitoyable du résultat de l'API de paiement
+    // 4. Validation stricte du résultat fourni par l'API de virement SamirPay
     if (!payoutResult || !payoutResult.success) {
+      // ROLLBACK STRICT : Le compte marchand SamirPay n'a pas pu effectuer le transfert
       throw new BadRequestException(
-        `L'API de paiement a rejeté le transfert physique : ${payoutResult?.message || 'Erreur inconnue de la passerelle de virement'}`,
+        `Échec du transfert : Solde insuffisant sur le compte opérateur SamirPay (${payoutResult?.message || 'Transaction refusée par le fournisseur de paiement'})`,
       );
     }
 
-    // 5. Exécution transactionnelle SQL uniquement si le paiement physique a Réussi (HTTP 200 / success: true)
-    return this.dataSource.transaction(async (manager) => {
+    // 5. Exécution transactionnelle SQL uniquement si le paiement physique a Réussi (Status 200)
+    const result = await this.dataSource.transaction(async (manager) => {
       // Règle métier stricte : 0% de frais. Le montant déduit est strictement égal au montant demandé.
       const platformWithdrawal = manager.create(PlatformWithdrawal, {
         amount: dto.amount,
@@ -409,17 +412,28 @@ export class AdminService {
       });
 
       const savedWithdrawal = await manager.save(platformWithdrawal);
-
       const updatedBalanceData = await this.getPlatformTreasuryBalance();
 
       return {
         success: true,
-        message: `Décaissement physique de ${dto.amount} FCFA exécuté avec succès via la passerelle de paiement (Réf: ${payoutResult.external_ref || reference}) sans aucun frais (0%).`,
+        message: `Décaissement physique de ${dto.amount} FCFA exécuté avec succès via SamirPay (Réf: ${payoutResult.external_ref || reference}) sans aucun frais (0%).`,
         external_ref: payoutResult.external_ref || reference,
         withdrawal: savedWithdrawal,
         new_treasury_balance: updatedBalanceData.treasury_balance,
       };
     });
+
+    // 6. BLOC 2 : Alerte SMS immédiate au Super Admin après validation et commit de la transaction
+    if (adminUser?.id && adminUser?.phone) {
+      const methodLabel = dto.method === PlatformWithdrawalMethod.SAMIR_MONEY ? 'Samir Money' : 'Wave/Orange Money';
+      const smsMessage = `Succès : Un retrait de trésorerie de ${dto.amount} FCFA a été effectué vers ${methodLabel} sur le numéro ${dto.accountDetails}. (Réf: ${payoutResult.external_ref || reference})`;
+      
+      this.notificationsService
+        .sendSms(adminUser.id, adminUser.phone, smsMessage)
+        .catch((err) => console.warn(`[Treasury] Failed to send withdrawal SMS notification to Super Admin: ${err.message}`));
+    }
+
+    return result;
   }
 
   /**

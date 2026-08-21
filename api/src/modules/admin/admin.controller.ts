@@ -250,8 +250,11 @@ export class AdminController {
   }
 
   @Post('treasury/withdraw')
-  withdrawPlatformTreasury(@Body() dto: CreatePlatformWithdrawalDto) {
-    return this.adminService.withdrawPlatformTreasury(dto);
+  withdrawPlatformTreasury(
+    @CurrentUser() admin: User,
+    @Body() dto: CreatePlatformWithdrawalDto,
+  ) {
+    return this.adminService.withdrawPlatformTreasury(dto, admin);
   }
 
   @Get('treasury/withdrawals')
