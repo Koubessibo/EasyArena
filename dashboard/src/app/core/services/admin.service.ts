@@ -165,21 +165,21 @@ export class AdminService {
   readonly platformWithdrawals = signal<PlatformWithdrawalItem[]>([]);
 
   loadTreasuryBalance(): void {
-    this.api.get<PlatformTreasuryBalance>('admin/treasury/balance').subscribe({
+    this.api.get<PlatformTreasuryBalance>('/admin/treasury/balance').subscribe({
       next: (res) => this.treasuryBalance.set(res),
       error: (err: any) => console.error('Failed to load treasury balance', err),
     });
   }
 
   loadPlatformWithdrawals(): void {
-    this.api.get<{ success: boolean; withdrawals: PlatformWithdrawalItem[] }>('admin/treasury/withdrawals').subscribe({
+    this.api.get<{ success: boolean; withdrawals: PlatformWithdrawalItem[] }>('/admin/treasury/withdrawals').subscribe({
       next: (res) => this.platformWithdrawals.set(res.withdrawals ?? []),
       error: (err: any) => console.error('Failed to load platform withdrawals', err),
     });
   }
 
   withdrawPlatformTreasury(amount: number, method: 'OPERATOR' | 'SAMIR_MONEY', accountDetails: string): Observable<any> {
-    return this.api.post('admin/treasury/withdraw', {
+    return this.api.post('/admin/treasury/withdraw', {
       amount,
       method,
       accountDetails,
