@@ -71,8 +71,10 @@
             <div class="form-group">
               <label>Méthode de retrait (Frais : 0 FCFA)</label>
               <select [(ngModel)]="treasuryMethod" name="treasuryMethod" class="form-control">
-                <option value="OPERATOR">📱 Opérateur Mobile (Wave / Orange / Free)</option>
-                <option value="SAMIR_MONEY">🏦 Compte Samir Money</option>
+                <option value="WAVE">🌊 Wave (Frais : 0 FCFA)</option>
+                <option value="ORANGE_MONEY">🍊 Orange Money (Frais : 0 FCFA)</option>
+                <option value="FREE_MONEY">📲 Free Money (Frais : 0 FCFA)</option>
+                <option value="SAMIR_MONEY">🏦 Compte Samir Money (Frais : 0 FCFA)</option>
               </select>
             </div>
 
@@ -120,8 +122,8 @@
             <td class="amount-cell text-bold">{{ pw.amount | fcfa }}</td>
             <td><span class="free-pill">0 FCFA (Gratuit)</span></td>
             <td>
-              <span class="method-chip" [ngClass]="pw.method === 'SAMIR_MONEY' ? 'method-chip--bank_transfer' : 'method-chip--wave'">
-                {{ pw.method === 'SAMIR_MONEY' ? 'Samir Money' : 'Opérateur Mobile' }}
+              <span class="method-chip" [ngClass]="'method-chip--' + pw.method.toLowerCase()">
+                {{ platformMethodLabel(pw.method) }}
               </span>
             </td>
             <td><code>{{ pw.account_details }}</code></td>

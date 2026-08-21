@@ -369,10 +369,21 @@ export class AdminService {
       );
     }
 
-    // 2. Détermination de l'opérateur mobile pour le décaissement physique
-    const operator = dto.method === PlatformWithdrawalMethod.SAMIR_MONEY
-      ? MobileOperator.WAVE
-      : MobileOperator.WAVE;
+    // 2. Détermination de l'opérateur mobile spécifique pour le décaissement physique
+    let operator: MobileOperator;
+    switch (dto.method) {
+      case PlatformWithdrawalMethod.ORANGE_MONEY:
+        operator = MobileOperator.ORANGE_MONEY;
+        break;
+      case PlatformWithdrawalMethod.FREE_MONEY:
+        operator = MobileOperator.FREE_MONEY;
+        break;
+      case PlatformWithdrawalMethod.WAVE:
+      case PlatformWithdrawalMethod.SAMIR_MONEY:
+      default:
+        operator = MobileOperator.WAVE;
+        break;
+    }
 
     const reference = `PLAT-TREASURY-${Date.now()}`;
 
@@ -402,7 +413,7 @@ export class AdminService {
 
     // 5. Exécution transactionnelle SQL uniquement si le paiement physique a Réussi (Status 200)
     const result = await this.dataSource.transaction(async (manager) => {
-      // Règle métier stricte : 0% de frais. Le montant déduit est strictement égal au montant demandé.
+      // Règle métier stricte : 0% de frais. Le montant déduit est strictly égal au montant demandé.
       const platformWithdrawal = manager.create(PlatformWithdrawal, {
         amount: dto.amount,
         method: dto.method,
@@ -425,7 +436,13 @@ export class AdminService {
 
     // 6. BLOC 2 : Alerte SMS immédiate au Super Admin après validation et commit de la transaction
     if (adminUser?.id && adminUser?.phone) {
-      const methodLabel = dto.method === PlatformWithdrawalMethod.SAMIR_MONEY ? 'Samir Money' : 'Wave/Orange Money';
+      const methodLabels: Record<string, string> = {
+        WAVE: 'Wave',
+        ORANGE_MONEY: 'Orange Money',
+        FREE_MONEY: 'Free Money',
+        SAMIR_MONEY: 'Samir Money',
+      };
+      const methodLabel = methodLabels[dto.method] ?? dto.method;
       const smsMessage = `Succès : Un retrait de trésorerie de ${dto.amount} FCFA a été effectué vers ${methodLabel} sur le numéro ${dto.accountDetails}. (Réf: ${payoutResult.external_ref || reference})`;
       
       this.notificationsService

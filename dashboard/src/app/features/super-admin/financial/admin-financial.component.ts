@@ -25,7 +25,7 @@ export class AdminFinancialComponent {
 
   // Champs du formulaire de décaissement Super Admin (Trésorerie)
   treasuryAmount: number | null = null;
-  treasuryMethod: 'OPERATOR' | 'SAMIR_MONEY' = 'OPERATOR';
+  treasuryMethod: 'WAVE' | 'ORANGE_MONEY' | 'FREE_MONEY' | 'SAMIR_MONEY' = 'WAVE';
   treasuryAccountDetails: string = '';
   isSubmittingTreasury = signal(false);
 
@@ -135,6 +135,17 @@ export class AdminFinancialComponent {
         });
       },
     });
+  }
+
+  platformMethodLabel(method: string): string {
+    const labels: Record<string, string> = {
+      WAVE: 'Wave',
+      ORANGE_MONEY: 'Orange Money',
+      FREE_MONEY: 'Free Money',
+      SAMIR_MONEY: 'Compte Samir Money',
+      OPERATOR: 'Opérateur Mobile',
+    };
+    return labels[method] ?? method;
   }
 
   methodLabel(method: string): string {

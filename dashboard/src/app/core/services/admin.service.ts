@@ -63,7 +63,7 @@ export interface PlatformTreasuryBalance {
 export interface PlatformWithdrawalItem {
   id: string;
   amount: number;
-  method: 'OPERATOR' | 'SAMIR_MONEY';
+  method: 'WAVE' | 'ORANGE_MONEY' | 'FREE_MONEY' | 'SAMIR_MONEY';
   account_details: string;
   status: 'PENDING' | 'COMPLETED' | 'REJECTED';
   created_at: string;
@@ -180,7 +180,7 @@ export class AdminService {
     });
   }
 
-  withdrawPlatformTreasury(amount: number, method: 'OPERATOR' | 'SAMIR_MONEY', accountDetails: string): Observable<any> {
+  withdrawPlatformTreasury(amount: number, method: 'WAVE' | 'ORANGE_MONEY' | 'FREE_MONEY' | 'SAMIR_MONEY', accountDetails: string): Observable<any> {
     return this.api.post('/admin/treasury/withdraw', {
       amount,
       method,

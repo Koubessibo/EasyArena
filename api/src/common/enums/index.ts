@@ -55,6 +55,7 @@ export enum PaymentMethod {
 export enum MobileOperator {
   WAVE = 'WAVE',
   ORANGE_MONEY = 'ORANGE_MONEY',
+  FREE_MONEY = 'FREE_MONEY',
 }
 
 export enum PaymentStatus {

@@ -6,7 +6,9 @@ import {
 } from 'typeorm';
 
 export enum PlatformWithdrawalMethod {
-  OPERATOR = 'OPERATOR',
+  WAVE = 'WAVE',
+  ORANGE_MONEY = 'ORANGE_MONEY',
+  FREE_MONEY = 'FREE_MONEY',
   SAMIR_MONEY = 'SAMIR_MONEY',
 }
 
