@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { User } from '../users/entities/user.entity';
@@ -10,15 +10,16 @@ import { VendorWithdrawal, VendorWithdrawalStatus } from '../vendor-earnings/ent
 import { Withdrawal } from '../withdrawals/entities/withdrawal.entity';
 import { UsersService } from '../users/users.service';
 import { WithdrawalsService } from '../withdrawals/withdrawals.service';
-import { Role, ArticleStatus, BookingStatus, FieldStatus, TransactionType, UserStatus } from '../../common/enums';
+import { Role, ArticleStatus, BookingStatus, FieldStatus, TransactionType, UserStatus, MobileOperator } from '../../common/enums';
 import { NotificationsService } from '../notifications/notifications.service';
 import { CreateOwnerDto } from '../users/dto/create-owner.dto';
 import { CreateVendorDto } from '../users/dto/create-vendor.dto';
 import { UpdateUserStatusDto } from '../users/dto/update-user-status.dto';
 import { ValidateWithdrawalDto } from '../withdrawals/dto/validate-withdrawal.dto';
 
-import { PlatformWithdrawal, PlatformWithdrawalStatus } from './entities/platform-withdrawal.entity';
+import { PlatformWithdrawal, PlatformWithdrawalMethod, PlatformWithdrawalStatus } from './entities/platform-withdrawal.entity';
 import { CreatePlatformWithdrawalDto } from './dto/create-platform-withdrawal.dto';
+import { IPaymentProvider, PAYMENT_PROVIDER } from '../payments/interfaces/payment-provider.interface';
 
 type StatPeriod = 'today' | 'week' | 'month' | 'all_time';
 
@@ -31,6 +32,7 @@ export class AdminService {
     @InjectRepository(Booking) private readonly bookingRepo: Repository<Booking>,
     @InjectRepository(Transaction) private readonly txRepo: Repository<Transaction>,
     @InjectRepository(PlatformWithdrawal) private readonly platformWithdrawalRepo: Repository<PlatformWithdrawal>,
+    @Inject(PAYMENT_PROVIDER) private readonly paymentProvider: IPaymentProvider,
     private readonly usersService: UsersService,
     private readonly withdrawalsService: WithdrawalsService,
     private readonly notificationsService: NotificationsService,
@@ -352,47 +354,70 @@ export class AdminService {
 
   /**
    * Super Admin : Effectuer un retrait sans frais (0% de frais) depuis la trésorerie.
+   * Exécute d'abord l'ordre de virement physique via la passerelle de paiement (SamirPay / Wave / Orange Money)
+   * et n'enregistre la transaction SQL en base de données QUE si l'API répond avec succès (200 OK / success: true).
    */
   async withdrawPlatformTreasury(dto: CreatePlatformWithdrawalDto) {
+    // 1. Vérification préalable du solde de trésorerie disponible
+    const currentBalanceData = await this.getPlatformTreasuryBalance();
+    const currentBalance = currentBalanceData.treasury_balance;
+
+    if (dto.amount > currentBalance) {
+      throw new BadRequestException(
+        `Solde de trésorerie insuffisant. Solde disponible : ${currentBalance} FCFA, Montant demandé : ${dto.amount} FCFA`,
+      );
+    }
+
+    // 2. Détermination de l'opérateur mobile pour le décaissement physique
+    const operator = dto.method === PlatformWithdrawalMethod.SAMIR_MONEY
+      ? MobileOperator.WAVE
+      : MobileOperator.WAVE;
+
+    const reference = `PLAT-TREASURY-${Date.now()}`;
+
+    // 3. Appel HTTP RÉEL à l'API de paiement (SamirPay / Wave / OM)
+    let payoutResult;
+    try {
+      payoutResult = await this.paymentProvider.cashOut({
+        amount: dto.amount,
+        operator: operator,
+        phoneNumber: dto.accountDetails,
+        reference: reference,
+      });
+    } catch (apiError: any) {
+      throw new BadRequestException(
+        `Échec de la connexion à l'API de paiement : ${apiError.message || 'Le serveur de virement est indisponible'}`,
+      );
+    }
+
+    // 4. Validation impitoyable du résultat de l'API de paiement
+    if (!payoutResult || !payoutResult.success) {
+      throw new BadRequestException(
+        `L'API de paiement a rejeté le transfert physique : ${payoutResult?.message || 'Erreur inconnue de la passerelle de virement'}`,
+      );
+    }
+
+    // 5. Exécution transactionnelle SQL uniquement si le paiement physique a Réussi (HTTP 200 / success: true)
     return this.dataSource.transaction(async (manager) => {
-      const grossRevResult = await manager
-        .createQueryBuilder(Booking, 'b')
-        .select('SUM(b.service_fee)', 'total')
-        .where('b.status = :status', { status: BookingStatus.CONFIRMED })
-        .getRawOne();
-      const totalGrossRevenue = parseFloat(grossRevResult?.total ?? '0');
-
-      const withdrawnResult = await manager
-        .createQueryBuilder(PlatformWithdrawal, 'pw')
-        .select('SUM(pw.amount)', 'total')
-        .where('pw.status = :status', { status: PlatformWithdrawalStatus.COMPLETED })
-        .getRawOne();
-      const totalWithdrawn = parseFloat(withdrawnResult?.total ?? '0');
-
-      const currentBalance = Math.max(0, totalGrossRevenue - totalWithdrawn);
-
-      if (dto.amount > currentBalance) {
-        throw new Error(
-          `Solde de trésorerie insuffisant. Solde disponible : ${currentBalance} FCFA, Montant demandé : ${dto.amount} FCFA`,
-        );
-      }
-
       // Règle métier stricte : 0% de frais. Le montant déduit est strictement égal au montant demandé.
       const platformWithdrawal = manager.create(PlatformWithdrawal, {
         amount: dto.amount,
         method: dto.method,
         account_details: dto.accountDetails,
+        external_ref: payoutResult.external_ref || reference,
         status: PlatformWithdrawalStatus.COMPLETED,
       });
 
       const savedWithdrawal = await manager.save(platformWithdrawal);
-      const newBalance = currentBalance - dto.amount;
+
+      const updatedBalanceData = await this.getPlatformTreasuryBalance();
 
       return {
         success: true,
-        message: `Décaissement de ${dto.amount} FCFA effectué avec succès sans aucun frais (0%).`,
+        message: `Décaissement physique de ${dto.amount} FCFA exécuté avec succès via la passerelle de paiement (Réf: ${payoutResult.external_ref || reference}) sans aucun frais (0%).`,
+        external_ref: payoutResult.external_ref || reference,
         withdrawal: savedWithdrawal,
-        new_treasury_balance: newBalance,
+        new_treasury_balance: updatedBalanceData.treasury_balance,
       };
     });
   }

@@ -30,6 +30,9 @@ export class PlatformWithdrawal {
   @Column({ type: 'varchar' })
   account_details: string;
 
+  @Column({ type: 'varchar', nullable: true })
+  external_ref: string | null;
+
   @Column({ type: 'enum', enum: PlatformWithdrawalStatus, default: PlatformWithdrawalStatus.COMPLETED })
   status: PlatformWithdrawalStatus;
 

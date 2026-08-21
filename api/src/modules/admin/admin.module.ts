@@ -15,6 +15,8 @@ import { SponsorshipModule } from '../sponsorship/sponsorship.module';
 
 import { PlatformWithdrawal } from './entities/platform-withdrawal.entity';
 
+import { PaymentsModule } from '../payments/payments.module';
+
 @Module({
   imports: [
     TypeOrmModule.forFeature([User, Field, Article, Booking, Transaction, PlatformWithdrawal]),
@@ -23,6 +25,7 @@ import { PlatformWithdrawal } from './entities/platform-withdrawal.entity';
     NotificationsModule,
     EnrollmentModule,
     SponsorshipModule,
+    PaymentsModule,
   ],
   providers: [AdminService],
   controllers: [AdminController],
