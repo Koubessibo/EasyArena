@@ -26,7 +26,7 @@ export class PlatformWithdrawal {
   @Column({ type: 'int' })
   amount: number;
 
-  @Column({ type: 'enum', enum: PlatformWithdrawalMethod })
+  @Column({ type: 'varchar' })
   method: PlatformWithdrawalMethod;
 
   @Column({ type: 'varchar' })
@@ -35,7 +35,7 @@ export class PlatformWithdrawal {
   @Column({ type: 'varchar', nullable: true })
   external_ref: string | null;
 
-  @Column({ type: 'enum', enum: PlatformWithdrawalStatus, default: PlatformWithdrawalStatus.COMPLETED })
+  @Column({ type: 'varchar', default: PlatformWithdrawalStatus.COMPLETED })
   status: PlatformWithdrawalStatus;
 
   @CreateDateColumn()
