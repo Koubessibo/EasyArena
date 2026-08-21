@@ -26,6 +26,7 @@ import { ValidateWithdrawalDto } from '../withdrawals/dto/validate-withdrawal.dt
 import { EnrollmentService } from '../enrollment/enrollment.service';
 import { SponsorshipService } from '../sponsorship/sponsorship.service';
 import { UpdateSponsorshipSettingsDto } from './dto/update-sponsorship-settings.dto';
+import { CreatePlatformWithdrawalDto } from './dto/create-platform-withdrawal.dto';
 import { IsEnum, IsOptional, IsString } from 'class-validator';
 
 class UpdateFieldStatusDto { @IsEnum(FieldStatus) status: FieldStatus; }
@@ -239,5 +240,22 @@ export class AdminController {
   @Put('enrollment-requests/:id/reject')
   rejectEnrollment(@Param('id') id: string, @Body() dto: RejectEnrollmentDto) {
     return this.enrollmentService.reject(id, dto.rejection_note);
+  }
+
+  // ── TRÉSORERIE EASYARENA ET RETRAITS SUPER ADMIN (0% FRAIS) ──
+
+  @Get('treasury/balance')
+  getPlatformTreasuryBalance() {
+    return this.adminService.getPlatformTreasuryBalance();
+  }
+
+  @Post('treasury/withdraw')
+  withdrawPlatformTreasury(@Body() dto: CreatePlatformWithdrawalDto) {
+    return this.adminService.withdrawPlatformTreasury(dto);
+  }
+
+  @Get('treasury/withdrawals')
+  getPlatformWithdrawalHistory() {
+    return this.adminService.getPlatformWithdrawalHistory();
   }
 }

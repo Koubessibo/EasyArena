@@ -19,6 +19,122 @@
     <span>{{ actionFeedback()!.message }}</span>
   </div>
 
+  <!-- 🏦 CARTE TRÉSORERIE EASYARENA & RETRAIT SUPER ADMIN (0% FRAIS) -->
+  <div class="card treasury-card">
+    <div class="treasury-card__header">
+      <div class="treasury-card__title-group">
+        <span class="material-symbols-outlined treasury-icon">account_balance</span>
+        <div>
+          <h2>Trésorerie EasyArena & Gains Nets</h2>
+          <p>Revenus nets conservés par la plateforme (frais de service prélevés sur les réservations)</p>
+        </div>
+      </div>
+      <span class="zero-fee-badge">
+        <span class="material-symbols-outlined">verified</span>
+        Retraits Super Admin : 0 FCFA de frais (100% gratuit)
+      </span>
+    </div>
+
+    <div class="treasury-card__body">
+      <!-- Indicateurs de Trésorerie -->
+      <div class="treasury-stats">
+        <div class="treasury-stat-item treasury-stat-item--main">
+          <span class="treasury-stat-item__label">Revenu Net Disponible (Retirable)</span>
+          <strong class="treasury-stat-item__value">{{ (treasuryBalance()?.treasury_balance ?? 0) | fcfa }}</strong>
+        </div>
+
+        <div class="treasury-stat-item">
+          <span class="treasury-stat-item__label">Revenus Bruts Cumulés</span>
+          <span class="treasury-stat-item__subvalue">{{ (treasuryBalance()?.total_gross_revenue ?? 0) | fcfa }}</span>
+        </div>
+
+        <div class="treasury-stat-item">
+          <span class="treasury-stat-item__label">Total Déjà Retiré</span>
+          <span class="treasury-stat-item__subvalue">{{ (treasuryBalance()?.total_withdrawn ?? 0) | fcfa }}</span>
+        </div>
+      </div>
+
+      <!-- Formulaire de Décaissement Trésorerie -->
+      <div class="treasury-form-box">
+        <h4 class="treasury-form-box__title">
+          <span class="material-symbols-outlined">payments</span>
+          Effectuer un décaissement sans frais
+        </h4>
+
+        <form (ngSubmit)="submitPlatformWithdrawal()" class="treasury-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Montant à retirer (FCFA)</label>
+              <input type="number" [(ngModel)]="treasuryAmount" name="treasuryAmount" placeholder="Ex: 50000" min="1" required class="form-control" />
+            </div>
+
+            <div class="form-group">
+              <label>Méthode de retrait (Frais : 0 FCFA)</label>
+              <select [(ngModel)]="treasuryMethod" name="treasuryMethod" class="form-control">
+                <option value="OPERATOR">📱 Opérateur Mobile (Wave / Orange / Free)</option>
+                <option value="SAMIR_MONEY">🏦 Compte Samir Money</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Numéro de compte / Téléphone</label>
+              <input type="text" [(ngModel)]="treasuryAccountDetails" name="treasuryAccountDetails" placeholder="Ex: +221770000000 ou REF-SAMIR-99" required class="form-control" />
+            </div>
+          </div>
+
+          <div class="treasury-form__actions">
+            <button type="submit" class="btn btn--primary btn--treasury" [disabled]="isSubmittingTreasury() || !treasuryAmount || treasuryAmount <= 0">
+              <span class="material-symbols-outlined">send_money</span>
+              {{ isSubmittingTreasury() ? 'Décaissement en cours...' : 'Valider le décaissement (0% Frais)' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- 📜 HISTORIQUE DES DÉCAISSEMENTS TRÉSORERIE SUPER ADMIN -->
+  <div class="card" *ngIf="platformWithdrawals().length > 0">
+    <div class="card__header">
+      <div class="card__header-title">
+        <span class="material-symbols-outlined">history</span>
+        <h3>Historique des Retraits Trésorerie Super Admin</h3>
+      </div>
+      <span class="badge badge--info">{{ platformWithdrawals().length }} retraits</span>
+    </div>
+
+    <div class="data-table-wrapper table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Montant Retiré</th>
+            <th>Frais Déduits</th>
+            <th>Méthode</th>
+            <th>Compte / Téléphone</th>
+            <th>Statut</th>
+            <th>Date & Heure</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let pw of platformWithdrawals()">
+            <td class="amount-cell text-bold">{{ pw.amount | fcfa }}</td>
+            <td><span class="free-pill">0 FCFA (Gratuit)</span></td>
+            <td>
+              <span class="method-chip" [ngClass]="pw.method === 'SAMIR_MONEY' ? 'method-chip--bank_transfer' : 'method-chip--wave'">
+                {{ pw.method === 'SAMIR_MONEY' ? 'Samir Money' : 'Opérateur Mobile' }}
+              </span>
+            </td>
+            <td><code>{{ pw.account_details }}</code></td>
+            <td>
+              <span class="status-badge status-badge--approved">Compensé (100%)</span>
+            </td>
+            <td>{{ pw.created_at | date:'dd/MM/yyyy à HH:mm' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
   <!-- Monthly Revenue Bar Chart Card -->
   <div class="card chart-card">
     <div class="card__header">

@@ -17,6 +17,9 @@ import { CreateVendorDto } from '../users/dto/create-vendor.dto';
 import { UpdateUserStatusDto } from '../users/dto/update-user-status.dto';
 import { ValidateWithdrawalDto } from '../withdrawals/dto/validate-withdrawal.dto';
 
+import { PlatformWithdrawal, PlatformWithdrawalStatus } from './entities/platform-withdrawal.entity';
+import { CreatePlatformWithdrawalDto } from './dto/create-platform-withdrawal.dto';
+
 type StatPeriod = 'today' | 'week' | 'month' | 'all_time';
 
 @Injectable()
@@ -27,6 +30,7 @@ export class AdminService {
     @InjectRepository(Article) private readonly articleRepo: Repository<Article>,
     @InjectRepository(Booking) private readonly bookingRepo: Repository<Booking>,
     @InjectRepository(Transaction) private readonly txRepo: Repository<Transaction>,
+    @InjectRepository(PlatformWithdrawal) private readonly platformWithdrawalRepo: Repository<PlatformWithdrawal>,
     private readonly usersService: UsersService,
     private readonly withdrawalsService: WithdrawalsService,
     private readonly notificationsService: NotificationsService,
@@ -312,5 +316,98 @@ export class AdminService {
       return { booking: from, tx: from };
     }
     return {};
+  }
+
+  /**
+   * Super Admin : Solde de trésorerie disponible (revenus nets de la plateforme).
+   */
+  async getPlatformTreasuryBalance() {
+    // 1. Total des revenus bruts de la plateforme (frais de service des réservations confirmées)
+    const grossRevResult = await this.bookingRepo
+      .createQueryBuilder('b')
+      .select('SUM(b.service_fee)', 'total')
+      .where('b.status = :status', { status: BookingStatus.CONFIRMED })
+      .getRawOne();
+    const totalGrossRevenue = parseFloat(grossRevResult?.total ?? '0');
+
+    // 2. Total des retraits déjà effectués par la plateforme
+    const withdrawnResult = await this.platformWithdrawalRepo
+      .createQueryBuilder('pw')
+      .select('SUM(pw.amount)', 'total')
+      .where('pw.status = :status', { status: PlatformWithdrawalStatus.COMPLETED })
+      .getRawOne();
+    const totalWithdrawn = parseFloat(withdrawnResult?.total ?? '0');
+
+    const treasuryBalance = Math.max(0, totalGrossRevenue - totalWithdrawn);
+
+    return {
+      success: true,
+      total_gross_revenue: totalGrossRevenue,
+      total_withdrawn: totalWithdrawn,
+      treasury_balance: treasuryBalance,
+      fee_rate: '0%',
+      currency: 'FCFA',
+    };
+  }
+
+  /**
+   * Super Admin : Effectuer un retrait sans frais (0% de frais) depuis la trésorerie.
+   */
+  async withdrawPlatformTreasury(dto: CreatePlatformWithdrawalDto) {
+    return this.dataSource.transaction(async (manager) => {
+      const grossRevResult = await manager
+        .createQueryBuilder(Booking, 'b')
+        .select('SUM(b.service_fee)', 'total')
+        .where('b.status = :status', { status: BookingStatus.CONFIRMED })
+        .getRawOne();
+      const totalGrossRevenue = parseFloat(grossRevResult?.total ?? '0');
+
+      const withdrawnResult = await manager
+        .createQueryBuilder(PlatformWithdrawal, 'pw')
+        .select('SUM(pw.amount)', 'total')
+        .where('pw.status = :status', { status: PlatformWithdrawalStatus.COMPLETED })
+        .getRawOne();
+      const totalWithdrawn = parseFloat(withdrawnResult?.total ?? '0');
+
+      const currentBalance = Math.max(0, totalGrossRevenue - totalWithdrawn);
+
+      if (dto.amount > currentBalance) {
+        throw new Error(
+          `Solde de trésorerie insuffisant. Solde disponible : ${currentBalance} FCFA, Montant demandé : ${dto.amount} FCFA`,
+        );
+      }
+
+      // Règle métier stricte : 0% de frais. Le montant déduit est strictement égal au montant demandé.
+      const platformWithdrawal = manager.create(PlatformWithdrawal, {
+        amount: dto.amount,
+        method: dto.method,
+        account_details: dto.accountDetails,
+        status: PlatformWithdrawalStatus.COMPLETED,
+      });
+
+      const savedWithdrawal = await manager.save(platformWithdrawal);
+      const newBalance = currentBalance - dto.amount;
+
+      return {
+        success: true,
+        message: `Décaissement de ${dto.amount} FCFA effectué avec succès sans aucun frais (0%).`,
+        withdrawal: savedWithdrawal,
+        new_treasury_balance: newBalance,
+      };
+    });
+  }
+
+  /**
+   * Super Admin : Historique des retraits de trésorerie de la plateforme.
+   */
+  async getPlatformWithdrawalHistory() {
+    const withdrawals = await this.platformWithdrawalRepo.find({
+      order: { created_at: 'DESC' },
+    });
+
+    return {
+      success: true,
+      withdrawals,
+    };
   }
 }

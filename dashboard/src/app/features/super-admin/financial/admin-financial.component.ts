@@ -1,5 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { AdminService } from '../../../core/services/admin.service';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
@@ -8,7 +9,7 @@ import { FcfaPipe } from '../../../shared/pipes/fcfa.pipe';
 @Component({
   selector: 'app-admin-financial',
   standalone: true,
-  imports: [CommonModule, PageHeaderComponent, StatusBadgeComponent, FcfaPipe],
+  imports: [CommonModule, FormsModule, PageHeaderComponent, StatusBadgeComponent, FcfaPipe],
   templateUrl: './admin-financial.component.html',
   styleUrl: './admin-financial.component.scss',
 })
@@ -19,12 +20,60 @@ export class AdminFinancialComponent {
   withdrawalRequests = this.adminService.withdrawalRequests;
   sponsorshipWithdrawals = this.adminService.sponsorshipWithdrawals;
   monthlyRevenue = this.adminService.monthlyRevenue;
+  treasuryBalance = this.adminService.treasuryBalance;
+  platformWithdrawals = this.adminService.platformWithdrawals;
+
+  // Champs du formulaire de décaissement Super Admin (Trésorerie)
+  treasuryAmount: number | null = null;
+  treasuryMethod: 'OPERATOR' | 'SAMIR_MONEY' = 'OPERATOR';
+  treasuryAccountDetails: string = '';
+  isSubmittingTreasury = signal(false);
 
   constructor() {
     this.adminService.loadTransactions();
     this.adminService.loadWithdrawals();
     this.adminService.loadSponsorshipWithdrawals();
     this.adminService.loadMonthlyRevenue();
+    this.adminService.loadTreasuryBalance();
+    this.adminService.loadPlatformWithdrawals();
+  }
+
+  submitPlatformWithdrawal(): void {
+    if (!this.treasuryAmount || this.treasuryAmount <= 0) {
+      this.actionFeedback.set({ id: 'treasury', type: 'error', message: 'Veuillez saisir un montant supérieur à 0 FCFA' });
+      return;
+    }
+    if (!this.treasuryAccountDetails.trim()) {
+      this.actionFeedback.set({ id: 'treasury', type: 'error', message: 'Veuillez renseigner le numéro de compte ou téléphone' });
+      return;
+    }
+
+    this.isSubmittingTreasury.set(true);
+    this.actionFeedback.set(null);
+
+    this.adminService.withdrawPlatformTreasury(this.treasuryAmount, this.treasuryMethod, this.treasuryAccountDetails.trim()).subscribe({
+      next: (res: any) => {
+        this.isSubmittingTreasury.set(false);
+        this.treasuryAmount = null;
+        this.treasuryAccountDetails = '';
+        this.adminService.loadTreasuryBalance();
+        this.adminService.loadPlatformWithdrawals();
+        this.actionFeedback.set({
+          id: 'treasury',
+          type: 'success',
+          message: res.message || 'Décaissement sans frais effectué avec succès.',
+        });
+        setTimeout(() => this.actionFeedback.set(null), 5000);
+      },
+      error: (err: any) => {
+        this.isSubmittingTreasury.set(false);
+        this.actionFeedback.set({
+          id: 'treasury',
+          type: 'error',
+          message: err?.error?.message ?? err?.message ?? 'Erreur lors du décaissement',
+        });
+      },
+    });
   }
 
   get maxRevenue(): number {

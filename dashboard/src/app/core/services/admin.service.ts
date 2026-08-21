@@ -51,6 +51,24 @@ export interface SponsorshipWithdrawalItem {
   createdAt: string;
 }
 
+export interface PlatformTreasuryBalance {
+  success: boolean;
+  total_gross_revenue: number;
+  total_withdrawn: number;
+  treasury_balance: number;
+  fee_rate: string;
+  currency: string;
+}
+
+export interface PlatformWithdrawalItem {
+  id: string;
+  amount: number;
+  method: 'OPERATOR' | 'SAMIR_MONEY';
+  account_details: string;
+  status: 'PENDING' | 'COMPLETED' | 'REJECTED';
+  created_at: string;
+}
+
 const ROLE_MAP: Record<string, UserRole> = {
   admin: 'super_admin',
   owner: 'field_owner',
@@ -142,6 +160,31 @@ export class AdminService {
   readonly monthlyRevenue = signal<{ month: string; value: number }[]>([]);
   readonly contentItems = signal<ContentItem[]>([]);
   readonly enrollmentRequests = signal<EnrollmentRequestItem[]>([]);
+
+  readonly treasuryBalance = signal<PlatformTreasuryBalance | null>(null);
+  readonly platformWithdrawals = signal<PlatformWithdrawalItem[]>([]);
+
+  loadTreasuryBalance(): void {
+    this.api.get<PlatformTreasuryBalance>('admin/treasury/balance').subscribe({
+      next: (res) => this.treasuryBalance.set(res),
+      error: (err: any) => console.error('Failed to load treasury balance', err),
+    });
+  }
+
+  loadPlatformWithdrawals(): void {
+    this.api.get<{ success: boolean; withdrawals: PlatformWithdrawalItem[] }>('admin/treasury/withdrawals').subscribe({
+      next: (res) => this.platformWithdrawals.set(res.withdrawals ?? []),
+      error: (err: any) => console.error('Failed to load platform withdrawals', err),
+    });
+  }
+
+  withdrawPlatformTreasury(amount: number, method: 'OPERATOR' | 'SAMIR_MONEY', accountDetails: string): Observable<any> {
+    return this.api.post('admin/treasury/withdraw', {
+      amount,
+      method,
+      accountDetails,
+    });
+  }
 
   loadMonthlyRevenue(): void {
     this.api.get<{ month: string; value: number }[]>('/admin/stats/monthly-revenue').subscribe({

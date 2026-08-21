@@ -13,9 +13,11 @@ import { NotificationsModule } from '../notifications/notifications.module';
 import { EnrollmentModule } from '../enrollment/enrollment.module';
 import { SponsorshipModule } from '../sponsorship/sponsorship.module';
 
+import { PlatformWithdrawal } from './entities/platform-withdrawal.entity';
+
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, Field, Article, Booking, Transaction]),
+    TypeOrmModule.forFeature([User, Field, Article, Booking, Transaction, PlatformWithdrawal]),
     UsersModule,
     WithdrawalsModule,
     NotificationsModule,

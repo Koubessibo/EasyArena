@@ -58,6 +58,218 @@
 .card {
   background: #ffffff;
   border-radius: 24px;
+
+/* 🏦 TREASURY CARD & ZERO FEE STYLING */
+.treasury-card {
+  border: 2px solid #3b82f6;
+  background: linear-gradient(135deg, #ffffff 0%, #f0f7ff 100%);
+  margin-bottom: 2rem;
+
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 1.75rem;
+    border-bottom: 1px solid #e2e8f0;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  &__title-group {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+
+    .treasury-icon {
+      font-size: 2.25rem;
+      color: #2563eb;
+      background: #eff6ff;
+      padding: 0.5rem;
+      border-radius: 16px;
+    }
+
+    h2 {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0;
+    }
+
+    p {
+      margin: 0;
+      font-size: 0.85rem;
+      color: #64748b;
+    }
+  }
+
+  &__body {
+    padding: 1.75rem;
+  }
+}
+
+.zero-fee-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+  padding: 0.4rem 0.85rem;
+  border-radius: 20px;
+  font-weight: 700;
+  font-size: 0.825rem;
+
+  .material-symbols-outlined {
+    font-size: 1rem;
+    color: #059669;
+  }
+}
+
+.treasury-stats {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 1.25rem;
+  margin-bottom: 1.75rem;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.treasury-stat-item {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 1.25rem;
+  border: 1px solid #e2e8f0;
+
+  &--main {
+    background: linear-gradient(135deg, #1e3a8a, #2563eb);
+    color: white;
+    border: none;
+
+    .treasury-stat-item__label {
+      color: rgba(255, 255, 255, 0.9);
+    }
+  }
+
+  &__label {
+    display: block;
+    font-size: 0.8rem;
+    color: #64748b;
+    font-weight: 600;
+    margin-bottom: 0.35rem;
+  }
+
+  &__value {
+    font-size: 1.85rem;
+    font-weight: 900;
+    display: block;
+  }
+
+  &__subvalue {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #1e293b;
+    display: block;
+  }
+}
+
+.treasury-form-box {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 1.25rem 1.5rem;
+  border: 1px solid #cbd5e1;
+
+  &__title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0 0 1rem;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #0f172a;
+
+    .material-symbols-outlined {
+      color: #2563eb;
+    }
+  }
+}
+
+.treasury-form {
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr 1.5fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+
+    @media (max-width: 768px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+
+    label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #334155;
+    }
+  }
+
+  .form-control {
+    padding: 0.65rem 0.85rem;
+    border-radius: 10px;
+    border: 1px solid #cbd5e1;
+    font-size: 0.9rem;
+
+    &:focus {
+      outline: none;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+  }
+
+  &__actions {
+    display: flex;
+    justify-content: flex-end;
+
+    .btn--treasury {
+      background: #2563eb;
+      color: white;
+      font-weight: 700;
+      padding: 0.75rem 1.5rem;
+      border-radius: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      border: none;
+      cursor: pointer;
+
+      &:hover:not(:disabled) {
+        background: #1d4ed8;
+      }
+
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+    }
+  }
+}
+
+.free-pill {
+  display: inline-block;
+  background: #dcfce7;
+  color: #15803d;
+  font-weight: 800;
+  font-size: 0.75rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+}
+
   border: 1.5px solid #e2e8f0;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
   margin-bottom: 2rem;
