@@ -29,7 +29,7 @@ export class Payment {
   @Column({ type: 'enum', enum: PaymentStatus, default: PaymentStatus.PENDING })
   status: PaymentStatus;
 
-  @Column({ type: 'enum', enum: MobileOperator, nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   operator: MobileOperator | null;
 
   @Column({ nullable: true })

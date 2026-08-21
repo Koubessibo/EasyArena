@@ -26,7 +26,7 @@ export class PlatformWithdrawal {
   @Column({ type: 'int' })
   amount: number;
 
-  @Column({ type: 'varchar' })
+  @Column({ type: 'varchar', default: PlatformWithdrawalMethod.WAVE, nullable: true })
   method: PlatformWithdrawalMethod;
 
   @Column({ type: 'varchar' })

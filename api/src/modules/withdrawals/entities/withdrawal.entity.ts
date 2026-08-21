@@ -33,7 +33,7 @@ export class Withdrawal {
   @Column()
   destination: string;
 
-  @Column({ type: 'enum', enum: MobileOperator, nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   operator: MobileOperator | null;
 
   @Column({ type: 'text', nullable: true })
