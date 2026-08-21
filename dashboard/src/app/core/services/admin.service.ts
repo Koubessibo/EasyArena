@@ -73,7 +73,9 @@ const ROLE_MAP: Record<string, UserRole> = {
   admin: 'super_admin',
   owner: 'field_owner',
   vendor: 'vendor',
-  client: 'vendor', // fallback – clients don't appear in dashboard
+  client: 'client',
+  field_admin: 'field_admin',
+  controller: 'controller',
 };
 
 function mapStats(s: any): PlatformStats {

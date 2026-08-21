@@ -105,7 +105,17 @@ export class UserManagementComponent {
   }
 
   roleLabel(role: string): string {
-    return role === 'field_owner' ? 'Propriétaire' : 'Vendeur';
+    const labels: Record<string, string> = {
+      super_admin: 'Super Admin',
+      admin: 'Super Admin',
+      field_owner: 'Propriétaire',
+      owner: 'Propriétaire',
+      vendor: 'Vendeur',
+      client: 'Client',
+      field_admin: 'Admin Terrain',
+      controller: 'Contrôleur',
+    };
+    return labels[role] ?? role;
   }
 
   contentTypeLabel(type: string): string {
