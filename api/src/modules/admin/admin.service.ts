@@ -1,4 +1,4 @@
-import { Inject, Injectable, BadRequestException } from '@nestjs/common';
+import { Inject, Injectable, BadRequestException, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { User } from '../users/entities/user.entity';
@@ -24,7 +24,7 @@ import { IPaymentProvider, PAYMENT_PROVIDER } from '../payments/interfaces/payme
 type StatPeriod = 'today' | 'week' | 'month' | 'all_time';
 
 @Injectable()
-export class AdminService {
+export class AdminService implements OnModuleInit {
   constructor(
     @InjectRepository(User) private readonly userRepo: Repository<User>,
     @InjectRepository(Field) private readonly fieldRepo: Repository<Field>,
@@ -38,6 +38,18 @@ export class AdminService {
     private readonly notificationsService: NotificationsService,
     private readonly dataSource: DataSource,
   ) {}
+
+  async onModuleInit() {
+    try {
+      await this.dataSource.query(`
+        ALTER TABLE platform_withdrawals ALTER COLUMN method TYPE VARCHAR(50) USING method::text;
+        ALTER TABLE platform_withdrawals ALTER COLUMN status TYPE VARCHAR(50) USING status::text;
+      `);
+      console.log('[AdminService] Successfully migrated platform_withdrawals columns to VARCHAR(50).');
+    } catch (err: any) {
+      // Ignore if columns already altered or table created cleanly
+    }
+  }
 
   async getStats(period: StatPeriod = 'all_time') {
     const dateFilter = this.buildDateFilter(period);
