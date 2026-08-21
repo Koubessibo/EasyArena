@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminService, ContentItem, CreateOwnerData, CreateVendorData, EnrollmentRequestItem } from '../../../core/services/admin.service';
@@ -24,8 +24,36 @@ export class UserManagementComponent {
   contentItems = this.adminService.contentItems;
   enrollmentRequests = this.adminService.enrollmentRequests;
 
-  // ── Tab state ────────────────────────────────────────────────────────────
+  // ── Tab & Search filter state ─────────────────────────────────────────────
   activeTab = signal<'pending' | 'active' | 'all' | 'requests'>('pending');
+  searchQuery = signal('');
+  roleFilter = signal<string>('all');
+
+  // KPI Statistics
+  totalUsersCount = computed(() => this.allUsers().length);
+  clientUsersCount = computed(() => this.allUsers().filter(u => u.role === 'client').length);
+  ownerUsersCount = computed(() => this.allUsers().filter(u => u.role === 'field_owner' || (u.role as string) === 'owner').length);
+  vendorUsersCount = computed(() => this.allUsers().filter(u => u.role === 'vendor').length);
+  vipUsersCount = computed(() => this.allUsers().filter(u => u.custom_n1_rate || u.custom_n2_rate || u.custom_duration_months || u.is_ambassador).length);
+
+  // Filtered Users List
+  filteredUsers = computed(() => {
+    const list = this.allUsers();
+    const query = this.searchQuery().toLowerCase().trim();
+    const role = this.roleFilter();
+
+    return list.filter(u => {
+      const matchesSearch = !query ||
+        (u.name && u.name.toLowerCase().includes(query)) ||
+        (u.phone && u.phone.includes(query)) ||
+        (u.email && u.email.toLowerCase().includes(query));
+
+      const matchesRole = role === 'all' ||
+        (role === 'vip' ? (u.custom_n1_rate || u.custom_n2_rate || u.custom_duration_months || u.is_ambassador) : u.role === role);
+
+      return matchesSearch && matchesRole;
+    });
+  });
 
   // ── Create user form state ───────────────────────────────────────────────
   createSuccess = signal('');
@@ -62,6 +90,7 @@ export class UserManagementComponent {
     this.adminService.loadPendingUsers();
     this.adminService.loadContentModeration();
     this.adminService.loadEnrollmentRequests();
+    this.adminService.loadUsers(); // Load all users by default for KPI counters
   }
 
   switchTab(tab: 'pending' | 'active' | 'all' | 'requests'): void {

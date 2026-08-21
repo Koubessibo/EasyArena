@@ -1,39 +1,85 @@
 <div class="user-management-container">
 
-  <button class="btn-back" (click)="location.back()">
-    <span class="material-symbols-outlined">arrow_back</span>
-    Retour
-  </button>
-
-  <!-- Header -->
-  <div class="header">
-    <div>
-      <h1 class="title">Gestion des Utilisateurs & Comptes</h1>
-      <p class="subtitle">Approbation des marchands, modération du contenu, privilèges VIP et gestion des rôles.</p>
+  <!-- Navigation & Action Header -->
+  <div class="header-section">
+    <div class="header-section__left">
+      <button class="btn-back" (click)="location.back()">
+        <span class="material-symbols-outlined">arrow_back</span>
+        <span>Retour</span>
+      </button>
+      <div class="title-group">
+        <div class="title-with-badge">
+          <h1 class="title">Gestion des Utilisateurs & Comptes</h1>
+          <span class="portal-badge">PORTAIL VIP SUPER ADMIN</span>
+        </div>
+        <p class="subtitle">Gestion des rôles, approbation des exploitants, modération et privilèges de parrainage VIP.</p>
+      </div>
     </div>
 
-    <!-- Quick Action Bar -->
-    <div class="actions-bar">
-      <button class="btn btn--primary" (click)="openCreateForm()" *ngIf="!showCreateForm()">
+    <div class="header-section__right">
+      <button class="btn btn--create" (click)="openCreateForm()" *ngIf="!showCreateForm()">
         <span class="material-symbols-outlined">person_add</span>
-        Créer un compte
+        <span>Nouveau compte</span>
       </button>
     </div>
   </div>
 
-  <!-- Success Banner -->
+  <!-- KPI Metrics Grid -->
+  <div class="kpi-grid">
+    <div class="kpi-card kpi-card--total" (click)="switchTab('all'); roleFilter.set('all')">
+      <div class="kpi-card__icon"><span class="material-symbols-outlined">group</span></div>
+      <div class="kpi-card__info">
+        <span class="kpi-card__label">Total Utilisateurs</span>
+        <span class="kpi-card__value">{{ totalUsersCount() }}</span>
+      </div>
+    </div>
+
+    <div class="kpi-card kpi-card--client" (click)="switchTab('all'); roleFilter.set('client')">
+      <div class="kpi-card__icon"><span class="material-symbols-outlined">person</span></div>
+      <div class="kpi-card__info">
+        <span class="kpi-card__label">Clients Joueurs</span>
+        <span class="kpi-card__value">{{ clientUsersCount() }}</span>
+      </div>
+    </div>
+
+    <div class="kpi-card kpi-card--owner" (click)="switchTab('all'); roleFilter.set('field_owner')">
+      <div class="kpi-card__icon"><span class="material-symbols-outlined">sports_soccer</span></div>
+      <div class="kpi-card__info">
+        <span class="kpi-card__label">Propriétaires Terrain</span>
+        <span class="kpi-card__value">{{ ownerUsersCount() }}</span>
+      </div>
+    </div>
+
+    <div class="kpi-card kpi-card--vendor" (click)="switchTab('all'); roleFilter.set('vendor')">
+      <div class="kpi-card__icon"><span class="material-symbols-outlined">storefront</span></div>
+      <div class="kpi-card__info">
+        <span class="kpi-card__label">Vendeurs Boutique</span>
+        <span class="kpi-card__value">{{ vendorUsersCount() }}</span>
+      </div>
+    </div>
+
+    <div class="kpi-card kpi-card--vip" (click)="switchTab('all'); roleFilter.set('vip')">
+      <div class="kpi-card__icon"><span class="material-symbols-outlined">workspace_premium</span></div>
+      <div class="kpi-card__info">
+        <span class="kpi-card__label">Comptes VIP & Ambassadeurs</span>
+        <span class="kpi-card__value">{{ vipUsersCount() }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Success Notification Alert -->
   <div class="alert alert--success" *ngIf="createSuccess()">
     <span class="material-symbols-outlined">check_circle</span>
     <span>{{ createSuccess() }}</span>
     <button class="alert-close" (click)="createSuccess.set('')">×</button>
   </div>
 
-  <!-- Create user form panel -->
+  <!-- Formulaire de Création de Compte -->
   <div class="card create-form-card" *ngIf="showCreateForm()">
     <div class="card__header">
       <div class="card__header-title">
-        <span class="material-symbols-outlined">person_add</span>
-        <h3>Nouveau compte d'exploitant</h3>
+        <span class="material-symbols-outlined icon-glow">person_add</span>
+        <h3>Création Rapide de Compte Exploitant</h3>
       </div>
       <button class="btn-icon-close" (click)="cancelCreate()">
         <span class="material-symbols-outlined">close</span>
@@ -41,15 +87,15 @@
     </div>
 
     <div class="card__body">
-      <!-- Role selector tabs -->
+      <!-- Role tabs selection -->
       <div class="role-tabs">
         <button class="role-tab" [class.role-tab--active]="selectedRole() === 'owner'" (click)="setRole('owner')">
           <span class="material-symbols-outlined">sports_soccer</span>
-          Propriétaire de terrain
+          <span>Propriétaire de terrain</span>
         </button>
         <button class="role-tab" [class.role-tab--active]="selectedRole() === 'vendor'" (click)="setRole('vendor')">
           <span class="material-symbols-outlined">storefront</span>
-          Vendeur Boutique
+          <span>Vendeur Boutique</span>
         </button>
       </div>
 
@@ -57,11 +103,11 @@
       <div class="form-grid" *ngIf="selectedRole() === 'owner'">
         <div class="form-group">
           <label class="form-label">Prénom *</label>
-          <input class="form-control" type="text" placeholder="Prénom" [value]="ownerFirstName()" (input)="ownerFirstName.set($any($event.target).value)">
+          <input class="form-control" type="text" placeholder="Ex: Moussa" [value]="ownerFirstName()" (input)="ownerFirstName.set($any($event.target).value)">
         </div>
         <div class="form-group">
           <label class="form-label">Nom *</label>
-          <input class="form-control" type="text" placeholder="Nom" [value]="ownerLastName()" (input)="ownerLastName.set($any($event.target).value)">
+          <input class="form-control" type="text" placeholder="Ex: Diop" [value]="ownerLastName()" (input)="ownerLastName.set($any($event.target).value)">
         </div>
         <div class="form-group">
           <label class="form-label">Téléphone de connexion *</label>
@@ -69,7 +115,7 @@
         </div>
         <div class="form-group">
           <label class="form-label">Compte Mobile Money (Optionnel)</label>
-          <input class="form-control" type="tel" placeholder="N° Wave / OM" [value]="ownerMobileMoney()" (input)="ownerMobileMoney.set($any($event.target).value)">
+          <input class="form-control" type="tel" placeholder="N° Wave / Orange Money" [value]="ownerMobileMoney()" (input)="ownerMobileMoney.set($any($event.target).value)">
         </div>
       </div>
 
@@ -77,11 +123,11 @@
       <div class="form-grid" *ngIf="selectedRole() === 'vendor'">
         <div class="form-group">
           <label class="form-label">Prénom du gérant *</label>
-          <input class="form-control" type="text" placeholder="Prénom" [value]="vendorFirstName()" (input)="vendorFirstName.set($any($event.target).value)">
+          <input class="form-control" type="text" placeholder="Ex: Fatou" [value]="vendorFirstName()" (input)="vendorFirstName.set($any($event.target).value)">
         </div>
         <div class="form-group">
           <label class="form-label">Nom *</label>
-          <input class="form-control" type="text" placeholder="Nom" [value]="vendorLastName()" (input)="vendorLastName.set($any($event.target).value)">
+          <input class="form-control" type="text" placeholder="Ex: Ndiaye" [value]="vendorLastName()" (input)="vendorLastName.set($any($event.target).value)">
         </div>
         <div class="form-group">
           <label class="form-label">Téléphone de connexion *</label>
@@ -101,10 +147,10 @@
         </div>
       </div>
 
-      <div class="cgu-checkbox-group" style="margin: 1rem 0;">
-        <label class="cgu-checkbox-label" style="display:flex; align-items:center; gap:0.5rem; font-size:0.85rem; color:#475569; cursor:pointer;">
+      <div class="cgu-checkbox-group">
+        <label class="cgu-checkbox-label">
           <input type="checkbox" [checked]="acceptedCgu()" (change)="acceptedCgu.set($any($event.target).checked)">
-          <span>J'ai lu et j'accepte les <a routerLink="/cgu" target="_blank" style="color:#10b981; font-weight:700; text-decoration:underline;">Conditions Générales d'Utilisation (CGU)</a></span>
+          <span>J'ai lu et j'accepte les <a routerLink="/cgu" target="_blank" class="cgu-link">Conditions Générales d'Utilisation (CGU)</a></span>
         </label>
       </div>
 
@@ -120,34 +166,60 @@
     </div>
   </div>
 
-  <!-- Users table card -->
+  <!-- Card Principale du Tableau Utilisateurs -->
   <div class="card main-table-card">
 
-    <!-- Filter tabs -->
-    <div class="tabs-wrap">
-      <button class="tab-btn" [class.tab-btn--active]="activeTab() === 'pending'" (click)="switchTab('pending')">
-        <span class="material-symbols-outlined">pending_actions</span>
-        <span>En attente</span>
-        <span class="tab-badge" *ngIf="pendingUsers().length > 0">{{ pendingUsers().length }}</span>
-      </button>
+    <!-- Onglets principaux & Barre de recherche -->
+    <div class="controls-wrap">
+      <!-- Tabs Navigation -->
+      <div class="tabs-wrap">
+        <button class="tab-btn" [class.tab-btn--active]="activeTab() === 'pending'" (click)="switchTab('pending')">
+          <span class="material-symbols-outlined">pending_actions</span>
+          <span>En attente</span>
+          <span class="tab-badge" *ngIf="pendingUsers().length > 0">{{ pendingUsers().length }}</span>
+        </button>
 
-      <button class="tab-btn" [class.tab-btn--active]="activeTab() === 'requests'" (click)="switchTab('requests')">
-        <span class="material-symbols-outlined">how_to_reg</span>
-        <span>Demandes d'inscription</span>
-        <span class="tab-badge tab-badge--danger" *ngIf="enrollmentRequests().length > 0">{{ enrollmentRequests().length }}</span>
-      </button>
+        <button class="tab-btn" [class.tab-btn--active]="activeTab() === 'requests'" (click)="switchTab('requests')">
+          <span class="material-symbols-outlined">how_to_reg</span>
+          <span>Demandes d'inscription</span>
+          <span class="tab-badge tab-badge--danger" *ngIf="enrollmentRequests().length > 0">{{ enrollmentRequests().length }}</span>
+        </button>
 
-      <button class="tab-btn" [class.tab-btn--active]="activeTab() === 'active'" (click)="switchTab('active')">
-        <span class="material-symbols-outlined">verified_user</span>
-        <span>Comptes Actifs</span>
-      </button>
+        <button class="tab-btn" [class.tab-btn--active]="activeTab() === 'active'" (click)="switchTab('active')">
+          <span class="material-symbols-outlined">verified_user</span>
+          <span>Comptes Actifs</span>
+        </button>
 
-      <button class="tab-btn" [class.tab-btn--active]="activeTab() === 'all'" (click)="switchTab('all')">
-        <span class="material-symbols-outlined">group</span>
-        <span>Tous les membres</span>
-      </button>
+        <button class="tab-btn" [class.tab-btn--active]="activeTab() === 'all'" (click)="switchTab('all')">
+          <span class="material-symbols-outlined">group</span>
+          <span>Tous les membres</span>
+        </button>
+      </div>
+
+      <!-- Live Search & Role Filter (Only active on all/active tabs) -->
+      <div class="search-filter-bar" *ngIf="activeTab() !== 'pending' && activeTab() !== 'requests'">
+        <div class="search-input-wrap">
+          <span class="material-symbols-outlined search-icon">search</span>
+          <input
+            type="text"
+            class="search-input"
+            placeholder="Rechercher par nom, téléphone..."
+            [ngModel]="searchQuery()"
+            (ngModelChange)="searchQuery.set($event)" />
+          <button class="search-clear-btn" *ngIf="searchQuery()" (click)="searchQuery.set('')">×</button>
+        </div>
+
+        <div class="filter-pills">
+          <button class="pill-btn" [class.pill-btn--active]="roleFilter() === 'all'" (click)="roleFilter.set('all')">Tous</button>
+          <button class="pill-btn" [class.pill-btn--active]="roleFilter() === 'client'" (click)="roleFilter.set('client')">Clients</button>
+          <button class="pill-btn" [class.pill-btn--active]="roleFilter() === 'field_owner'" (click)="roleFilter.set('field_owner')">Propriétaires</button>
+          <button class="pill-btn" [class.pill-btn--active]="roleFilter() === 'vendor'" (click)="roleFilter.set('vendor')">Vendeurs</button>
+          <button class="pill-btn pill-btn--vip" [class.pill-btn--active]="roleFilter() === 'vip'" (click)="roleFilter.set('vip')">👑 VIP</button>
+        </div>
+      </div>
     </div>
 
+    <!-- Data Table -->
     <div class="data-table-wrapper table-responsive">
       <table class="data-table">
         <thead>
@@ -155,21 +227,23 @@
             <th>Utilisateur / Membre</th>
             <th>Rôle</th>
             <th>Contact</th>
-            <th>Date d'arrivée</th>
+            <th>Date d'inscription</th>
             <th>Statut</th>
-            <th class="text-right">Actions</th>
+            <th class="text-right">Actions Privilégiées</th>
           </tr>
         </thead>
 
-        <!-- Pending tab -->
+        <!-- Pending Users tab -->
         <tbody *ngIf="activeTab() === 'pending'">
           <tr *ngFor="let user of pendingUsers()">
             <td>
               <div class="user-cell">
-                <div class="user-cell__avatar">{{ (user.name || 'U').charAt(0).toUpperCase() }}</div>
-                <div>
+                <div class="user-cell__avatar user-cell__avatar--pending">
+                  {{ (user.name || 'U').charAt(0).toUpperCase() }}
+                </div>
+                <div class="user-cell__details">
                   <p class="user-cell__name">{{ user.name }}</p>
-                  <p class="user-cell__email">{{ user.phone }}</p>
+                  <p class="user-cell__sub">{{ user.phone }}</p>
                 </div>
               </div>
             </td>
@@ -194,10 +268,12 @@
           <tr *ngFor="let req of enrollmentRequests()">
             <td>
               <div class="user-cell">
-                <div class="user-cell__avatar user-cell__avatar--purple">{{ (req.name || 'R').charAt(0).toUpperCase() }}</div>
-                <div>
+                <div class="user-cell__avatar user-cell__avatar--req">
+                  {{ (req.name || 'R').charAt(0).toUpperCase() }}
+                </div>
+                <div class="user-cell__details">
                   <p class="user-cell__name">{{ req.name }}</p>
-                  <p class="user-cell__email">{{ req.detail }}</p>
+                  <p class="user-cell__sub">{{ req.detail }}</p>
                 </div>
               </div>
             </td>
@@ -217,18 +293,21 @@
           </tr>
         </tbody>
 
-        <!-- Active / All tabs -->
+        <!-- Active / All Users Filtered List -->
         <tbody *ngIf="activeTab() !== 'pending' && activeTab() !== 'requests'">
-          <tr *ngFor="let user of allUsers()">
+          <tr *ngFor="let user of filteredUsers()">
             <td>
               <div class="user-cell">
-                <div class="user-cell__avatar">{{ (user.name || 'U').charAt(0).toUpperCase() }}</div>
-                <div>
-                  <div style="display:flex; align-items:center; gap:0.4rem;">
+                <div class="user-cell__avatar" [ngClass]="'user-cell__avatar--' + user.role">
+                  {{ (user.name || 'U').charAt(0).toUpperCase() }}
+                </div>
+                <div class="user-cell__details">
+                  <div class="user-name-line">
                     <p class="user-cell__name">{{ user.name }}</p>
                     <span *ngIf="user.custom_n1_rate || user.custom_n2_rate || user.custom_duration_months" class="badge-vip-pill" title="Privilèges VIP actifs">👑 VIP</span>
+                    <span *ngIf="user.is_ambassador" class="badge-ambassador-pill" title="Ambassadeur officiel">⭐ Ambassadeur</span>
                   </div>
-                  <p class="user-cell__email">{{ user.phone }}</p>
+                  <p class="user-cell__sub">{{ user.email || user.phone }}</p>
                 </div>
               </div>
             </td>
@@ -238,15 +317,16 @@
             <td><app-status-badge [status]="user.status"></app-status-badge></td>
             <td class="text-right">
               <div class="action-btns">
-                <!-- BOUTON PARAMÈTRES VIP TRÈS VISIBLE -->
+                <!-- BOUTON PARAMÈTRES VIP HAUT DE GAMME -->
                 <button
                   class="btn btn--sm btn--vip-action"
                   (click)="openVipModal(user)"
                   title="Paramètres de parrainage VIP (surcharges)">
-                  <span class="material-symbols-outlined" style="color: #d97706; font-weight: bold;">workspace_premium</span>
-                  <span style="font-weight: 700;">👑 Paramètres VIP</span>
+                  <span class="material-symbols-outlined vip-star-icon">workspace_premium</span>
+                  <span>👑 Paramètres VIP</span>
                 </button>
 
+                <!-- SWITCH STATUS ACTIF/INACTIF -->
                 <button
                   class="toggle-btn"
                   [class.toggle-btn--active]="user.status === 'active'"
@@ -258,34 +338,40 @@
                   <span class="toggle-btn__label">{{ user.status === 'active' ? 'Actif' : 'Inactif' }}</span>
                 </button>
 
+                <!-- ÉTOILE AMBASSADEUR -->
                 <button
-                  class="btn btn--sm"
+                  class="btn btn--sm btn--star-toggle"
                   [class.btn--ambassador]="user.is_ambassador"
                   (click)="toggleAmbassador(user)"
                   [title]="user.is_ambassador ? 'Rétrograder Client' : 'Promouvoir Ambassadeur'">
                   <span class="material-symbols-outlined">{{ user.is_ambassador ? 'star' : 'star_border' }}</span>
                 </button>
 
-                <button class="btn btn--sm btn--danger-icon" (click)="confirmDeleteUser(user)" title="Supprimer">
+                <!-- BOUTON SUPPRIMER -->
+                <button class="btn btn--sm btn--danger-icon" (click)="confirmDeleteUser(user)" title="Supprimer le membre">
                   <span class="material-symbols-outlined">delete</span>
                 </button>
               </div>
             </td>
           </tr>
-          <tr *ngIf="allUsers().length === 0">
-            <td colspan="6" class="empty-row">Aucun utilisateur trouvé.</td>
+
+          <tr *ngIf="filteredUsers().length === 0">
+            <td colspan="6" class="empty-row">
+              <span class="material-symbols-outlined search-empty-icon">search_off</span>
+              <p>Aucun utilisateur ne correspond à vos critères de recherche.</p>
+            </td>
           </tr>
         </tbody>
       </table>
     </div>
   </div>
 
-  <!-- Contenu Désactivé / Signalé -->
-  <div class="card">
+  <!-- Contenus & Terrains Suspendus -->
+  <div class="card card--moderation">
     <div class="card__header">
       <div class="card__header-title">
-        <span class="material-symbols-outlined">shield</span>
-        <h3>Contenus & Terrains Suspendus</h3>
+        <span class="material-symbols-outlined icon-shield">shield</span>
+        <h3>Contenus & Terrains Suspendus / Signalés</h3>
       </div>
       <span class="badge badge--error" *ngIf="contentItems().length > 0">{{ contentItems().length }} éléments</span>
     </div>
@@ -311,13 +397,16 @@
     </div>
   </div>
 
-  <!-- MODAL PARAMÈTRES DE PARRAINAGE VIP (SUPERPOSÉ) -->
+  <!-- MODAL HIGH-END PARAMÈTRES DE PARRAINAGE VIP -->
   <div class="modal-backdrop" *ngIf="selectedUserForVip()" (click)="closeVipModal()">
     <div class="vip-modal card" (click)="$event.stopPropagation()">
-      <div class="card__header">
-        <div class="card__header-title">
+      <div class="vip-modal__header">
+        <div class="vip-modal__header-title">
           <span class="material-symbols-outlined style-vip-icon">workspace_premium</span>
-          <h3>Paramètres de Parrainage VIP</h3>
+          <div>
+            <h3>Surcharge des Privilèges VIP</h3>
+            <span class="vip-modal-tag">MODIFICATION SUPER ADMIN</span>
+          </div>
         </div>
         <button class="btn-icon-close" (click)="closeVipModal()">
           <span class="material-symbols-outlined">close</span>
@@ -325,9 +414,13 @@
       </div>
 
       <div class="card__body" *ngIf="selectedUserForVip() as u">
-        <p class="vip-user-subtitle">
-          Surcharge personnalisée des privilèges pour <strong>{{ u.name }}</strong> ({{ u.phone }})
-        </p>
+        <div class="vip-user-card">
+          <div class="vip-user-avatar">{{ (u.name || 'U').charAt(0).toUpperCase() }}</div>
+          <div>
+            <p class="vip-user-name">{{ u.name }}</p>
+            <p class="vip-user-phone">{{ u.phone }} · {{ roleLabel(u.role) }}</p>
+          </div>
+        </div>
 
         <div class="alert alert--success" *ngIf="vipSuccessMessage()">
           <span class="material-symbols-outlined">check_circle</span>
@@ -343,29 +436,29 @@
           <div class="form-group">
             <label class="form-label">Commission N1 (%)</label>
             <input type="number" class="form-control" [ngModel]="vipN1()" (ngModelChange)="vipN1.set($event)" placeholder="Par défaut : 7%" min="0" max="100" />
-            <small class="form-help">Laissez vide pour utiliser le taux par défaut (7%).</small>
+            <small class="form-help">Laissez vide pour utiliser le taux par défaut de 7%.</small>
           </div>
 
           <div class="form-group">
             <label class="form-label">Commission N2 (%)</label>
             <input type="number" class="form-control" [ngModel]="vipN2()" (ngModelChange)="vipN2.set($event)" placeholder="Par défaut : 2%" min="0" max="100" />
-            <small class="form-help">Laissez vide pour utiliser le taux par défaut (2%).</small>
+            <small class="form-help">Laissez vide pour utiliser le taux par défaut de 2%.</small>
           </div>
 
           <div class="form-group">
             <label class="form-label">Durée de validité (en mois)</label>
             <input type="number" class="form-control" [ngModel]="vipDuration()" (ngModelChange)="vipDuration.set($event)" placeholder="Par défaut : 24 mois" min="1" max="120" />
-            <small class="form-help">Laissez vide pour utiliser la durée par défaut (24 mois).</small>
+            <small class="form-help">Laissez vide pour la durée par défaut de 24 mois.</small>
           </div>
         </div>
 
         <div class="vip-modal-footer">
-          <button class="btn btn--secondary" (click)="resetVipSettings()" [disabled]="vipLoading()">
+          <button class="btn btn--ghost-reset" (click)="resetVipSettings()" [disabled]="vipLoading()">
             <span class="material-symbols-outlined">restart_alt</span>
-            <span>Rétablir les valeurs par défaut (Null)</span>
+            <span>Rétablir valeurs par défaut (Null)</span>
           </button>
 
-          <button class="btn btn--primary" (click)="saveVipSettings()" [disabled]="vipLoading()">
+          <button class="btn btn--vip-save" (click)="saveVipSettings()" [disabled]="vipLoading()">
             <span class="material-symbols-outlined">save</span>
             <span>{{ vipLoading() ? 'Sauvegarde...' : 'Sauvegarder les privilèges' }}</span>
           </button>
