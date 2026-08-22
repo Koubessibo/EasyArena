@@ -11,7 +11,7 @@ export class CreateStaffDto {
   last_name: string;
 
   @IsString()
-  @Matches(/^\+?\d{9,15}$/, { message: 'Invalid phone number' })
+  @Matches(/^[\d\s+()-]{9,20}$/, { message: 'Numéro de téléphone invalide' })
   phone: string;
 
   @IsEnum([Role.FIELD_ADMIN, Role.CONTROLLER], { message: 'Role must be field_admin or controller' })

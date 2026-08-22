@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -247,12 +248,15 @@ export class UsersService {
     const owner = await this.ownerRepo.findOne({ where: { user: { id: ownerUser.id } } });
     if (!owner) throw new NotFoundException('Profil propriétaire introuvable');
 
-    const cleanPhone = dto.phone.trim();
-    const barePhone = cleanPhone.replace(/^\+221/, '');
-    const formattedPhone = cleanPhone.startsWith('+221') ? cleanPhone : `+221${cleanPhone}`;
+    const digitsOnly = dto.phone.replace(/\D/g, '');
+    if (!digitsOnly || digitsOnly.length < 9) {
+      throw new BadRequestException('Numéro de téléphone invalide (au moins 9 chiffres requis).');
+    }
+    const barePhone = digitsOnly.slice(-9);
+    const formattedPhone = `+221${barePhone}`;
 
     const existingUser = await this.userRepo.findOne({
-      where: [{ phone: cleanPhone }, { phone: barePhone }, { phone: formattedPhone }],
+      where: [{ phone: formattedPhone }, { phone: barePhone }],
     });
 
     if (existingUser) {
