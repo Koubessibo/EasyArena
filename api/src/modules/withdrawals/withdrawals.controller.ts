@@ -24,13 +24,13 @@ export class WithdrawalsController {
     private readonly usersService: UsersService,
   ) {}
 
-  @Roles(Role.OWNER, Role.FIELD_ADMIN, Role.CONTROLLER)
+  @Roles(Role.OWNER)
   @Get('balance')
   getBalance(@CurrentUser() user: User) {
     return this.withdrawalsService.getOwnerBalance(user);
   }
 
-  @Roles(Role.OWNER, Role.FIELD_ADMIN, Role.CONTROLLER)
+  @Roles(Role.OWNER)
   @Get('transactions')
   async getTransactions(
     @CurrentUser() user: User,
@@ -71,7 +71,7 @@ export class WithdrawalsController {
     return this.withdrawalsService.requestWithdrawal(user, dto);
   }
 
-  @Roles(Role.OWNER, Role.FIELD_ADMIN, Role.CONTROLLER)
+  @Roles(Role.OWNER)
   @Get('withdrawals')
   getWithdrawals(
     @CurrentUser() user: User,
@@ -89,13 +89,13 @@ export class WithdrawalsController {
     );
   }
 
-  @Roles(Role.OWNER, Role.FIELD_ADMIN, Role.CONTROLLER)
+  @Roles(Role.OWNER)
   @Get('withdrawals/:id')
   getOne(@CurrentUser() user: User, @Param('id') id: string) {
     return this.withdrawalsService.getWithdrawalById(user, id);
   }
 
-  // ── Staff permissions ─────────────────────────────────────────────────
+  // ── Staff permissions & Updates ────────────────────────────────────────
 
   @Roles(Role.OWNER)
   @Put('staff/:staffId/can-withdraw')
@@ -106,8 +106,6 @@ export class WithdrawalsController {
   ) {
     return this.usersService.updateStaffCanWithdraw(user, staffId, canWithdraw);
   }
-
-  // ── Staff CRUD ────────────────────────────────────────────────────────
 
   @Roles(Role.OWNER)
   @Post('staff')
@@ -125,5 +123,15 @@ export class WithdrawalsController {
   @Delete('staff/:id')
   deleteStaff(@CurrentUser() user: User, @Param('id') id: string) {
     return this.usersService.deleteStaff(user, id);
+  }
+
+  @Roles(Role.OWNER)
+  @Put('staff/:id')
+  updateStaff(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+    @Body() dto: { status?: 'active' | 'suspended'; role?: any; can_withdraw?: boolean; field_id?: string | null },
+  ) {
+    return this.usersService.updateStaff(user, id, dto);
   }
 }

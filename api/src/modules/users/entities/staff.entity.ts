@@ -9,6 +9,8 @@ import {
 import { User } from './user.entity';
 import { Owner } from './owner.entity';
 
+import { Field } from '../../fields/entities/field.entity';
+
 @Entity('staff')
 export class Staff {
   @PrimaryGeneratedColumn('uuid')
@@ -24,6 +26,13 @@ export class Staff {
 
   @Column({ name: 'owner_id' })
   owner_id: string;
+
+  @ManyToOne(() => Field, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'field_id' })
+  field: Field | null;
+
+  @Column({ name: 'field_id', nullable: true, type: 'uuid' })
+  field_id: string | null;
 
   @Column({ default: false })
   can_withdraw: boolean;

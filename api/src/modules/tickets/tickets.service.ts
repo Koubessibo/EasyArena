@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Inject,
   Injectable,
   Logger,
@@ -11,8 +12,11 @@ import { Repository } from 'typeorm';
 import { EventTicket } from './entities/event-ticket.entity';
 import { SportEvent } from '../events/entities/sport-event.entity';
 import { Client } from '../users/entities/client.entity';
+import { Staff } from '../users/entities/staff.entity';
+import { Owner } from '../users/entities/owner.entity';
+import { User } from '../users/entities/user.entity';
+import { MobileOperator, Role, UserStatus } from '../../common/enums';
 import { IPaymentProvider, PAYMENT_PROVIDER } from '../payments/interfaces/payment-provider.interface';
-import { MobileOperator } from '../../common/enums';
 import { v4 as uuidv4 } from 'uuid';
 import { NotificationsService } from '../notifications/notifications.service';
 import { TotpService } from './totp.service';
@@ -30,6 +34,10 @@ export class TicketsService {
     private readonly eventRepo: Repository<SportEvent>,
     @InjectRepository(Client)
     private readonly clientRepo: Repository<Client>,
+    @InjectRepository(Staff)
+    private readonly staffRepo: Repository<Staff>,
+    @InjectRepository(Owner)
+    private readonly ownerRepo: Repository<Owner>,
     @Inject(PAYMENT_PROVIDER)
     private readonly paymentProvider: IPaymentProvider,
     private readonly notificationsService: NotificationsService,
@@ -185,15 +193,47 @@ export class TicketsService {
    *  - 401 : Token expiré ou invalide (capture d'écran frauduleuse !)
    *  - 400 : Billet déjà scanné (tentative de replay)
    */
-  async validateTicket(ticketId: string, token: string) {
+  async validateTicket(ticketId: string, token: string, validatorUser?: User) {
+    // ── 0. Vérification du statut du compte du valideur / contrôleur ────────
+    if (validatorUser && validatorUser.status === UserStatus.SUSPENDED) {
+      throw new ForbiddenException('Compte collaborateur suspendu par le propriétaire.');
+    }
+
     // ── 1. Récupération du billet et son secret TOTP ───────────────────────
     const ticket = await this.ticketRepo.findOne({
       where: { id: ticketId },
-      relations: ['event', 'client', 'client.user'],
+      relations: ['event', 'event.field', 'client', 'client.user'],
     });
 
     if (!ticket) {
       throw new NotFoundException('Billet introuvable.');
+    }
+
+    // ── 1b. Isolation stricte de propriété & terrain ──────────────────────
+    if (validatorUser && validatorUser.role !== Role.ADMIN) {
+      if (validatorUser.role === Role.OWNER) {
+        const owner = await this.ownerRepo.findOne({ where: { user: { id: validatorUser.id } } });
+        if (!owner || ticket.event?.owner_id !== owner.id) {
+          throw new ForbiddenException('Alerte Sécurité : Ce billet appartient à un autre propriétaire.');
+        }
+      } else if (validatorUser.role === Role.CONTROLLER || validatorUser.role === Role.FIELD_ADMIN) {
+        const staff = await this.staffRepo.findOne({
+          where: { user: { id: validatorUser.id } },
+          relations: ['user', 'owner', 'field'],
+        });
+
+        if (!staff || !staff.owner || ticket.event?.owner_id !== staff.owner_id) {
+          throw new ForbiddenException('Alerte Sécurité : Ce billet appartient à un autre propriétaire.');
+        }
+
+        if (staff.user?.status === UserStatus.SUSPENDED) {
+          throw new ForbiddenException('Compte collaborateur suspendu par le propriétaire.');
+        }
+
+        if (staff.field_id && ticket.event?.field_id && ticket.event.field_id !== staff.field_id) {
+          throw new ForbiddenException("Vous n'êtes pas assigné à ce terrain.");
+        }
+      }
     }
 
     // ── 2. Vérification Anti-Replay (statut) ──────────────────────────────

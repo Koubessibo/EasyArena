@@ -60,8 +60,16 @@
         <div class="form-group">
           <label class="form-label">Rôle & Permissions *</label>
           <select class="form-control" [ngModel]="formRole()" (ngModelChange)="formRole.set($event)">
-            <option value="field_admin">Administrateur Terrain</option>
             <option value="controller">Contrôleur de Billets (Scanner)</option>
+            <option value="field_admin">Administrateur Terrain</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Terrain Assigné (Optionnel)</label>
+          <select class="form-control" [ngModel]="formFieldId()" (ngModelChange)="formFieldId.set($event)">
+            <option value="">🏟️ Tous les terrains (Accès global)</option>
+            <option *ngFor="let f of fields()" [value]="f.id">📍 {{ f.name }} ({{ f.location }})</option>
           </select>
         </div>
       </div>
@@ -73,7 +81,7 @@
 
       <div class="form-hint">
         <span class="material-symbols-outlined">info</span>
-        <span>Le collaborateur recevra le code PIN par défaut <strong>1234</strong> qu'il pourra personnaliser lors de sa première connexion.</span>
+        <span>Le collaborateur recevra le code PIN par défaut <strong>0000</strong> qu'il pourra personnaliser lors de sa première connexion.</span>
       </div>
 
       <div class="form-actions">
@@ -104,8 +112,9 @@
           <tr>
             <th>Nom & Prénom</th>
             <th>Rôle</th>
+            <th>Terrain Assigné</th>
             <th>Numéro de Téléphone</th>
-            <th>Date d'ajout</th>
+            <th>Statut du Compte</th>
             <th>Autorisation Retraits</th>
             <th class="text-right">Actions</th>
           </tr>
@@ -113,14 +122,14 @@
 
         <tbody>
           <tr *ngIf="loading()">
-            <td colspan="6" class="loading-td">
+            <td colspan="7" class="loading-td">
               <div class="spinner spinner--sm"></div>
               <span>Chargement des collaborateurs...</span>
             </td>
           </tr>
 
           <tr *ngIf="!loading() && staffList().length === 0">
-            <td colspan="6" class="empty-row">
+            <td colspan="7" class="empty-row">
               <span class="material-symbols-outlined">groups</span>
               <p>Aucun collaborateur enregistré. Cliquez sur "Ajouter un collaborateur" pour commencer.</p>
             </td>
@@ -129,7 +138,7 @@
           <tr *ngFor="let s of staffList()">
             <td>
               <div class="user-cell">
-                <div class="user-avatar">
+                <div class="user-avatar" [class.user-avatar--suspended]="s.status === 'suspended'">
                   {{ s.firstName ? s.firstName[0].toUpperCase() : 'U' }}
                 </div>
                 <div class="user-info">
@@ -144,9 +153,26 @@
               </span>
             </td>
 
+            <td>
+              <span class="field-chip" [class.field-chip--global]="!s.field_name">
+                <span class="material-symbols-outlined">{{ s.field_name ? 'location_on' : 'public' }}</span>
+                {{ s.field_name || 'Tous les terrains' }}
+              </span>
+            </td>
+
             <td class="font-mono">{{ s.phone }}</td>
 
-            <td>{{ s.createdAt | date:'dd/MM/yyyy' }}</td>
+            <td>
+              <button class="status-toggle-btn"
+                [class.status-toggle-btn--active]="s.status !== 'suspended'"
+                [class.status-toggle-btn--suspended]="s.status === 'suspended'"
+                [disabled]="updatingId() === s.id"
+                (click)="toggleStatus(s)"
+                title="{{ s.status === 'suspended' ? 'Cliquer pour réactiver' : 'Cliquer pour suspendre' }}">
+                <span class="material-symbols-outlined">{{ s.status === 'suspended' ? 'block' : 'check_circle' }}</span>
+                <span>{{ s.status === 'suspended' ? 'Suspendu' : 'Actif' }}</span>
+              </button>
+            </td>
 
             <td>
               <button *ngIf="s.role === 'controller'"
@@ -165,7 +191,7 @@
               <button class="btn-icon btn-icon--danger"
                 (click)="deleteStaff(s.id)"
                 [disabled]="deleting() === s.id"
-                title="Supprimer ce membre">
+                title="Supprimer définitivement ce collaborateur">
                 <span class="material-symbols-outlined">delete</span>
               </button>
             </td>

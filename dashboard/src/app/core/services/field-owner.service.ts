@@ -393,14 +393,17 @@ export class FieldOwnerService {
           lastName: s.user?.last_name ?? '',
           phone: s.user?.phone ?? '',
           role: s.user?.role ?? '',
+          status: s.user?.status ?? 'active',
           createdAt: s.user?.created_at ?? '',
           can_withdraw: s.can_withdraw ?? false,
+          field_id: s.field_id ?? s.field?.id ?? null,
+          field_name: s.field?.name ?? null,
         }));
       }),
     );
   }
 
-  createStaff(dto: { first_name: string; last_name: string; phone: string; role: string }): Observable<any> {
+  createStaff(dto: { first_name: string; last_name: string; phone: string; role: string; field_id?: string | null }): Observable<any> {
     return this.api.post<any>('/owner/staff', dto);
   }
 
@@ -410,6 +413,10 @@ export class FieldOwnerService {
 
   updateStaffCanWithdraw(staffId: string, canWithdraw: boolean): Observable<any> {
     return this.api.put<any>(`/owner/staff/${staffId}/can-withdraw`, { can_withdraw: canWithdraw });
+  }
+
+  updateStaff(staffId: string, dto: { status?: 'active' | 'suspended'; role?: string; can_withdraw?: boolean; field_id?: string | null }): Observable<any> {
+    return this.api.put<any>(`/owner/staff/${staffId}`, dto);
   }
 
   loadTransactionsFiltered(page: number, perPage: number, startDate?: string, endDate?: string): Observable<{ data: Transaction[]; total: number }> {

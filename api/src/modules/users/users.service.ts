@@ -266,7 +266,11 @@ export class UsersService {
         }),
       );
       await manager.save(
-        manager.create(Staff, { user, owner }),
+        manager.create(Staff, {
+          user,
+          owner,
+          ...(dto.field_id ? { field_id: dto.field_id } : {}),
+        }),
       );
       return { user, temp_pin: tempPin };
     });
@@ -278,7 +282,7 @@ export class UsersService {
 
     return this.staffRepo.find({
       where: { owner_id: owner.id },
-      relations: ['user'],
+      relations: ['user', 'field'],
       order: { user: { created_at: 'DESC' } },
     });
   }
@@ -302,11 +306,51 @@ export class UsersService {
 
     const staff = await this.staffRepo.findOne({
       where: { id: staffId, owner_id: owner.id },
-      relations: ['user'],
+      relations: ['user', 'field'],
     });
     if (!staff) throw new NotFoundException('Staff not found');
 
     staff.can_withdraw = canWithdraw;
     return this.staffRepo.save(staff);
+  }
+
+  async updateStaff(
+    ownerUser: User,
+    staffId: string,
+    dto: { status?: 'active' | 'suspended'; role?: Role; can_withdraw?: boolean; field_id?: string | null },
+  ): Promise<Staff> {
+    const owner = await this.ownerRepo.findOne({ where: { user: { id: ownerUser.id } } });
+    if (!owner) throw new NotFoundException('Owner profile not found');
+
+    const staff = await this.staffRepo.findOne({
+      where: { id: staffId, owner_id: owner.id },
+      relations: ['user', 'field'],
+    });
+    if (!staff) throw new NotFoundException('Staff not found');
+
+    if (dto.status) {
+      staff.user.status = dto.status === 'suspended' ? UserStatus.SUSPENDED : UserStatus.ACTIVE;
+      await this.userRepo.save(staff.user);
+    }
+
+    if (dto.role) {
+      staff.user.role = dto.role;
+      await this.userRepo.save(staff.user);
+    }
+
+    if (dto.can_withdraw !== undefined) {
+      staff.can_withdraw = dto.can_withdraw;
+    }
+
+    if (dto.field_id !== undefined) {
+      staff.field_id = dto.field_id;
+    }
+
+    await this.staffRepo.save(staff);
+
+    return this.staffRepo.findOne({
+      where: { id: staffId },
+      relations: ['user', 'field'],
+    }) as Promise<Staff>;
   }
 }

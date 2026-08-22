@@ -82,8 +82,8 @@ export class TicketsController {
    */
   @Roles(Role.OWNER, Role.FIELD_ADMIN, Role.CONTROLLER, Role.ADMIN)
   @Post('validate')
-  async validateTicket(@Body() dto: ValidateTicketDto) {
-    const result = await this.ticketsService.validateTicket(dto.ticketId, dto.token);
+  async validateTicket(@Body() dto: ValidateTicketDto, @CurrentUser() user: User) {
+    const result = await this.ticketsService.validateTicket(dto.ticketId, dto.token, user);
     return {
       success: true,
       message: '✅ Ticket validé avec succès',

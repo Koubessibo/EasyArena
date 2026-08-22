@@ -5,16 +5,18 @@ import { TicketsService } from './tickets.service';
 import { TotpService } from './totp.service';
 import { EventTicket } from './entities/event-ticket.entity';
 import { SportEvent } from '../events/entities/sport-event.entity';
+import { Staff } from '../users/entities/staff.entity';
+import { Owner } from '../users/entities/owner.entity';
+
 import { Client } from '../users/entities/client.entity';
 import { UsersModule } from '../users/users.module';
 import { PaymentsModule } from '../payments/payments.module';
 import { NotificationsModule } from '../notifications/notifications.module';
-
 import { SponsorshipModule } from '../sponsorship/sponsorship.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([EventTicket, SportEvent, Client]),
+    TypeOrmModule.forFeature([EventTicket, SportEvent, Client, Staff, Owner]),
     UsersModule,
     PaymentsModule,
     NotificationsModule,

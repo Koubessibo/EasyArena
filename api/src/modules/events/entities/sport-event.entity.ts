@@ -16,6 +16,9 @@ export class SportEvent {
   @Column({ name: 'owner_id' })
   owner_id: string;
 
+  @Column({ name: 'field_id', nullable: true, type: 'uuid' })
+  field_id: string | null;
+
   @Column()
   name: string;
 

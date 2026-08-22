@@ -1,4 +1,4 @@
-import { IsEnum, IsNotEmpty, IsString, Matches } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsOptional, IsString, IsUUID, Matches } from 'class-validator';
 import { Role } from '../../../common/enums';
 
 export class CreateStaffDto {
@@ -16,4 +16,8 @@ export class CreateStaffDto {
 
   @IsEnum([Role.FIELD_ADMIN, Role.CONTROLLER], { message: 'Role must be field_admin or controller' })
   role: Role.FIELD_ADMIN | Role.CONTROLLER;
+
+  @IsOptional()
+  @IsUUID('4', { message: 'Le terrain rattaché doit être un UUID valide' })
+  field_id?: string;
 }
