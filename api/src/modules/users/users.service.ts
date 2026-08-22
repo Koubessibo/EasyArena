@@ -245,10 +245,47 @@ export class UsersService {
 
   async createStaff(ownerUser: User, dto: CreateStaffDto): Promise<{ user: User; temp_pin: string }> {
     const owner = await this.ownerRepo.findOne({ where: { user: { id: ownerUser.id } } });
-    if (!owner) throw new NotFoundException('Owner profile not found');
+    if (!owner) throw new NotFoundException('Profil propriétaire introuvable');
 
-    const existing = await this.userRepo.findOne({ where: { phone: dto.phone } });
-    if (existing) throw new ConflictException('Ce numéro de téléphone est déjà utilisé.');
+    const cleanPhone = dto.phone.trim();
+    const barePhone = cleanPhone.replace(/^\+221/, '');
+    const formattedPhone = cleanPhone.startsWith('+221') ? cleanPhone : `+221${cleanPhone}`;
+
+    const existingUser = await this.userRepo.findOne({
+      where: [{ phone: cleanPhone }, { phone: barePhone }, { phone: formattedPhone }],
+    });
+
+    if (existingUser) {
+      const existingStaff = await this.staffRepo.findOne({
+        where: { user: { id: existingUser.id } },
+        relations: ['owner'],
+      });
+
+      if (existingStaff) {
+        throw new ConflictException('Ce numéro de téléphone est déjà enregistré comme collaborateur.');
+      }
+
+      if (existingUser.role === Role.OWNER || existingUser.role === Role.ADMIN) {
+        throw new ConflictException('Ce numéro de téléphone appartient déjà à un Propriétaire ou un Administrateur.');
+      }
+
+      // Attacher le compte utilisateur existant comme Staff / Contrôleur
+      existingUser.role = dto.role;
+      if (dto.first_name) existingUser.first_name = dto.first_name;
+      if (dto.last_name) existingUser.last_name = dto.last_name;
+      existingUser.status = UserStatus.ACTIVE;
+      await this.userRepo.save(existingUser);
+
+      await this.staffRepo.save(
+        this.staffRepo.create({
+          user: existingUser,
+          owner,
+          ...(dto.field_id ? { field_id: dto.field_id } : {}),
+        }),
+      );
+
+      return { user: existingUser, temp_pin: 'Existe déjà' };
+    }
 
     const tempPin = '0000';
     const pin_hash = await bcrypt.hash(tempPin, 10);
@@ -256,7 +293,7 @@ export class UsersService {
     return this.dataSource.transaction(async (manager) => {
       const user = await manager.save(
         manager.create(User, {
-          phone: dto.phone,
+          phone: formattedPhone,
           first_name: dto.first_name,
           last_name: dto.last_name,
           role: dto.role,
