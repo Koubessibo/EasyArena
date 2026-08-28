@@ -97,8 +97,8 @@ export class EnrollmentService {
     const message =
       `Bienvenue sur EasyArena !\n` +
       `Votre profil ${roleLabel} a été validé avec succès.\n` +
+      `Votre compte est créé, MDP par défaut : ${created.temp_pin}\n` +
       `Identifiant : ${request.phone}\n` +
-      `Code PIN provisoire : ${created.temp_pin}\n` +
       `Connectez-vous sur https://easyarena221.com/ pour accéder à votre espace.`;
 
     await this.notificationsService.sendRawSms(request.phone, message);

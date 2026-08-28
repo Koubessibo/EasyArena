@@ -87,7 +87,7 @@ export class UsersService {
       throw new ConflictException('Ce numéro de téléphone est déjà associé à un compte existant.');
     }
 
-    const tempPin = '0000';
+    const tempPin = '1234';
     const pin_hash = await bcrypt.hash(tempPin, 10);
 
     try {
@@ -135,7 +135,7 @@ export class UsersService {
       throw new ConflictException('Ce numéro de téléphone est déjà associé à un compte existant.');
     }
 
-    const tempPin = '0000';
+    const tempPin = '1234';
     const pin_hash = await bcrypt.hash(tempPin, 10);
 
     try {
