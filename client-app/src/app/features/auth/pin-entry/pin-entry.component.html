@@ -47,7 +47,10 @@
   </div>
 
   <!-- Footer links -->
-  <div class="pin-entry-screen__footer">
+  <div class="pin-entry-screen__footer" style="display:flex; flex-direction:column; gap:0.75rem; align-items:center;">
+    <a [routerLink]="['/forgot-password']" style="color:#f97316; font-size:0.875rem; text-decoration:none; font-weight:500;">
+      Code PIN oublié ?
+    </a>
     <button class="pin-entry-screen__switch-btn" (click)="switchAccount()" type="button">
       Utiliser un autre numéro
     </button>

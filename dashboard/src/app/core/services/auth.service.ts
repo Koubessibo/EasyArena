@@ -79,9 +79,17 @@ export class AuthService {
     });
   }
 
-  forgotPin(phone: string): Observable<unknown> {
+  forgotPassword(phone: string): Observable<unknown> {
     this.pendingPhone.set(phone);
-    return this.api.post<unknown>('/auth/forgot-pin', { phone });
+    return this.api.post<unknown>('/auth/forgot-password', { phone });
+  }
+
+  forgotPin(phone: string): Observable<unknown> {
+    return this.forgotPassword(phone);
+  }
+
+  resetPassword(data: { phone: string; otp: string; newPassword: string }): Observable<any> {
+    return this.api.post<any>('/auth/reset-password', data);
   }
 
   verifyOtpForPinChange(otp: string): Observable<unknown> {

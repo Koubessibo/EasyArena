@@ -8,6 +8,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
 import { User } from '../users/entities/user.entity';
 import { Staff } from '../users/entities/staff.entity';
+import { Client } from '../users/entities/client.entity';
 import { OtpCode } from '../../otp/entities/otp-code.entity';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { OtpModule } from '../../otp/otp.module';
@@ -15,7 +16,7 @@ import { SponsorshipModule } from '../sponsorship/sponsorship.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, OtpCode, Staff]),
+    TypeOrmModule.forFeature([User, OtpCode, Staff, Client]),
     PassportModule,
     JwtModule.register({}),
     NotificationsModule,

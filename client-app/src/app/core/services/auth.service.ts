@@ -238,7 +238,11 @@ export class AuthService {
 
   requestPasswordReset(phone: string): Observable<any> {
     this.pendingPhone.set(phone);
-    return this.api.post<any>('/auth/forgot-pin', { phone });
+    return this.api.post<any>('/auth/forgot-password', { phone });
+  }
+
+  resetPassword(data: { phone: string; otp: string; newPassword: string }): Observable<any> {
+    return this.api.post<any>('/auth/reset-password', data);
   }
 
   submitEnrollmentRequest(data: {

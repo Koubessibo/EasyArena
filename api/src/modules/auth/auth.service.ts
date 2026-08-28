@@ -25,6 +25,8 @@ import { SetPinDto } from './dto/set-pin.dto';
 import { LoginDto } from './dto/login.dto';
 import { ChangePinDto } from './dto/change-pin.dto';
 import { ForgotPinDto } from './dto/forgot-pin.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
 
 const MAX_LOGIN_ATTEMPTS = 3;
@@ -37,6 +39,8 @@ export class AuthService {
   constructor(
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
+    @InjectRepository(Client)
+    private readonly clientRepo: Repository<Client>,
     @InjectRepository(OtpCode)
     private readonly otpRepo: Repository<OtpCode>,
     @InjectRepository(Staff)
@@ -49,13 +53,18 @@ export class AuthService {
     private readonly sponsorshipService: SponsorshipService,
   ) {}
 
-  async register(dto: RegisterDto): Promise<{ message: string; expires_in: number }> {
-    const digitsOnly = dto.phone.replace(/\D/g, '');
-    if (!digitsOnly || digitsOnly.length < 9) {
-      throw new BadRequestException('Numéro de téléphone invalide (au moins 9 chiffres requis).');
-    }
+  private normalizePhone(phone: string): { formattedPhone: string; barePhone: string } {
+    const digitsOnly = (phone || '').replace(/\D/g, '');
     const barePhone = digitsOnly.slice(-9);
     const formattedPhone = `+221${barePhone}`;
+    return { formattedPhone, barePhone };
+  }
+
+  async register(dto: RegisterDto): Promise<{ message: string; expires_in: number }> {
+    const { formattedPhone, barePhone } = this.normalizePhone(dto.phone);
+    if (!barePhone || barePhone.length < 9) {
+      throw new BadRequestException('Numéro de téléphone invalide (au moins 9 chiffres requis).');
+    }
 
     const existing = await this.userRepo.findOne({
       where: [{ phone: formattedPhone }, { phone: barePhone }],
@@ -133,12 +142,75 @@ export class AuthService {
     return `${prefix}-${suffix}`;
   }
 
+  async forgotPassword(dto: ForgotPasswordDto): Promise<{ message: string; expires_in: number }> {
+    const { formattedPhone, barePhone } = this.normalizePhone(dto.phone);
+    const user = await this.userRepo.findOne({
+      where: [{ phone: formattedPhone }, { phone: barePhone }],
+    });
+    if (!user) {
+      throw new NotFoundException('Aucun compte trouvé avec ce numéro de téléphone.');
+    }
+    if (user.status === UserStatus.SUSPENDED) {
+      throw new UnauthorizedException('Ce compte est suspendu. Veuillez contacter le support.');
+    }
+
+    const { expires_in } = await this.otpService.sendResetOtp(user.phone, user.id);
+    return {
+      message: 'Votre code de réinitialisation EasyArena vous a été envoyé par SMS.',
+      expires_in,
+    };
+  }
+
   async forgotPin(dto: ForgotPinDto): Promise<{ message: string; expires_in: number }> {
-    const user = await this.userRepo.findOne({ where: { phone: dto.phone, status: UserStatus.ACTIVE } });
-    if (!user) throw new NotFoundException('No active account found for this number');
-    await this.sendOtp(user);
-    const expiresIn = this.configService.get<number>('otp.expiresInSeconds') ?? 300;
-    return { message: 'OTP sent', expires_in: expiresIn };
+    return this.forgotPassword(dto);
+  }
+
+  async resetPassword(dto: ResetPasswordDto): Promise<{ success: boolean; message: string }> {
+    const { formattedPhone, barePhone } = this.normalizePhone(dto.phone);
+    const user = await this.userRepo.findOne({
+      where: [{ phone: formattedPhone }, { phone: barePhone }],
+    });
+    if (!user) {
+      throw new NotFoundException('Aucun compte trouvé avec ce numéro de téléphone.');
+    }
+
+    const newPinOrPass = dto.newPassword || dto.new_password || dto.new_pin || dto.pin;
+    if (!newPinOrPass) {
+      throw new BadRequestException('Le nouveau mot de passe / code PIN est obligatoire.');
+    }
+
+    // 1. Verify OTP with anti-replay check
+    const isOtpValid = (await this.otpService.verifyOtp(user.phone, dto.otp)) ||
+                       (await this.otpService.verifyOtp(formattedPhone, dto.otp)) ||
+                       (await this.otpService.verifyOtp(barePhone, dto.otp));
+    if (!isOtpValid) {
+      throw new UnauthorizedException('Code OTP invalide ou expiré.');
+    }
+
+    // 2. Hash new password with bcrypt
+    const pin_hash = await bcrypt.hash(newPinOrPass, SALT_ROUNDS);
+
+    // 3. Update user in database
+    await this.userRepo.update(user.id, {
+      pin_hash,
+      must_change_pin: false,
+      login_attempts: 0,
+      last_failed_login: undefined,
+      status: user.status === UserStatus.PENDING ? UserStatus.ACTIVE : user.status,
+    });
+
+    // 4. Send success SMS notification
+    const successMsg = "Votre mot de passe EasyArena a été modifié avec succès. Si vous n'êtes pas à l'origine de cette action, contactez le support.";
+    try {
+      await this.notificationsService.sendSms(user.id, user.phone, successMsg);
+    } catch {
+      await this.notificationsService.sendRawSms(user.phone, successMsg);
+    }
+
+    return {
+      success: true,
+      message: 'Votre mot de passe a été réinitialisé avec succès.',
+    };
   }
 
   async resendOtp(phone: string): Promise<{ message: string; expires_in: number }> {

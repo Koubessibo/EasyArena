@@ -47,6 +47,33 @@ export class OtpService {
     return { expires_in: expiresInSeconds };
   }
 
+  async sendResetOtp(phone: string, userId: string): Promise<{ expires_in: number }> {
+    const length = this.configService.get<number>('otp.length') ?? 6;
+    const expiresInSeconds = 600; // 10 minutes strict validity
+
+    // Invalidate previous unused OTPs
+    await this.otpRepo.update({ phone, used: false }, { used: true });
+
+    const code =
+      process.env.NODE_ENV === 'production'
+        ? crypto.randomInt(10 ** (length - 1), 10 ** length).toString()
+        : '123456';
+    const code_hash = await bcrypt.hash(code, SALT_ROUNDS);
+    const expires_at = new Date(Date.now() + expiresInSeconds * 1000);
+
+    await this.otpRepo.save(this.otpRepo.create({ phone, code_hash, expires_at }));
+
+    this.logger.log(`[Reset OTP] ${phone} → ${code}`);
+    const message = `Votre code de réinitialisation EasyArena est : ${code}. Valable 10 minutes.`;
+    try {
+      await this.notificationsService.sendSms(userId, phone, message);
+    } catch {
+      await this.notificationsService.sendRawSms(phone, message);
+    }
+
+    return { expires_in: expiresInSeconds };
+  }
+
   async verifyOtp(phone: string, code: string): Promise<boolean> {
     const now = new Date();
     const otp = await this.otpRepo.findOne({

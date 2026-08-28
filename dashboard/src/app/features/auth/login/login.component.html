@@ -44,6 +44,12 @@
         <span class="login-pill">PORTAIL DE GESTION</span>
       </div>
 
+      <!-- Success banner -->
+      <div class="login-success" *ngIf="successToast()" style="display:flex; align-items:center; gap:0.5rem; background:#ecfdf5; border:1px solid #10b981; color:#065f46; padding:0.875rem 1rem; border-radius:0.75rem; margin-bottom:1.25rem; font-size:0.9rem; font-weight:500;">
+        <span class="material-symbols-outlined" style="color:#10b981">check_circle</span>
+        {{ successToast() }}
+      </div>
+
       <!-- Error banner -->
       <div class="login-error" *ngIf="auth.error()">
         <span class="material-symbols-outlined">error</span>
@@ -80,7 +86,7 @@
 
           <div class="login-card__foot">
             <a href="#" class="login-link" (click)="$event.preventDefault(); step.set('forgot-phone'); auth.error.set(null)">
-              Code PIN oublié ?
+              Mot de passe / Code PIN oublié ?
             </a>
           </div>
         </form>
@@ -88,7 +94,7 @@
 
       <!-- Step: forgot phone -->
       <ng-container *ngIf="step() === 'forgot-phone'">
-        <h1 class="login-heading">PIN oublié</h1>
+        <h1 class="login-heading">Mot de passe oublié</h1>
         <p class="login-subheading">Entrez votre numéro pour recevoir un code de réinitialisation</p>
 
         <form (ngSubmit)="submitForgotPin()" class="login-form">
@@ -98,11 +104,65 @@
           </div>
           <button type="submit" class="btn btn--primary login-submit" [disabled]="auth.loading() || !forgotPhone()">
             <span class="loading-spinner" *ngIf="auth.loading()"></span>
-            <ng-container *ngIf="!auth.loading()">Envoyer le code OTP</ng-container>
+            <ng-container *ngIf="!auth.loading()">Envoyer le code de réinitialisation</ng-container>
           </button>
           <div class="login-card__foot">
             <a href="#" class="login-link" (click)="$event.preventDefault(); step.set('credentials'); auth.error.set(null)">
               ← Retour à la connexion
+            </a>
+          </div>
+        </form>
+      </ng-container>
+
+      <!-- Step: reset form (OTP + New Password + Confirm Password) -->
+      <ng-container *ngIf="step() === 'reset-form'">
+        <h1 class="login-heading">Nouveau code PIN</h1>
+        <p class="login-subheading">Entrez le code OTP reçu par SMS et définissez votre nouveau code PIN.</p>
+
+        <form (ngSubmit)="submitResetPassword()" class="login-form">
+          <div class="form-group">
+            <label class="form-label">Code OTP reçu par SMS (6 chiffres)</label>
+            <div class="form-input-wrap">
+              <span class="material-symbols-outlined form-input-icon">sms</span>
+              <input type="text" class="form-input form-input--icon" placeholder="123456"
+                maxlength="6" inputmode="numeric"
+                [value]="otpCode()" (input)="otpCode.set($any($event.target).value)">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Nouveau Code PIN (4 chiffres)</label>
+            <div class="form-input-wrap">
+              <span class="material-symbols-outlined form-input-icon">lock</span>
+              <input type="password" class="form-input form-input--icon" placeholder="••••"
+                maxlength="4" inputmode="numeric"
+                [value]="newPin()" (input)="newPin.set($any($event.target).value)">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Confirmer le Code PIN</label>
+            <div class="form-input-wrap">
+              <span class="material-symbols-outlined form-input-icon">lock_reset</span>
+              <input type="password" class="form-input form-input--icon" placeholder="••••"
+                maxlength="4" inputmode="numeric"
+                [value]="confirmPin()" (input)="confirmPin.set($any($event.target).value)">
+            </div>
+          </div>
+
+          <p class="login-error" *ngIf="pinError()" style="margin-bottom:0.75rem">{{ pinError() }}</p>
+
+          <button type="submit" class="btn btn--primary login-submit" [disabled]="auth.loading()">
+            <span class="loading-spinner" *ngIf="auth.loading()"></span>
+            <ng-container *ngIf="!auth.loading()">
+              Modifier mon mot de passe
+              <span class="material-symbols-outlined">check</span>
+            </ng-container>
+          </button>
+
+          <div class="login-card__foot">
+            <a href="#" class="login-link" (click)="$event.preventDefault(); step.set('credentials'); auth.error.set(null)">
+              ← Annuler et revenir à la connexion
             </a>
           </div>
         </form>
