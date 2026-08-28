@@ -73,64 +73,100 @@ export class UsersService {
   }
 
   async createOwner(dto: CreateOwnerDto): Promise<{ user: User; temp_pin: string }> {
-    const existing = await this.userRepo.findOne({ where: { phone: dto.phone } });
-    if (existing) throw new ConflictException('Phone number already registered');
+    const digitsOnly = dto.phone.replace(/\D/g, '');
+    if (!digitsOnly || digitsOnly.length < 9) {
+      throw new BadRequestException('Numéro de téléphone invalide (au moins 9 chiffres requis).');
+    }
+    const barePhone = digitsOnly.slice(-9);
+    const formattedPhone = `+221${barePhone}`;
+
+    const existing = await this.userRepo.findOne({
+      where: [{ phone: formattedPhone }, { phone: barePhone }],
+    });
+    if (existing) {
+      throw new ConflictException('Ce numéro de téléphone est déjà associé à un compte existant.');
+    }
 
     const tempPin = '0000';
     const pin_hash = await bcrypt.hash(tempPin, 10);
 
-    return this.dataSource.transaction(async (manager) => {
-      const user = await manager.save(
-        manager.create(User, {
-          phone: dto.phone,
-          first_name: dto.first_name,
-          last_name: dto.last_name,
-          role: Role.OWNER,
-          status: UserStatus.ACTIVE,
-          pin_hash,
-          must_change_pin: true,
-        }),
-      );
-      await manager.save(
-        manager.create(Owner, {
-          user,
-          mobile_money: dto.mobile_money,
-          bank_account: dto.bank_account,
-        }),
-      );
-      return { user, temp_pin: tempPin };
-    });
+    try {
+      return await this.dataSource.transaction(async (manager) => {
+        const user = await manager.save(
+          manager.create(User, {
+            phone: formattedPhone,
+            first_name: dto.first_name,
+            last_name: dto.last_name,
+            role: Role.OWNER,
+            status: UserStatus.ACTIVE,
+            pin_hash,
+            must_change_pin: true,
+          }),
+        );
+        await manager.save(
+          manager.create(Owner, {
+            user,
+            mobile_money: dto.mobile_money,
+            bank_account: dto.bank_account,
+          }),
+        );
+        return { user, temp_pin: tempPin };
+      });
+    } catch (err: any) {
+      if (err?.code === '23505' || err?.detail?.includes('phone')) {
+        throw new ConflictException('Ce numéro de téléphone est déjà associé à un compte existant.');
+      }
+      throw err;
+    }
   }
 
   async createVendor(dto: CreateVendorDto): Promise<{ user: User; temp_pin: string }> {
-    const existing = await this.userRepo.findOne({ where: { phone: dto.phone } });
-    if (existing) throw new ConflictException('Phone number already registered');
+    const digitsOnly = dto.phone.replace(/\D/g, '');
+    if (!digitsOnly || digitsOnly.length < 9) {
+      throw new BadRequestException('Numéro de téléphone invalide (au moins 9 chiffres requis).');
+    }
+    const barePhone = digitsOnly.slice(-9);
+    const formattedPhone = `+221${barePhone}`;
+
+    const existing = await this.userRepo.findOne({
+      where: [{ phone: formattedPhone }, { phone: barePhone }],
+    });
+    if (existing) {
+      throw new ConflictException('Ce numéro de téléphone est déjà associé à un compte existant.');
+    }
 
     const tempPin = '0000';
     const pin_hash = await bcrypt.hash(tempPin, 10);
 
-    return this.dataSource.transaction(async (manager) => {
-      const user = await manager.save(
-        manager.create(User, {
-          phone: dto.phone,
-          first_name: dto.first_name,
-          last_name: dto.last_name,
-          role: Role.VENDOR,
-          status: UserStatus.ACTIVE,
-          pin_hash,
-          must_change_pin: true,
-        }),
-      );
-      await manager.save(
-        manager.create(Vendor, {
-          user,
-          shop_name: dto.shop_name,
-          contact_phone: dto.contact_phone,
-          location: dto.location,
-        }),
-      );
-      return { user, temp_pin: tempPin };
-    });
+    try {
+      return await this.dataSource.transaction(async (manager) => {
+        const user = await manager.save(
+          manager.create(User, {
+            phone: formattedPhone,
+            first_name: dto.first_name,
+            last_name: dto.last_name,
+            role: Role.VENDOR,
+            status: UserStatus.ACTIVE,
+            pin_hash,
+            must_change_pin: true,
+          }),
+        );
+        await manager.save(
+          manager.create(Vendor, {
+            user,
+            shop_name: dto.shop_name,
+            contact_phone: dto.contact_phone,
+            location: dto.location,
+          }),
+        );
+        return { user, temp_pin: tempPin };
+      });
+    } catch (err: any) {
+      if (err?.code === '23505' || err?.detail?.includes('phone')) {
+        throw new ConflictException('Ce numéro de téléphone est déjà associé à un compte existant.');
+      }
+      throw err;
+    }
   }
 
   async updateStatus(id: string, status: UserStatus): Promise<User> {
@@ -156,13 +192,20 @@ export class UsersService {
   async inviteUser(
     dto: InviteUserDto,
   ): Promise<{ success: boolean; message: string; data: Partial<User> }> {
+    const digitsOnly = dto.phone.replace(/\D/g, '');
+    if (!digitsOnly || digitsOnly.length < 9) {
+      throw new BadRequestException('Numéro de téléphone invalide (au moins 9 chiffres requis).');
+    }
+    const barePhone = digitsOnly.slice(-9);
+    const formattedPhone = `+221${barePhone}`;
+
     // ── 1. Vérification d'unicité du téléphone ─────────────────────────────
     const existingPhone = await this.userRepo.findOne({
-      where: { phone: dto.phone },
+      where: [{ phone: formattedPhone }, { phone: barePhone }],
     });
     if (existingPhone) {
       throw new ConflictException(
-        `Un compte avec le numéro ${dto.phone} existe déjà.`,
+        `Ce numéro de téléphone est déjà associé à un compte existant.`,
       );
     }
 
@@ -183,20 +226,27 @@ export class UsersService {
     const pin_hash = await bcrypt.hash(tempPin, 10);
 
     // ── 4. Création en base ────────────────────────────────────────────────
-    const newUser = this.userRepo.create({
-      phone:           dto.phone,
-      first_name:      dto.first_name,
-      last_name:       dto.last_name,
-      ...(dto.email && { email: dto.email }),
-      role:            dto.role as unknown as Role,
-      status:          UserStatus.PENDING,   // Activation requise
-      pin_hash,
-      must_change_pin: true,
-      // referrer_id stocké dans la colonne nullable
-      ...(dto.referrer_id ? { referrer_id: dto.referrer_id } : {}),
-    });
+    let savedUser: User;
+    try {
+      const newUser = this.userRepo.create({
+        phone:           formattedPhone,
+        first_name:      dto.first_name,
+        last_name:       dto.last_name,
+        ...(dto.email && { email: dto.email }),
+        role:            dto.role as unknown as Role,
+        status:          UserStatus.PENDING,   // Activation requise
+        pin_hash,
+        must_change_pin: true,
+        referrer_id:     dto.referrer_id,
+      });
 
-    const savedUser = await this.userRepo.save(newUser);
+      savedUser = await this.userRepo.save(newUser);
+    } catch (err: any) {
+      if (err?.code === '23505' || err?.detail?.includes('phone')) {
+        throw new ConflictException('Ce numéro de téléphone est déjà associé à un compte existant.');
+      }
+      throw err;
+    }
 
     // ── Envoi instantané du SMS avec le PIN de parrainage ─────────────────────────
     const inviteMessage = `Bienvenue sur EasyArena ! Vous avez été invité(e) par parrainage. Votre code PIN temporaire est : ${tempPin}. Connectez-vous sur https://easyarena221.com/ pour l'activer.`;
@@ -294,27 +344,34 @@ export class UsersService {
     const tempPin = '0000';
     const pin_hash = await bcrypt.hash(tempPin, 10);
 
-    return this.dataSource.transaction(async (manager) => {
-      const user = await manager.save(
-        manager.create(User, {
-          phone: formattedPhone,
-          first_name: dto.first_name,
-          last_name: dto.last_name,
-          role: dto.role,
-          status: UserStatus.ACTIVE,
-          pin_hash,
-          must_change_pin: true,
-        }),
-      );
-      await manager.save(
-        manager.create(Staff, {
-          user,
-          owner,
-          ...(dto.field_id ? { field_id: dto.field_id } : {}),
-        }),
-      );
-      return { user, temp_pin: tempPin };
-    });
+    try {
+      return await this.dataSource.transaction(async (manager) => {
+        const user = await manager.save(
+          manager.create(User, {
+            phone: formattedPhone,
+            first_name: dto.first_name,
+            last_name: dto.last_name,
+            role: dto.role,
+            status: UserStatus.ACTIVE,
+            pin_hash,
+            must_change_pin: true,
+          }),
+        );
+        await manager.save(
+          manager.create(Staff, {
+            user,
+            owner,
+            ...(dto.field_id ? { field_id: dto.field_id } : {}),
+          }),
+        );
+        return { user, temp_pin: tempPin };
+      });
+    } catch (err: any) {
+      if (err?.code === '23505' || err?.detail?.includes('phone')) {
+        throw new ConflictException('Ce numéro de téléphone est déjà associé à un compte existant.');
+      }
+      throw err;
+    }
   }
 
   async listStaffByOwner(ownerUser: User): Promise<Staff[]> {

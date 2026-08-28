@@ -194,9 +194,9 @@ export class UserManagementComponent {
           this.createSuccess.set('Compte propriétaire créé. PIN temporaire : 0000');
           this.adminService.loadPendingUsers();
         },
-        error: (err: Error) => {
+        error: (err: any) => {
           this.createLoading.set(false);
-          this.createError.set(err.message);
+          this.createError.set(err?.error?.message || err?.message || 'Erreur lors de la création');
         },
       });
     } else {
@@ -220,9 +220,9 @@ export class UserManagementComponent {
           this.createSuccess.set('Compte vendeur créé. PIN temporaire : 0000');
           this.adminService.loadPendingUsers();
         },
-        error: (err: Error) => {
+        error: (err: any) => {
           this.createLoading.set(false);
-          this.createError.set(err.message);
+          this.createError.set(err?.error?.message || err?.message || 'Erreur lors de la création');
         },
       });
     }

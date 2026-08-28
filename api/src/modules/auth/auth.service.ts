@@ -50,8 +50,19 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto): Promise<{ message: string; expires_in: number }> {
-    const existing = await this.userRepo.findOne({ where: { phone: dto.phone } });
-    if (existing) throw new ConflictException('Phone number already registered');
+    const digitsOnly = dto.phone.replace(/\D/g, '');
+    if (!digitsOnly || digitsOnly.length < 9) {
+      throw new BadRequestException('Numéro de téléphone invalide (au moins 9 chiffres requis).');
+    }
+    const barePhone = digitsOnly.slice(-9);
+    const formattedPhone = `+221${barePhone}`;
+
+    const existing = await this.userRepo.findOne({
+      where: [{ phone: formattedPhone }, { phone: barePhone }],
+    });
+    if (existing) {
+      throw new ConflictException('Ce numéro de téléphone est déjà associé à un compte existant.');
+    }
 
     let sponsorUser: User | null = null;
     if (dto.referrer_code) {
@@ -61,32 +72,39 @@ export class AuthService {
     }
 
     let savedUser: User;
-    await this.dataSource.transaction(async (manager) => {
-      const referralCode = await this.generateUniqueReferralCode(dto.first_name, manager);
-      const user = manager.create(User, {
-        phone: dto.phone,
-        first_name: dto.first_name,
-        last_name: dto.last_name,
-        email: dto.email,
-        role: Role.CLIENT,
-        status: UserStatus.PENDING,
-        referral_code: referralCode,
-        referrer_id: sponsorUser?.id ?? null,
+    try {
+      await this.dataSource.transaction(async (manager) => {
+        const referralCode = await this.generateUniqueReferralCode(dto.first_name, manager);
+        const user = manager.create(User, {
+          phone: formattedPhone,
+          first_name: dto.first_name,
+          last_name: dto.last_name,
+          email: dto.email,
+          role: Role.CLIENT,
+          status: UserStatus.PENDING,
+          referral_code: referralCode,
+          referrer_id: sponsorUser?.id ?? null,
+        });
+        savedUser = await manager.save(User, user);
+
+        const client = manager.create(Client, { user: savedUser });
+        await manager.save(Client, client);
+
+        if (sponsorUser) {
+          await this.sponsorshipService.createSponsorshipWithManager(
+            sponsorUser.id,
+            savedUser.id,
+            'client',
+            manager,
+          );
+        }
       });
-      savedUser = await manager.save(User, user);
-
-      const client = manager.create(Client, { user: savedUser });
-      await manager.save(Client, client);
-
-      if (sponsorUser) {
-        await this.sponsorshipService.createSponsorshipWithManager(
-          sponsorUser.id,
-          savedUser.id,
-          'client',
-          manager,
-        );
+    } catch (err: any) {
+      if (err?.code === '23505' || err?.detail?.includes('phone')) {
+        throw new ConflictException('Ce numéro de téléphone est déjà associé à un compte existant.');
       }
-    });
+      throw err;
+    }
 
     await this.sendOtp(savedUser!);
 
