@@ -214,7 +214,10 @@ export class AuthService {
   }
 
   async resendOtp(phone: string): Promise<{ message: string; expires_in: number }> {
-    const user = await this.userRepo.findOne({ where: { phone } });
+    const { formattedPhone, barePhone } = this.normalizePhone(phone);
+    const user = await this.userRepo.findOne({
+      where: [{ phone: formattedPhone }, { phone: barePhone }, { phone }],
+    });
     if (!user) throw new NotFoundException('Phone number not found');
     if (user.status === UserStatus.SUSPENDED) {
       throw new UnauthorizedException('Account is suspended');
@@ -225,9 +228,14 @@ export class AuthService {
   }
 
   async verifyOtp(dto: VerifyOtpDto): Promise<{ message: string }> {
+    const { formattedPhone, barePhone } = this.normalizePhone(dto.phone);
     const now = new Date();
     const otp = await this.otpRepo.findOne({
-      where: { phone: dto.phone, used: false, expires_at: MoreThan(now) },
+      where: [
+        { phone: formattedPhone, used: false, expires_at: MoreThan(now) },
+        { phone: barePhone, used: false, expires_at: MoreThan(now) },
+        { phone: dto.phone, used: false, expires_at: MoreThan(now) },
+      ],
       order: { created_at: 'DESC' },
     });
     if (!otp) throw new UnauthorizedException('Invalid or expired OTP');
@@ -237,7 +245,9 @@ export class AuthService {
 
     await this.otpRepo.update(otp.id, { used: true });
 
-    const user = await this.userRepo.findOne({ where: { phone: dto.phone } });
+    const user = await this.userRepo.findOne({
+      where: [{ phone: formattedPhone }, { phone: barePhone }, { phone: dto.phone }],
+    });
     if (user && user.status === UserStatus.PENDING) {
       await this.userRepo.update(user.id, { status: UserStatus.ACTIVE });
     }
@@ -246,8 +256,13 @@ export class AuthService {
   }
 
   async setPin(dto: SetPinDto) {
+    const { formattedPhone, barePhone } = this.normalizePhone(dto.phone);
     const user = await this.userRepo.findOne({
-      where: { phone: dto.phone, status: UserStatus.ACTIVE },
+      where: [
+        { phone: formattedPhone, status: UserStatus.ACTIVE },
+        { phone: barePhone, status: UserStatus.ACTIVE },
+        { phone: dto.phone, status: UserStatus.ACTIVE },
+      ],
       relations: ['client', 'owner', 'vendor'],
     });
     if (!user) throw new NotFoundException('Active user not found for this phone');
@@ -260,6 +275,8 @@ export class AuthService {
   }
 
   async login(dto: LoginDto) {
+    const { formattedPhone, barePhone } = this.normalizePhone(dto.phone);
+
     const userSelect: (keyof User)[] = [
       'id', 'phone', 'first_name', 'last_name', 'email', 'profile_photo',
       'role', 'status', 'pin_hash', 'login_attempts', 'last_failed_login',
@@ -269,13 +286,21 @@ export class AuthService {
 
     // Prefer the CLIENT account when the same phone is registered under multiple roles
     let user = await this.userRepo.findOne({
-      where: { phone: dto.phone, role: Role.CLIENT },
+      where: [
+        { phone: formattedPhone, role: Role.CLIENT },
+        { phone: barePhone, role: Role.CLIENT },
+        { phone: dto.phone, role: Role.CLIENT },
+      ],
       select: userSelect,
       relations: userRelations,
     });
     if (!user) {
       user = await this.userRepo.findOne({
-        where: { phone: dto.phone },
+        where: [
+          { phone: formattedPhone },
+          { phone: barePhone },
+          { phone: dto.phone },
+        ],
         select: userSelect,
         relations: userRelations,
       });
