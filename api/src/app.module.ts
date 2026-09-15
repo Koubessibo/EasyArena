@@ -46,20 +46,27 @@ import { SponsorshipModule } from './modules/sponsorship/sponsorship.module';
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (config: ConfigService) => ({
-        type: 'postgres',
-        host: config.get<string>('database.host'),
-        port: config.get<number>('database.port'),
-        username: config.get<string>('database.username'),
-        password: config.get<string>('database.password'),
-        database: config.get<string>('database.name'),
-        autoLoadEntities: true,
-        entities: [__dirname + '/**/*.entity{.ts,.js}'],
-        migrations: [__dirname + '/migrations/*{.ts,.js}'],
-        synchronize: false,
-        migrationsRun: false,
-        logging: config.get<string>('nodeEnv') === 'development',
-      }),
+      useFactory: (config: ConfigService) => {
+        const isProd = config.get<string>('nodeEnv') === 'production';
+        const useSsl = config.get<boolean>('database.ssl') || false;
+
+        return {
+          type: 'postgres',
+          host: config.get<string>('database.host'),
+          port: config.get<number>('database.port'),
+          username: config.get<string>('database.username'),
+          password: config.get<string>('database.password'),
+          database: config.get<string>('database.name'),
+          ssl: useSsl ? { rejectUnauthorized: false } : false,
+          autoLoadEntities: true,
+          entities: [__dirname + '/**/*.entity{.ts,.js}'],
+          migrations: [__dirname + '/migrations/*{.ts,.js}'],
+          synchronize: false, // SÉCURITÉ STRICTE : Empêche toute modification destructive du schéma
+          dropSchema: false,  // SÉCURITÉ STRICTE : Empêche toute suppression de données
+          migrationsRun: false,
+          logging: !isProd,
+        };
+      },
       inject: [ConfigService],
     }),
     ThrottlerModule.forRoot([{ name: 'default', ttl: 60000, limit: 60 }]),

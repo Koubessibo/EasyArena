@@ -6,11 +6,13 @@ export const validationSchema = Joi.object({
     .valid('development', 'production', 'test')
     .default('development'),
 
-  DB_HOST: Joi.string().required(),
+  DATABASE_URL: Joi.string().optional(),
+  DB_HOST: Joi.string().optional(),
   DB_PORT: Joi.number().default(5432),
-  DB_USERNAME: Joi.string().required(),
-  DB_PASSWORD: Joi.string().required(),
-  DB_NAME: Joi.string().required(),
+  DB_USERNAME: Joi.string().optional(),
+  DB_PASSWORD: Joi.string().optional(),
+  DB_NAME: Joi.string().optional(),
+  DB_SSL: Joi.string().optional(),
 
   JWT_ACCESS_SECRET: Joi.string().required(),
   JWT_ACCESS_EXPIRES_IN: Joi.string().default('15m'),
@@ -62,16 +64,42 @@ export const validationSchema = Joi.object({
   SUPABASE_BUCKET_NAME: Joi.string().required(),
 });
 
-export default () => ({
-  port: parseInt(process.env.APP_PORT ?? '3000', 10),
-  nodeEnv: process.env.NODE_ENV ?? 'development',
-  database: {
-    host: process.env.DB_HOST,
-    port: parseInt(process.env.DB_PORT ?? '5432', 10),
-    username: process.env.DB_USERNAME,
-    password: process.env.DB_PASSWORD,
-    name: process.env.DB_NAME,
-  },
+export default () => {
+  let host = process.env.DB_HOST;
+  let port = parseInt(process.env.DB_PORT ?? '5432', 10);
+  let username = process.env.DB_USERNAME;
+  let password = process.env.DB_PASSWORD;
+  let name = process.env.DB_NAME;
+  let ssl = process.env.DB_SSL === 'true';
+
+  if (process.env.DATABASE_URL && (!host || !username)) {
+    try {
+      const parsed = new URL(process.env.DATABASE_URL);
+      host = parsed.hostname;
+      port = parseInt(parsed.port || '5432', 10);
+      username = decodeURIComponent(parsed.username);
+      password = decodeURIComponent(parsed.password);
+      name = parsed.pathname.replace(/^\//, '');
+      if (parsed.searchParams.get('sslmode') === 'require') {
+        ssl = true;
+      }
+    } catch (e) {
+      console.error('Error parsing DATABASE_URL:', e);
+    }
+  }
+
+  return {
+    port: parseInt(process.env.APP_PORT ?? '3000', 10),
+    nodeEnv: process.env.NODE_ENV ?? 'development',
+    database: {
+      url: process.env.DATABASE_URL,
+      host,
+      port,
+      username,
+      password,
+      name,
+      ssl,
+    },
   jwt: {
     accessSecret: process.env.JWT_ACCESS_SECRET,
     accessExpiresIn: process.env.JWT_ACCESS_EXPIRES_IN ?? '15m',
@@ -99,10 +127,11 @@ export default () => ({
       sender:    process.env.MTARGET_SENDER ?? 'EasyArena',
     },
   },
-  superAdminPhone: process.env.SUPER_ADMIN_PHONE,
-  supabase: {
-    url: process.env.SUPABASE_URL,
-    serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
-    bucketName: process.env.SUPABASE_BUCKET_NAME,
-  },
-});
+    superAdminPhone: process.env.SUPER_ADMIN_PHONE,
+    supabase: {
+      url: process.env.SUPABASE_URL,
+      serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+      bucketName: process.env.SUPABASE_BUCKET_NAME,
+    },
+  };
+};
