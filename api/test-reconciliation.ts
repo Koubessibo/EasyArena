@@ -101,6 +101,20 @@ async function runReconciliationCrashTest() {
     createQueryRunner: () => mockQueryRunner,
   };
 
+  const mockPaymentGateway: any = {
+    notifyPaymentConfirmed: () => {},
+    notifyPaymentFailed: () => {},
+  };
+
+  const mockNotificationsService: any = {
+    sendSms: async () => {},
+    sendRawSms: async () => {},
+  };
+
+  const mockSponsorshipService: any = {
+    distributeCommissions: async () => {},
+  };
+
   // Instantiate ReconciliationService
   const reconciliationService = new ReconciliationService(
     mockBookingRepo,
@@ -109,6 +123,9 @@ async function runReconciliationCrashTest() {
     mockPaymentProvider,
     mockIotService,
     mockTransactionsService,
+    mockPaymentGateway,
+    mockNotificationsService,
+    mockSponsorshipService,
     mockDataSource,
   );
 

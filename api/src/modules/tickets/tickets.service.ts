@@ -74,7 +74,8 @@ export class TicketsService {
         const paymentPhone = (phone && phone.trim().length > 0) ? phone : (client?.user?.phone || '');
 
         const op = (operator as MobileOperator) || MobileOperator.WAVE;
-        const returnUrl = `http://localhost:4200/my-tickets?status=success&ticketId=${ticket.id}`;
+        const frontendUrl = process.env.FRONTEND_URL || process.env.CLIENT_APP_URL || 'https://easyarena221.com';
+        const returnUrl = `${frontendUrl}/my-tickets?status=success&ticketId=${ticket.id}`;
         const paymentRes = await this.paymentProvider.initiatePayment({
           amount: price,
           operator: op,

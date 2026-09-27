@@ -59,6 +59,9 @@ export const validationSchema = Joi.object({
 
   SUPER_ADMIN_PHONE: Joi.string().optional(),
 
+  FRONTEND_URL: Joi.string().optional(),
+  CLIENT_APP_URL: Joi.string().optional(),
+
   SUPABASE_URL: Joi.string().required(),
   SUPABASE_SERVICE_ROLE_KEY: Joi.string().required(),
   SUPABASE_BUCKET_NAME: Joi.string().required(),
@@ -128,6 +131,7 @@ export default () => {
     },
   },
     superAdminPhone: process.env.SUPER_ADMIN_PHONE,
+    frontendUrl: process.env.FRONTEND_URL || process.env.CLIENT_APP_URL || 'https://easyarena221.com',
     supabase: {
       url: process.env.SUPABASE_URL,
       serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,

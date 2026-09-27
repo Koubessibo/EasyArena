@@ -71,7 +71,13 @@ export class SamirpayProvider implements IPaymentProvider {
 
   async initiatePayment(params: InitiatePaymentParams): Promise<InitiatePaymentResult> {
     const operatorName = this.normalizeOperator(params.operator as string);
-    const returnUrl = params.returnUrl || params.callbackUrl || 'http://localhost:4200/my-tickets?status=success';
+    const frontendUrl =
+      this.configService.get<string>('frontendUrl') ||
+      process.env.FRONTEND_URL ||
+      process.env.CLIENT_APP_URL ||
+      'https://easyarena221.com';
+    const defaultReturnUrl = `${frontendUrl}/my-bookings?status=success`;
+    const returnUrl = params.returnUrl || params.callbackUrl || defaultReturnUrl;
 
     let cleanPhone = params.phone ? params.phone.replace(/[\s\-().]/g, '') : '';
     if (cleanPhone.startsWith('+221')) cleanPhone = cleanPhone.slice(4);
@@ -166,24 +172,33 @@ export class SamirpayProvider implements IPaymentProvider {
   }
 
   verifyWebhook(rawBody: string, signature: string): boolean {
+    if (!this.webhookSecret) {
+      this.logger.warn('[Webhook] No webhook secret configured');
+      return false;
+    }
     if (!signature) {
-      this.logger.warn('[Webhook] Rejected: missing x-signature header');
+      this.logger.warn('[Webhook] Rejected: missing signature header');
       return false;
     }
-    const expected = createHmac('sha256', this.webhookSecret)
-      .update(rawBody)
-      .digest('hex');
-    const sigBuffer = Buffer.from(signature, 'hex');
-    const expectedBuffer = Buffer.from(expected, 'hex');
-    if (sigBuffer.length !== expectedBuffer.length) {
-      this.logger.warn('[Webhook] Rejected: signature length mismatch');
+    try {
+      const expected = createHmac('sha256', this.webhookSecret)
+        .update(rawBody)
+        .digest('hex');
+      const sigBuffer = Buffer.from(signature, 'hex');
+      const expectedBuffer = Buffer.from(expected, 'hex');
+      if (sigBuffer.length !== expectedBuffer.length) {
+        this.logger.warn('[Webhook] Rejected: signature length mismatch');
+        return false;
+      }
+      const valid = timingSafeEqual(sigBuffer, expectedBuffer);
+      if (!valid) {
+        this.logger.warn('[Webhook] Rejected: HMAC signature invalid');
+      }
+      return valid;
+    } catch (e: any) {
+      this.logger.error(`[Webhook] Signature verification error: ${e?.message}`);
       return false;
     }
-    const valid = timingSafeEqual(sigBuffer, expectedBuffer);
-    if (!valid) {
-      this.logger.warn('[Webhook] Rejected: HMAC signature invalid');
-    }
-    return valid;
   }
 
   async verifyTransaction(reference: string): Promise<{ status: 'SUCCESS' | 'FAILED' | 'PENDING' | 'EXPIRED' }> {

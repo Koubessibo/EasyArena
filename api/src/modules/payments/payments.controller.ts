@@ -14,10 +14,13 @@ export class PaymentsController {
   @Post('webhook')
   webhook(
     @Req() req: RawBodyRequest<Request>,
-    @Headers('x-signature') signature: string,
-    @Body() dto: WebhookPayloadDto,
+    @Headers('x-signature') signature?: string,
+    @Headers('signature') altSignature?: string,
+    @Headers('x-samirpay-signature') samirpaySignature?: string,
+    @Body() dto?: WebhookPayloadDto,
   ) {
-    const rawBody = req.rawBody?.toString() ?? JSON.stringify(dto);
-    return this.paymentsService.handleWebhook(rawBody, signature ?? '', dto);
+    const sig = signature || altSignature || samirpaySignature || (req.headers['x-signature'] as string) || (req.headers['signature'] as string) || '';
+    const rawBody = req.rawBody?.toString() ?? JSON.stringify(dto || {});
+    return this.paymentsService.handleWebhook(rawBody, sig, dto || ({} as WebhookPayloadDto));
   }
 }

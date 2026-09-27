@@ -7,6 +7,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, In, Repository } from 'typeorm';
 import { Booking } from '../bookings/entities/booking.entity';
@@ -50,6 +51,7 @@ export class PaymentsService {
     @InjectRepository(Client) private readonly clientRepo: Repository<Client>,
     @InjectRepository(Owner) private readonly ownerRepo: Repository<Owner>,
     @Inject(PAYMENT_PROVIDER) private readonly paymentProvider: IPaymentProvider,
+    private readonly configService: ConfigService,
     private readonly transactionsService: TransactionsService,
     private readonly notificationsService: NotificationsService,
     private readonly dataSource: DataSource,
@@ -107,6 +109,13 @@ export class PaymentsService {
       throw new ConflictException('Slot already confirmed by another booking');
     }
 
+    const frontendUrl =
+      this.configService.get<string>('frontendUrl') ||
+      process.env.FRONTEND_URL ||
+      process.env.CLIENT_APP_URL ||
+      'https://easyarena221.com';
+    const returnUrl = `${frontendUrl}/my-bookings?status=success&bookingId=${bookingId}`;
+
     // Check for existing pending payment — re-call provider to get fresh URLs/QR
     const existingPayment = await this.paymentRepo.findOne({ where: { booking_id: bookingId } });
     if (existingPayment?.status === PaymentStatus.PENDING) {
@@ -117,6 +126,8 @@ export class PaymentsService {
           operator: dto.operator,
           reference: existingPayment.id,
           phone: dto.phone,
+          returnUrl,
+          callbackUrl: returnUrl,
         });
       } catch (err) {
         await this.bookingRepo.update(booking.id, { status: BookingStatus.EXPIRED });
@@ -156,6 +167,8 @@ export class PaymentsService {
         operator: dto.operator,
         reference: payment.id,
         phone: dto.phone,
+        returnUrl,
+        callbackUrl: returnUrl,
       });
     } catch (err) {
       await this.bookingRepo.update(booking.id, { status: BookingStatus.EXPIRED });
@@ -343,9 +356,15 @@ export class PaymentsService {
        return { received: true };
     }
 
-    // order_id = payment.id (used as orderId when calling Samirpay initPayment)
+    const isSuccess = ['success', 'successful', 'paid', 'completed'].includes((payload.status || '').toLowerCase());
+
+    // order_id can be payment.id, payment.external_ref, or booking_id
     const payment = await this.paymentRepo.findOne({
-      where: { id: payload.order_id },
+      where: [
+        { id: payload.order_id },
+        { external_ref: payload.order_id },
+        { booking_id: payload.order_id },
+      ],
     });
     
     // --- HANDLING TICKETS PAYMENT WEBHOOK ---
@@ -364,7 +383,7 @@ export class PaymentsService {
         return { received: true, message: 'Ticket Already processed' };
       }
 
-      if (payload.status === 'success') {
+      if (isSuccess) {
         await this.dataSource.manager.update(EventTicket, ticket.id, {
           status: 'VALID'
         });
@@ -397,11 +416,11 @@ export class PaymentsService {
     await qr.startTransaction();
 
     try {
-      if (payload.status === 'success') {
+      if (isSuccess) {
         await qr.manager.update(Payment, payment.id, {
           status: PaymentStatus.SUCCESS,
           paid_at: new Date(),
-          external_ref: payload.transaction_id,
+          external_ref: payload.transaction_id || payment.external_ref,
         });
 
         const booking = await qr.manager.findOne(Booking, {
