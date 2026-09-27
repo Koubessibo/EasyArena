@@ -44,6 +44,7 @@ const BOOKING_STATUS_MAP: Record<string, BookingSlot['status']> = {
 
 const TX_TYPE_MAP: Record<string, Transaction['type']> = {
   BOOKING_CREDIT: 'booking_payment',
+  TICKET_CREDIT: 'booking_payment',
   WITHDRAWAL_DEBIT: 'withdrawal',
   REFUND_CREDIT: 'refund',
   FEE_DEBIT: 'platform_fee',

@@ -13,6 +13,7 @@ import { UsersModule } from '../users/users.module';
 import { PaymentsModule } from '../payments/payments.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { SponsorshipModule } from '../sponsorship/sponsorship.module';
+import { TransactionsModule } from '../transactions/transactions.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { SponsorshipModule } from '../sponsorship/sponsorship.module';
     PaymentsModule,
     NotificationsModule,
     SponsorshipModule,
+    TransactionsModule,
   ],
   controllers: [TicketsController],
   providers: [TicketsService, TotpService],

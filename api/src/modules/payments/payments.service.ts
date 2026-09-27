@@ -371,7 +371,7 @@ export class PaymentsService {
     if (!payment) {
       const ticket = await this.dataSource.manager.findOne(EventTicket, {
         where: { id: payload.order_id },
-        relations: ['client', 'client.user']
+        relations: ['client', 'client.user', 'event'],
       });
       
       if (!ticket) {
@@ -384,22 +384,69 @@ export class PaymentsService {
       }
 
       if (isSuccess) {
-        await this.dataSource.manager.update(EventTicket, ticket.id, {
-          status: 'VALID'
-        });
+        const qr = this.dataSource.createQueryRunner();
+        await qr.connect();
+        await qr.startTransaction();
+
+        try {
+          await qr.manager.update(EventTicket, ticket.id, {
+            status: 'VALID',
+          });
+
+          // Crédit du solde pour le propriétaire de l'événement
+          const ticketPrice = Number(ticket.event?.ticket_price || 0);
+          if (ticketPrice > 0 && ticket.event?.owner_id) {
+            const balanceBefore = await this.transactionsService.computeOwnerBalance(ticket.event.owner_id, qr.manager);
+            await this.transactionsService.createTransaction(
+              {
+                owner_id: ticket.event.owner_id,
+                type: TransactionType.TICKET_CREDIT,
+                direction: TransactionDirection.CREDIT,
+                amount: ticketPrice,
+                balance_before: balanceBefore,
+                source_id: ticket.id,
+                source_type: TransactionSourceType.PAYMENT,
+                description: `Vente de billet pour l'événement "${ticket.event?.name || 'Événement'}" (Pass #${ticket.id.slice(0, 8)})`,
+              },
+              qr.manager,
+            );
+          }
+
+          // Sponsorship commission distribution
+          if (ticket.client?.user && ticketPrice > 0) {
+            try {
+              await this.sponsorshipService.distributeCommissions(
+                ticket.client.user.id, ticketPrice, ticket.id, qr.manager,
+              );
+            } catch (e) {
+              this.logger.warn(`[Sponsorship Ticket Webhook] Distribution failed: ${e.message}`);
+            }
+          }
+
+          await qr.commitTransaction();
+        } catch (err) {
+          await qr.rollbackTransaction();
+          this.logger.error(`[Webhook Ticket] Error processing ticket payment: ${err.message}`, err.stack);
+          throw err;
+        } finally {
+          await qr.release();
+        }
         
         // Notify client via websocket that ticket is ready
         this.paymentGateway.notifyPaymentConfirmed(ticket.id);
         
         if (ticket.client?.user) {
           const u = ticket.client.user;
-          const msg = `Félicitations ${u.first_name}, votre paiement a été validé ! Votre billet d'événement est maintenant disponible dans l'application EasyArena.`;
+          const eventName = ticket.event?.name || 'Événement Sportif';
+          const msg = `Félicitations ${u.first_name || ''}, votre paiement pour l'événement ${eventName} a été validé ! Votre QR Pass dynamique est maintenant disponible dans l'application EasyArena.`;
           await this.notificationsService.sendRawSms(u.phone, msg);
-          await this.notificationsService.sendSms(u.id, u.phone, msg);
+          if (u.id) {
+            await this.notificationsService.sendSms(u.id, u.phone, msg);
+          }
         }
       } else {
         await this.dataSource.manager.update(EventTicket, ticket.id, {
-          status: 'FAILED'
+          status: 'FAILED',
         });
         this.paymentGateway.notifyPaymentFailed(ticket.id);
       }

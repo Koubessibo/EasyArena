@@ -8,20 +8,20 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { EventTicket } from './entities/event-ticket.entity';
 import { SportEvent } from '../events/entities/sport-event.entity';
 import { Client } from '../users/entities/client.entity';
 import { Staff } from '../users/entities/staff.entity';
 import { Owner } from '../users/entities/owner.entity';
 import { User } from '../users/entities/user.entity';
-import { MobileOperator, Role, UserStatus } from '../../common/enums';
+import { MobileOperator, Role, TransactionDirection, TransactionSourceType, TransactionType, UserStatus } from '../../common/enums';
 import { IPaymentProvider, PAYMENT_PROVIDER } from '../payments/interfaces/payment-provider.interface';
 import { v4 as uuidv4 } from 'uuid';
 import { NotificationsService } from '../notifications/notifications.service';
 import { TotpService } from './totp.service';
-
 import { SponsorshipService } from '../sponsorship/sponsorship.service';
+import { TransactionsService } from '../transactions/transactions.service';
 
 @Injectable()
 export class TicketsService {
@@ -43,6 +43,8 @@ export class TicketsService {
     private readonly notificationsService: NotificationsService,
     private readonly totpService: TotpService,
     private readonly sponsorshipService: SponsorshipService,
+    private readonly transactionsService: TransactionsService,
+    private readonly dataSource: DataSource,
   ) {}
 
   async buyTicket(eventId: string, clientId: string, operator?: string, phone?: string) {
@@ -160,9 +162,52 @@ export class TicketsService {
       };
     }
 
-    // Payment verified — activate the ticket
-    await this.ticketRepo.update(ticket.id, { status: 'VALID' });
-    ticket.status = 'VALID';
+    // Payment verified — activate the ticket and credit owner in transaction
+    const qr = this.dataSource.createQueryRunner();
+    await qr.connect();
+    await qr.startTransaction();
+
+    try {
+      await qr.manager.update(EventTicket, ticket.id, { status: 'VALID' });
+      ticket.status = 'VALID';
+
+      const ticketPrice = Number(ticket.event?.ticket_price || 0);
+      if (ticketPrice > 0 && ticket.event?.owner_id) {
+        const balanceBefore = await this.transactionsService.computeOwnerBalance(ticket.event.owner_id, qr.manager);
+        await this.transactionsService.createTransaction(
+          {
+            owner_id: ticket.event.owner_id,
+            type: TransactionType.TICKET_CREDIT,
+            direction: TransactionDirection.CREDIT,
+            amount: ticketPrice,
+            balance_before: balanceBefore,
+            source_id: ticket.id,
+            source_type: TransactionSourceType.PAYMENT,
+            description: `Vente de billet pour l'événement "${ticket.event.name || 'Événement'}" (Pass #${ticket.id.slice(0, 8)})`,
+          },
+          qr.manager,
+        );
+      }
+
+      // Sponsorship commission distribution
+      if (ticket.client?.user && ticketPrice > 0) {
+        try {
+          await this.sponsorshipService.distributeCommissions(
+            ticket.client.user.id, ticketPrice, ticket.id, qr.manager,
+          );
+        } catch (e) {
+          this.logger.warn(`[Sponsorship Ticket] Distribution failed: ${e.message}`);
+        }
+      }
+
+      await qr.commitTransaction();
+    } catch (err) {
+      await qr.rollbackTransaction();
+      this.logger.error(`[ConfirmTicket] Error confirming ticket: ${err.message}`, err.stack);
+      throw err;
+    } finally {
+      await qr.release();
+    }
 
     const u = ticket.client?.user;
     const targetPhone = u?.phone;

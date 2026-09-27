@@ -75,7 +75,7 @@ export class AdminService implements OnModuleInit {
         .getRawMany(),
       this.txRepo.createQueryBuilder('t')
         .select('SUM(t.amount)', 'total')
-        .where('t.type = :type', { type: TransactionType.BOOKING_CREDIT })
+        .where('t.type IN (:...types)', { types: [TransactionType.BOOKING_CREDIT, TransactionType.TICKET_CREDIT] })
         .andWhere(dateFilter.tx ? 't.created_at >= :from' : '1=1', { from: dateFilter.tx })
         .getRawOne(),
       this.bookingRepo.find({

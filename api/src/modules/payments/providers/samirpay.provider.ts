@@ -203,18 +203,37 @@ export class SamirpayProvider implements IPaymentProvider {
 
   async verifyTransaction(reference: string): Promise<{ status: 'SUCCESS' | 'FAILED' | 'PENDING' | 'EXPIRED' }> {
     const url = `https://app.samirpay.com/samirpays/api/tiers/direct/verify/${reference}`;
-    this.logger.log(`[VerifyTransaction] Querying Samirpay for reference=${reference}`);
+    const maskedKey = this.apiKey ? `${this.apiKey.slice(0, 8)}...` : 'NONE';
+    this.logger.log(`[VerifyTransaction] Querying Samirpay for reference=${reference} (API-KEY: ${maskedKey})`);
+    
     try {
       const response = await fetch(url, { method: 'GET', headers: this.headers });
-      if (!response.ok) return { status: 'FAILED' };
+      
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => '');
+        this.logger.error(
+          `[VerifyTransaction] ❌ HTTP ${response.status} (${response.statusText}) from Samirpay for ref=${reference}. Body: ${errorText || '(empty)'}. ` +
+          `Vérifiez les clés SAMIRPAY_API_KEY / SAMIRPAY_SECRET_KEY et les autorisations de l'endpoint direct/verify chez SamirPay.`,
+        );
+        return { status: 'PENDING' };
+      }
+
       const data: any = await response.json();
+      this.logger.log(`[VerifyTransaction] Response for ref=${reference}: ${JSON.stringify(data)}`);
+      
       const statusStr = String(data.status || data.data?.status || '').toUpperCase();
-      if (statusStr === 'SUCCESS' || statusStr === 'SUCCESSFUL' || statusStr === 'PAID') return { status: 'SUCCESS' };
-      if (statusStr === 'FAILED' || statusStr === 'REJECTED') return { status: 'FAILED' };
-      if (statusStr === 'EXPIRED') return { status: 'EXPIRED' };
+      if (['SUCCESS', 'SUCCESSFUL', 'PAID', 'COMPLETED'].includes(statusStr)) {
+        return { status: 'SUCCESS' };
+      }
+      if (['FAILED', 'REJECTED', 'DECLINED', 'CANCELLED'].includes(statusStr)) {
+        return { status: 'FAILED' };
+      }
+      if (statusStr === 'EXPIRED') {
+        return { status: 'EXPIRED' };
+      }
       return { status: 'PENDING' };
     } catch (err: any) {
-      this.logger.error(`[VerifyTransaction] Error querying Samirpay: ${err.message}`);
+      this.logger.error(`[VerifyTransaction] ❌ Network/Fetch error querying Samirpay for ref=${reference}: ${err.message}`);
       return { status: 'PENDING' };
     }
   }
