@@ -40,8 +40,15 @@ export class OtpService {
     const message = `Votre code de vérification EasyArena est : ${code}. Valide pendant ${expiresInSeconds / 60} minutes.`;
     try {
       await this.notificationsService.sendSms(userId, phone, message);
-    } catch {
-      await this.notificationsService.sendRawSms(phone, message);
+    } catch (err) {
+      // `sendSms` n'échoue ici que si l'écriture du journal d'audit échoue :
+      // l'envoi a déjà été tenté. Un envoi de secours doublerait le code OTP.
+      // L'OTP lui-même est déjà persisté (etape precedente) et ne depend pas
+      // de ce journal : on journalise sans bloquer l'utilisateur.
+      this.logger.error(
+        `Échec de journalisation de la notification SMS (OTP) pour ${phone}`,
+        (err as Error)?.stack ?? String(err),
+      );
     }
 
     return { expires_in: expiresInSeconds };
@@ -67,8 +74,13 @@ export class OtpService {
     const message = `Votre code de réinitialisation EasyArena est : ${code}. Valable 10 minutes.`;
     try {
       await this.notificationsService.sendSms(userId, phone, message);
-    } catch {
-      await this.notificationsService.sendRawSms(phone, message);
+    } catch (err) {
+      // Idem sendOtp : journal d'audit seul, jamais de second envoi (le
+      // destinataire recevrait deux codes et n'utiliserait que le dernier).
+      this.logger.error(
+        `Échec de journalisation de la notification SMS (OTP reset) pour ${phone}`,
+        (err as Error)?.stack ?? String(err),
+      );
     }
 
     return { expires_in: expiresInSeconds };

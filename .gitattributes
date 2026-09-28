@@ -1,7 +1,9 @@
 # Encodage des sources normalisé en LF.
 #
-# `core.autocrlf=true` convertirait ce fichier en CRLF au prochain checkout,
-# ce qui fait retomber ~243 erreurs `prettier/prettier` ("Delete `␍`").
-# On fige LF pour que la correction tienne.
+# `core.autocrlf=true` convertirait ces fichiers en CRLF au prochain checkout,
+# ce qui fait retomber les erreurs `prettier/prettier` ("Delete `CR`")
+# ramenées à 0 : ~243 sur enums/index.ts, ~457 sur auth/auth.service.ts.
+# On fige LF pour que les corrections tiennent.
 api/src/common/enums/index.ts text eol=lf
+api/src/modules/auth/auth.service.ts text eol=lf
 .gitattributes text eol=lf

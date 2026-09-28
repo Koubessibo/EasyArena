@@ -203,8 +203,14 @@ export class AuthService {
     const successMsg = "Votre mot de passe EasyArena a été modifié avec succès. Si vous n'êtes pas à l'origine de cette action, contactez le support.";
     try {
       await this.notificationsService.sendSms(user.id, user.phone, successMsg);
-    } catch {
-      await this.notificationsService.sendRawSms(user.phone, successMsg);
+    } catch (err) {
+      // Journal d'audit uniquement : le mot de passe est déjà réinitialisé et
+      // l'envoi a déjà été tenté. Pas de relance — elle enverrait un second
+      // SMS au sujet d'une action que l'utilisateur vient déjà d'effectuer.
+      this.logger.error(
+        'Échec de journalisation de la notification SMS (réinitialisation de mot de passe)',
+        (err as Error)?.stack ?? String(err),
+      );
     }
 
     return {
