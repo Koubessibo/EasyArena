@@ -34,6 +34,15 @@ export class CreatePlanDto {
   @Min(1)
   reservations_count: number;
 
+  /**
+   * Durée de validité du pass en jours (défaut 30 côté colonne).
+   * Remplace la validité `+1 an` codée en dur dans subscribeClient().
+   */
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  duration_days?: number;
+
   @IsBoolean()
   allows_moratorium: boolean;
 

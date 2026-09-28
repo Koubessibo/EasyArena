@@ -179,6 +179,7 @@ export enum NotificationType {
   SHIFT_SUMMARY = 'shift_summary',
 
   // ── Abonnements ─────────────────────────────────────────────────
+  SUBSCRIPTION_CONFIRMED = 'subscription_confirmed',
   SUBSCRIPTION_REMINDER = 'subscription_reminder',
   SUBSCRIPTION_DUE = 'subscription_due',
   SUBSCRIPTION_SUSPENDED = 'subscription_suspended',
@@ -217,10 +218,15 @@ export enum NotificationType {
 }
 
 export enum SubscriptionStatus {
+  /** Souscription créée, premier paiement pas encore validé. */
   PENDING = 'pending',
   ACTIVE = 'active',
   SUSPENDED = 'suspended',
   EXPIRED = 'expired',
+  /** Quota de séances entièrement consommé : rien de plus à consommer. */
+  COMPLETED = 'completed',
+  /** Stérilisée faute de paiement (purge des `pending` abandonnés). */
+  CANCELLED = 'cancelled',
 }
 
 export enum InstallmentStatus {

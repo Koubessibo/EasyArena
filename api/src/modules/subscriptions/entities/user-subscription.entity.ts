@@ -46,6 +46,16 @@ export class UserSubscription {
   @Column({ type: 'timestamp' })
   end_date: Date;
 
+  /**
+   * Séances déjà consommées sur ce pass.
+   *
+   * `SubscriptionPlan.reservations_count` est le quota *du plan*, partagé par
+   * tous ses souscripteurs : il ne peut pas servir de compteur individuel.
+   * Le quota restant vaut donc `plan.reservations_count - reservations_used`.
+   */
+  @Column({ type: 'int', default: 0 })
+  reservations_used: number;
+
   /** Les différentes échéances de paiement liées à cet abonnement */
   @OneToMany(() => PaymentInstallment, (installment) => installment.subscription, {
     cascade: true,

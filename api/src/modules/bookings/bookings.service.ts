@@ -8,7 +8,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository, In, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
+import { DataSource, EntityManager, Repository, In, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
 import { Booking } from './entities/booking.entity';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { BookingQueryDto } from './dto/booking-query.dto';
@@ -20,6 +20,7 @@ import {
   NotificationType,
   PaymentStatus,
   Role,
+  SubscriptionStatus,
   TransactionDirection,
   TransactionSourceType,
   TransactionType,
@@ -30,6 +31,8 @@ import { Client } from '../users/entities/client.entity';
 import { Owner } from '../users/entities/owner.entity';
 import { Staff } from '../users/entities/staff.entity';
 import { User } from '../users/entities/user.entity';
+import { UserSubscription } from '../subscriptions/entities/user-subscription.entity';
+import { SubscriptionPlan } from '../subscriptions/entities/subscription-plan.entity';
 import { CancellationRequest } from './entities/cancellation-request.entity';
 import { CreateCancelRequestDto, ValidateCancelRequestDto } from './dto/cancel-request.dto';
 import { TransactionsService } from '../transactions/transactions.service';
@@ -132,14 +135,30 @@ export class BookingsService {
         if (conflict) throw new ConflictException(`Slot ${slotStart} is already booked or reserved pending payment`);
       }
 
+      // ── BLOC 1 — Pass d'abonnement : consommation du quota ──────────
+      // Un pass ACTIF du propriétaire du terrain couvre les créneaux : on
+      // consomme le quota et on confirme la réservation sans passer par la
+      // passerelle (sinon le client paierait une seconde fois des séances
+      // déjà réglées via l'abonnement). Le quota est verrouillé en
+      // pessimistic_write pour empêcher deux réservations simultanées de
+      // consommer la dernière séance.
+      const coveredByPass = await this.consumeSubscriptionQuota(
+        qr.manager,
+        client.id,
+        field.owner_id ?? null,
+        numSlots,
+      );
+
       const now = new Date();
       const slotEnd = this.addMinutes(dto.slot_start, schedule.slot_duration_min * numSlots);
-      const total_amount = Number(schedule.price_per_slot) * numSlots;
-      const service_fee = Math.round(total_amount * SERVICE_FEE_PERCENT);
+      const total_amount = coveredByPass
+        ? 0
+        : Number(schedule.price_per_slot) * numSlots;
+      const service_fee = coveredByPass ? 0 : Math.round(total_amount * SERVICE_FEE_PERCENT);
       const expires_at = new Date(now.getTime() + BOOKING_EXPIRY_HOURS * 60 * 60 * 1000);
-      const min_deposit_amount = schedule.deposit_per_slot != null
-        ? Number(schedule.deposit_per_slot) * numSlots
-        : null;
+      const min_deposit_amount = coveredByPass || schedule.deposit_per_slot == null
+        ? null
+        : Number(schedule.deposit_per_slot) * numSlots;
 
       const booking = await qr.manager.save(
         qr.manager.create(Booking, {
@@ -153,7 +172,7 @@ export class BookingsService {
           total_amount,
           service_fee,
           min_deposit_amount,
-          status: BookingStatus.PENDING_PAYMENT,
+          status: coveredByPass ? BookingStatus.CONFIRMED : BookingStatus.PENDING_PAYMENT,
           expires_at,
         }),
       );
@@ -169,6 +188,76 @@ export class BookingsService {
     } finally {
       await qr.release();
     }
+  }
+
+  /**
+   * BLOC 1 — Consomme le quota du pass d'abonnement pour le terrain réservé.
+   *
+   * Retourne `true` si les créneaux sont couverts par un pass (la
+   * réservation est alors facturée 0 et confirmée d'emblée), `false` sinon
+   * (réservation facturée au tarif normal).
+   *
+   * Conditions :
+   *  - statut `active` ;
+   *  - `end_date > now` — validité portée par la formule, plus figée à +1 an ;
+   *  - le plan appartient au **propriétaire du terrain réservé** ;
+   *  - quota restant `reservations_count - reservations_used >= num_slots`.
+   *
+   * Le verrou `pessimistic_write` porte sur `user_subscriptions` seul (pas de
+   * jointure : TypeORM + PostgreSQL refusent / verrouillent mal `FOR UPDATE`
+   * avec un JOIN), ce qui empêche deux réservations simultanées de consommer
+   * la même dernière séance. À épuisement, la souscription bascule en
+   * `completed`.
+   */
+  private async consumeSubscriptionQuota(
+    manager: EntityManager,
+    clientId: string,
+    ownerId: string | null,
+    numSlots: number,
+  ): Promise<boolean> {
+    if (!ownerId || numSlots <= 0) return false;
+
+    const plans = await manager.find(SubscriptionPlan, {
+      where: { owner_id: ownerId },
+    });
+    if (plans.length === 0) return false;
+
+    const subscription = await manager
+      .createQueryBuilder(UserSubscription, 'sub')
+      .where('sub.client_id = :clientId', { clientId })
+      .andWhere('sub.status = :status', { status: SubscriptionStatus.ACTIVE })
+      .andWhere('sub.end_date > :now', { now: new Date() })
+      .andWhere('sub.plan_id IN (:...planIds)', {
+        planIds: plans.map((p) => p.id),
+      })
+      .orderBy('sub.end_date', 'DESC')
+      .setLock('pessimistic_write')
+      .getOne();
+    if (!subscription) return false;
+
+    const plan = plans.find((p) => p.id === subscription.plan_id);
+    if (!plan) return false;
+
+    const quota = plan.reservations_count;
+    const used = subscription.reservations_used ?? 0;
+    if (used + numSlots > quota) return false; // quota insuffisant -> tarif normal
+
+    const updated = await manager.update(
+      UserSubscription,
+      { id: subscription.id, status: SubscriptionStatus.ACTIVE },
+      { reservations_used: used + numSlots },
+    );
+    if (updated.affected !== 1) return false; // course perdue avec une requête concurrente
+
+    if (used + numSlots >= quota) {
+      await manager.update(UserSubscription, subscription.id, {
+        status: SubscriptionStatus.COMPLETED,
+      });
+      this.logger.log(
+        `[Pass] Souscription ${subscription.id.slice(0, 8)} épuisée (${quota}/${quota} séances) -> completed`,
+      );
+    }
+    return true;
   }
 
   async getClientBookings(user: User, query: BookingQueryDto) {

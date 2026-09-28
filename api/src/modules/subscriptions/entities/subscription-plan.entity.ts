@@ -39,6 +39,15 @@ export class SubscriptionPlan {
   @Column({ type: 'int' })
   reservations_count: number;
 
+  /**
+   * Durée de validité du pass en jours, mesurée à partir de la souscription.
+   *
+   * Remplace le `+1 an` autrefois codé en dur dans `subscribeClient()` : la
+   * validité doit suivre la formule (Pass Mensuel = 30 j, Pass Saisonnier…).
+   */
+  @Column({ type: 'int', default: 30 })
+  duration_days: number;
+
   /** Indique si le paiement moratoire est autorisé */
   @Column({ default: false })
   allows_moratorium: boolean;
