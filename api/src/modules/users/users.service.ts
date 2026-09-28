@@ -17,6 +17,8 @@ import { CreateVendorDto } from './dto/create-vendor.dto';
 import { CreateStaffDto } from './dto/create-staff.dto';
 import { InviteUserDto } from './dto/invite-user.dto';
 import { NotificationsService } from '../notifications/notifications.service';
+import { Field } from '../fields/entities/field.entity';
+import { NotificationPriority, NotificationType } from '../../common/enums';
 
 import { Client } from './entities/client.entity';
 
@@ -338,6 +340,9 @@ export class UsersService {
         }),
       );
 
+      // Même alerte que pour un collaborateur tout juste créé.
+      await this.notifyStaffFieldChange(existingUser, dto.field_id ?? null, null);
+
       return { user: existingUser, temp_pin: 'Existe déjà' };
     }
 
@@ -345,7 +350,7 @@ export class UsersService {
     const pin_hash = await bcrypt.hash(tempPin, 10);
 
     try {
-      return await this.dataSource.transaction(async (manager) => {
+      const created = await this.dataSource.transaction(async (manager) => {
         const user = await manager.save(
           manager.create(User, {
             phone: formattedPhone,
@@ -366,6 +371,11 @@ export class UsersService {
         );
         return { user, temp_pin: tempPin };
       });
+
+      // In-app : l'affectation terrain est la seule alerte opérationnelle
+      // qu'un contrôleur doit recevoir (aucune notification par scan).
+      await this.notifyStaffFieldChange(created.user, dto.field_id ?? null, null);
+      return created;
     } catch (err: any) {
       if (err?.code === '23505' || err?.detail?.includes('phone')) {
         throw new ConflictException('Ce numéro de téléphone est déjà associé à un compte existant.');
@@ -436,6 +446,7 @@ export class UsersService {
       await this.userRepo.save(staff.user);
     }
 
+    const previousFieldId = staff.field_id;
     if (dto.can_withdraw !== undefined) {
       staff.can_withdraw = dto.can_withdraw;
     }
@@ -446,9 +457,61 @@ export class UsersService {
 
     await this.staffRepo.save(staff);
 
+    // In-app : changement d'affectation terrain (création, mutation ou retrait).
+    await this.notifyStaffFieldChange(
+      staff.user,
+      staff.field_id,
+      previousFieldId,
+    );
+
     return this.staffRepo.findOne({
       where: { id: staffId },
       relations: ['user', 'field'],
     }) as Promise<Staff>;
+  }
+
+  // ── In-app (Phase 3) ──────────────────────────────────────────────────
+
+  /**
+   * Affectation d'un terrain à un membre d'équipe (contrôleur / field_admin).
+   *
+   * C'est la SEULE notification opérationnelle que reçoit un contrôleur :
+   * aucun message in-app par scan individuel, les résumés de fin de shift
+   * arriveront en Phase 6. Pas d'alerte si l'affectation n'a pas bougé.
+   */
+  private async notifyStaffFieldChange(
+    user: User,
+    fieldId: string | null,
+    previousFieldId: string | null,
+  ): Promise<void> {
+    if (fieldId === previousFieldId) return;
+
+    const targetFieldId = fieldId ?? previousFieldId;
+    if (!targetFieldId) return;
+
+    const field = await this.dataSource.manager.findOne(Field, {
+      where: { id: targetFieldId },
+    });
+    const fieldName = field?.name ?? 'votre terrain';
+    const assigned = Boolean(fieldId);
+
+    await this.notificationsService.notify({
+      userId: user.id,
+      type: NotificationType.SCHEDULE_ASSIGNED,
+      title: assigned ? 'Nouvelle affectation' : 'Affectation modifiée',
+      message: assigned
+        ? `Vous êtes affecté(e) au terrain ${fieldName}. Consultez votre planning pour les créneaux concernés.`
+        : `Vous n'êtes plus affecté(e) au terrain ${fieldName}.`,
+      link: '/owner/schedule',
+      metadata: {
+        fieldId: targetFieldId,
+        assigned,
+        role: user.role,
+      },
+      priority: NotificationPriority.ACTION,
+      // La clé porte le couple (avant → après) : un aller-retour d'affectation
+      // reste traçable, une simple resoumission est ignorée.
+      dedupeKey: `staff:${user.id}:${previousFieldId ?? 'none'}->${fieldId ?? 'none'}`,
+    });
   }
 }

@@ -28,9 +28,12 @@ import {
   TransactionType,
   SubscriptionStatus,
   InstallmentStatus,
+  NotificationPriority,
+  NotificationType,
 } from '../../common/enums';
 import { Order, OrderStatus } from '../orders/entities/order.entity';
 import { OrderItem } from '../orders/entities/order-item.entity';
+import { Vendor } from '../users/entities/vendor.entity';
 import { Product } from '../products/entities/product.entity';
 import { PaymentInstallment } from '../subscriptions/entities/payment-installment.entity';
 import { UserSubscription } from '../subscriptions/entities/user-subscription.entity';
@@ -38,6 +41,7 @@ import { InitiatePaymentDto } from './dto/initiate-payment.dto';
 import { WebhookPayloadDto } from './dto/webhook-payload.dto';
 import { User } from '../users/entities/user.entity';
 import { SponsorshipService } from '../sponsorship/sponsorship.service';
+import { RecipientsResolver } from '../notifications/recipients.resolver';
 
 const SERVICE_FEE_PERCENT = 0.05;
 
@@ -58,6 +62,7 @@ export class PaymentsService {
     private readonly paymentGateway: PaymentGateway,
     private readonly iotService: IotService,
     private readonly sponsorshipService: SponsorshipService,
+    private readonly recipientsResolver: RecipientsResolver,
   ) {}
 
   async initiatePayment(user: User, bookingId: string, dto: InitiatePaymentDto) {
@@ -261,6 +266,7 @@ export class PaymentsService {
             this.buildOwnerSms(booking, payment),
           );
         }
+        await this.notifyBookingConfirmed(booking, payment, owner ?? null);
         this.paymentGateway.notifyPaymentConfirmed(bookingId);
       } catch (err) {
         await qr.rollbackTransaction();
@@ -310,6 +316,7 @@ export class PaymentsService {
              const msg = `Félicitations ! Votre paiement pour la commande EasyArena #${ref} a bien été reçu. Le vendeur prépare actuellement votre livraison.`;
              await this.notificationsService.sendRawSms(phone, msg);
           }
+          await this.notifyOrdersPaid(orders);
        } else {
           for (const order of orders) {
              await this.dataSource.manager.update(Order, order.id, { status: OrderStatus.CANCELLED });
@@ -443,6 +450,7 @@ export class PaymentsService {
           if (u.id) {
             await this.notificationsService.sendSms(u.id, u.phone, msg);
           }
+          await this.notifyTicketPurchased(ticket);
         }
       } else {
         await this.dataSource.manager.update(EventTicket, ticket.id, {
@@ -568,6 +576,7 @@ export class PaymentsService {
         }
 
         await qr.commitTransaction();
+        await this.notifyBookingConfirmed(booking, payment, owner);
         this.paymentGateway.notifyPaymentConfirmed(booking.id);
       } else {
         await qr.manager.update(Payment, payment.id, { status: PaymentStatus.FAILED });
@@ -585,6 +594,7 @@ export class PaymentsService {
             );
           }
           await qr.commitTransaction();
+          await this.notifyBookingPaymentFailed(booking, payment);
           this.paymentGateway.notifyPaymentFailed(booking.id);
         } else {
           await qr.commitTransaction();
@@ -648,6 +658,181 @@ export class PaymentsService {
       starts.push(this.addMinutes(booking.slot_start, i * perSlotMin));
     }
     return starts;
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  //  IN-APP — événements métier (Phase 3)
+  //
+  //  Toutes ces méthodes sont appelées APRÈS `commitTransaction()` :
+  //  notifier une écriture encore annulable fabriquerait de fausses
+  //  alertes. `notify()` ne throw jamais, donc aucun paiement ne peut
+  //  échouer à cause d'une notification.
+  // ══════════════════════════════════════════════════════════════════
+
+  /**
+   * Réservation confirmée :
+   * - client → sa confirmation (ACTION, il a un lien de route à ouvrir)
+   * - propriétaire + ses `field_admin` → une nouvelle réservation à traiter
+   *
+   * Les `controller` sont exclus : ils ne reçoivent ni la vie commerciale
+   * ni les réservations, uniquement leurs assignations et résumés.
+   */
+  private async notifyBookingConfirmed(
+    booking: Booking,
+    payment: Payment,
+    owner: Owner | null,
+  ): Promise<void> {
+    if (booking.client?.user) {
+      await this.notificationsService.notify({
+        userId: booking.client.user.id,
+        type: NotificationType.BOOKING_CONFIRMED,
+        title: 'Réservation confirmée',
+        message:
+          `Votre réservation du ${this.formatBookingDate(booking)} à ${booking.slot_start} ` +
+          `sur ${booking.field?.name ?? 'votre terrain'} est confirmée.`,
+        link: `/booking/${booking.id}`,
+        metadata: {
+          bookingId: booking.id,
+          paymentId: payment.id,
+          fieldId: booking.field_id,
+          amount: Number(payment.amount),
+        },
+        priority: NotificationPriority.ACTION,
+        dedupeKey: `booking:${booking.id}:confirmed`,
+      });
+    }
+
+    if (!owner?.user) return;
+
+    const recipients = await this.recipientsResolver.ownerTeamOf(
+      owner.id,
+      owner.user.id,
+    );
+    await this.notificationsService.notifyMany(recipients, {
+      type: NotificationType.BOOKING_NEW,
+      title: 'Nouvelle réservation',
+      message:
+        `${booking.field?.name ?? 'Terrain'} — ${this.formatBookingDate(booking)} ` +
+        `à ${booking.slot_start}. ${Number(payment.amount)} FCFA encaissés.`,
+      link: '/owner/overview',
+      metadata: {
+        bookingId: booking.id,
+        fieldId: booking.field_id,
+        amount: Number(payment.amount),
+      },
+      priority: NotificationPriority.ACTION,
+      dedupeKey: `booking:${booking.id}:new`,
+    });
+  }
+
+  /** Paiement refusé : la réservation bascule en CANCELLED côté client. */
+  private async notifyBookingPaymentFailed(
+    booking: Booking,
+    payment: Payment,
+  ): Promise<void> {
+    if (!booking.client?.user) return;
+
+    await this.notificationsService.notify({
+      userId: booking.client.user.id,
+      type: NotificationType.PAYMENT_FAILED,
+      title: 'Paiement échoué',
+      message:
+        `Le paiement de votre réservation du ${this.formatBookingDate(booking)} ` +
+        `a échoué. Vous pouvez réessayer depuis votre historique.`,
+      link: `/booking/${booking.id}`,
+      metadata: {
+        bookingId: booking.id,
+        paymentId: payment.id,
+        amount: Number(payment.amount),
+      },
+      priority: NotificationPriority.ACTION,
+      dedupeKey: `payment:${payment.id}:failed`,
+    });
+  }
+
+  /** Billet d'événement payé : le QR Pass devient disponible. */
+  private async notifyTicketPurchased(ticket: EventTicket): Promise<void> {
+    if (!ticket.client?.user) return;
+
+    await this.notificationsService.notify({
+      userId: ticket.client.user.id,
+      type: NotificationType.TICKET_PURCHASED,
+      title: 'Billet validé',
+      message:
+        `Votre pass pour ${ticket.event?.name ?? "l'événement"} ` +
+        `est disponible dans « Mes billets ».`,
+      link: '/my-tickets',
+      metadata: { ticketId: ticket.id, eventId: ticket.event?.id },
+      priority: NotificationPriority.INFO,
+      dedupeKey: `ticket:${ticket.id}:paid`,
+    });
+  }
+
+  /**
+   * Commande boutique payée : le client suit sa commande, le vendeur a
+   * un nouveau travail à traiter. Un lot `EA-…` peut couvrir plusieurs
+   * vendeurs — chacun n'est prévenu que de sa propre commande.
+   */
+  private async notifyOrdersPaid(orders: Order[]): Promise<void> {
+    const clientIds = [...new Set(orders.map((o) => o.client_id).filter(Boolean))];
+    const vendorIds = [...new Set(orders.map((o) => o.vendor_id).filter(Boolean))];
+
+    const clients: Client[] = clientIds.length
+      ? await this.dataSource.manager.find(Client, {
+          where: { id: In(clientIds) },
+          relations: ['user'],
+        })
+      : [];
+    const vendors: Vendor[] = vendorIds.length
+      ? await this.dataSource.manager.find(Vendor, {
+          where: { id: In(vendorIds) },
+          relations: ['user'],
+        })
+      : [];
+
+    for (const order of orders) {
+      const ref = (order.reference || order.id).slice(0, 8).toUpperCase();
+
+      const client = clients.find((c) => c.id === order.client_id);
+      if (client?.user) {
+        await this.notificationsService.notify({
+          userId: client.user.id,
+          type: NotificationType.ORDER_PAID,
+          title: 'Paiement reçu',
+          message: `Votre commande #${ref} est payée. Le vendeur prépare la livraison.`,
+          link: '/orders',
+          metadata: {
+            orderId: order.id,
+            reference: order.reference,
+            amount: Number(order.total_amount),
+          },
+          priority: NotificationPriority.INFO,
+          dedupeKey: `order:${order.id}:paid`,
+        });
+      }
+
+      const vendor = vendors.find((v) => v.id === order.vendor_id);
+      if (vendor?.user) {
+        await this.notificationsService.notify({
+          userId: vendor.user.id,
+          type: NotificationType.ORDER_NEW,
+          title: 'Nouvelle commande',
+          message: `Commande #${ref} — ${Number(order.total_amount)} FCFA. Préparez la livraison.`,
+          link: '/vendor/orders',
+          metadata: {
+            orderId: order.id,
+            reference: order.reference,
+            amount: Number(order.total_amount),
+          },
+          priority: NotificationPriority.ACTION,
+          dedupeKey: `order:${order.id}:new`,
+        });
+      }
+    }
+  }
+
+  private formatBookingDate(booking: Booking): string {
+    return booking.booking_date.split('-').reverse().join('/');
   }
 
 }

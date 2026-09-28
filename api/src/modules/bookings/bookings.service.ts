@@ -16,6 +16,8 @@ import {
   BookingStatus,
   CancellationRequestStatus,
   FieldStatus,
+  NotificationPriority,
+  NotificationType,
   PaymentStatus,
   Role,
   TransactionDirection,
@@ -32,6 +34,7 @@ import { CancellationRequest } from './entities/cancellation-request.entity';
 import { CreateCancelRequestDto, ValidateCancelRequestDto } from './dto/cancel-request.dto';
 import { TransactionsService } from '../transactions/transactions.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { RecipientsResolver } from '../notifications/recipients.resolver';
 import { IPaymentProvider, PAYMENT_PROVIDER } from '../payments/interfaces/payment-provider.interface';
 
 const SERVICE_FEE_PERCENT = 0.05;
@@ -53,6 +56,7 @@ export class BookingsService {
     @Inject(PAYMENT_PROVIDER) private readonly paymentProvider: IPaymentProvider,
     private readonly transactionsService: TransactionsService,
     private readonly notificationsService: NotificationsService,
+    private readonly recipientsResolver: RecipientsResolver,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -276,7 +280,9 @@ export class BookingsService {
       reason: dto.reason,
       status: CancellationRequestStatus.PENDING,
     });
-    return this.cancelRepo.save(request);
+    const saved = await this.cancelRepo.save(request);
+    await this.notifyOwnerCancellationRequested(booking, saved);
+    return saved;
   }
 
   async getCancellationRequest(user: User, bookingId: string) {
@@ -323,7 +329,13 @@ export class BookingsService {
       request.rejection_note = dto.rejection_note || '';
       request.processed_at = new Date();
       request.processed_by = user.id;
-      return this.cancelRepo.save(request);
+      const rejected = await this.cancelRepo.save(request);
+      await this.notifyClientCancellationOutcome(
+        request.booking,
+        'rejected',
+        rejected.rejection_note,
+      );
+      return rejected;
     }
 
     // ── Approval with automatic refund ──
@@ -411,6 +423,11 @@ export class BookingsService {
             `Votre réservation du ${booking.booking_date} a été annulée. Un remboursement de ${refundAmount} FCFA a été envoyé sur votre compte ${payment.operator}.`,
           );
         }
+        await this.notifyClientCancellationOutcome(
+          booking,
+          'refunded',
+          `Un remboursement de ${refundAmount} FCFA a été envoyé sur votre compte ${payment.operator}.`,
+        );
       } catch (cashOutError: any) {
         this.logger.error(`Refund cashOut FAILED for booking ${booking.id}: ${cashOutError.message}`);
 
@@ -439,6 +456,11 @@ export class BookingsService {
             `Votre réservation du ${booking.booking_date} a été annulée. Le remboursement automatique a échoué, veuillez contacter le support.`,
           );
         }
+        await this.notifyClientCancellationOutcome(
+          booking,
+          'refund_failed',
+          cashOutError.message,
+        );
       }
     } else {
       // No payment info — just notify cancellation without refund
@@ -449,12 +471,134 @@ export class BookingsService {
           `Votre réservation du ${booking.booking_date} a été annulée.`,
         );
       }
+      await this.notifyClientCancellationOutcome(booking, 'no_refund');
     }
+
+    // In-app : l'équipe terrain doit voir le créneau se libérer.
+    await this.notifyOwnerTeamBookingCancelled(booking, ownerId);
 
     // Return updated request
     return this.cancelRepo.findOne({
       where: { id: requestId },
       relations: ['booking'],
+    });
+  }
+
+  // ── In-app (Phase 3) ───────────────────────────────────────────────
+
+  /**
+   * Le propriétaire et ses `field_admin` doivent voir la demande arriver :
+   * c'est une décision attendue (priorité ACTION), les `controller` sont
+   * exclus de ce type d'alerte.
+   */
+  private async notifyOwnerCancellationRequested(
+    booking: Booking,
+    request: CancellationRequest,
+  ): Promise<void> {
+    const ownerId = booking.field?.owner_id;
+    if (!ownerId) return;
+
+    const owner = await this.ownerRepo.findOne({
+      where: { id: ownerId },
+      relations: ['user'],
+    });
+    if (!owner?.user) return;
+
+    const recipients = await this.recipientsResolver.ownerTeamOf(
+      ownerId,
+      owner.user.id,
+    );
+    const date = booking.booking_date.split('-').reverse().join('/');
+    const clientName =
+      booking.client?.user?.first_name ?? 'Un client';
+
+    await this.notificationsService.notifyMany(recipients, {
+      type: NotificationType.CANCELLATION_REQUESTED,
+      title: "Demande d'annulation",
+      message:
+        `${clientName} demande l'annulation de la réservation du ${date} ` +
+        `à ${booking.slot_start}. Motif : ${request.reason || 'non précisé'}`,
+      link: '/owner/cancellations',
+      metadata: {
+        bookingId: booking.id,
+        requestId: request.id,
+        reason: request.reason,
+      },
+      priority: NotificationPriority.ACTION,
+      dedupeKey: `cancellation:${request.id}:requested`,
+    });
+  }
+
+  /**
+   * Issue de la demande côté client : acceptée (remboursement envoyé,
+   * sans remboursement, ou remboursement en échec) ou refusée.
+   * Le titre reste cohérent avec le `type` pour que l'icône et le libellé
+   * ne se contredisent jamais dans le fil.
+   */
+  private async notifyClientCancellationOutcome(
+    booking: Booking,
+    outcome: 'refunded' | 'refund_failed' | 'rejected' | 'no_refund',
+    detail?: string,
+  ): Promise<void> {
+    if (!booking.client?.user) return;
+
+    const date = booking.booking_date.split('-').reverse().join('/');
+    const messages: Record<typeof outcome, string> = {
+      refunded: `Votre réservation du ${date} est annulée. ${detail ?? ''}`.trim(),
+      no_refund: `Votre réservation du ${date} est annulée.`,
+      rejected:
+        `Votre demande d'annulation pour la réservation du ${date} a été refusée.` +
+        (detail ? ` Motif : ${detail}` : ''),
+      refund_failed:
+        `Votre réservation du ${date} est annulée, mais le remboursement ` +
+        `automatique a échoué. Contactez le support.`,
+    };
+    const type =
+      outcome === 'rejected'
+        ? NotificationType.CANCELLATION_REJECTED
+        : outcome === 'refund_failed'
+          ? NotificationType.BOOKING_REFUND_FAILED
+          : NotificationType.CANCELLATION_APPROVED;
+
+    await this.notificationsService.notify({
+      userId: booking.client.user.id,
+      type,
+      title: outcome === 'rejected' ? 'Annulation refusée' : 'Annulation acceptée',
+      message: messages[outcome],
+      link: `/booking/${booking.id}`,
+      metadata: { bookingId: booking.id, outcome },
+      priority: NotificationPriority.INFO,
+      dedupeKey: `booking:${booking.id}:cancellation:${outcome}`,
+    });
+  }
+
+  /** Le créneau se libère : l'équipe terrain doit le savoir. */
+  private async notifyOwnerTeamBookingCancelled(
+    booking: Booking,
+    ownerId: string,
+  ): Promise<void> {
+    const owner = await this.ownerRepo.findOne({
+      where: { id: ownerId },
+      relations: ['user'],
+    });
+    if (!owner?.user) return;
+
+    const recipients = await this.recipientsResolver.ownerTeamOf(
+      ownerId,
+      owner.user.id,
+    );
+    const date = booking.booking_date.split('-').reverse().join('/');
+
+    await this.notificationsService.notifyMany(recipients, {
+      type: NotificationType.BOOKING_CANCELLED,
+      title: 'Réservation annulée',
+      message:
+        `La réservation du ${date} à ${booking.slot_start} sur ` +
+        `${booking.field?.name ?? 'votre terrain'} est annulée : le créneau est libéré.`,
+      link: '/owner/cancellations',
+      metadata: { bookingId: booking.id, fieldId: booking.field_id },
+      priority: NotificationPriority.INFO,
+      dedupeKey: `booking:${booking.id}:cancelled`,
     });
   }
 

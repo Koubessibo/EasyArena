@@ -125,6 +125,7 @@ async function runReconciliationCrashTest() {
     mockTransactionsService,
     mockPaymentGateway,
     mockNotificationsService,
+    null as any,
     mockSponsorshipService,
     mockDataSource,
   );

@@ -16,6 +16,8 @@ import { User } from '../users/entities/user.entity';
 import {
   SponsorType,
   SponsorshipCommissionStatus,
+  NotificationPriority,
+  NotificationType,
   TransactionDirection,
   TransactionSourceType,
   TransactionType,
@@ -183,6 +185,24 @@ export class SponsorshipService {
         .catch((err) =>
           this.logger.warn(`[Sponsorship] Failed to send N1 pending SMS: ${err.message}`),
         );
+
+      // In-app : même destinataire que le SMS, canal distinct. La clé porte
+      // l'identifiant de la source (paiement/réservation), donc un rejeu du
+      // webhook — y compris après rollback — ne produit jamais un doublon.
+      void this.notificationsService
+        .notify({
+          userId: n1Sponsor.id,
+          type: NotificationType.COMMISSION_EARNED,
+          title: 'Commission parrainage',
+          message: `Vous avez une commission de +${n1_commission} FCFA en attente (disponible après l'événement).`,
+          link: '/profile/ambassador-wallet',
+          metadata: { sourceId, level: 1, amount: n1_commission },
+          priority: NotificationPriority.INFO,
+          dedupeKey: `commission:${sourceId}:pending:1`,
+        })
+        .catch((err) =>
+          this.logger.warn(`[Sponsorship] Failed to send N1 commission notification: ${err.message}`),
+        );
     }
 
     // N2: Find sponsor of the N1 sponsor
@@ -227,6 +247,22 @@ export class SponsorshipService {
         )
         .catch((err) =>
           this.logger.warn(`[Sponsorship] Failed to send N2 pending SMS: ${err.message}`),
+        );
+
+      // In-app : idem N1, la clé est scopée par niveau de parrainage.
+      void this.notificationsService
+        .notify({
+          userId: n2Sponsor.id,
+          type: NotificationType.COMMISSION_EARNED,
+          title: 'Commission parrainage',
+          message: `Vous avez une commission de +${n2_commission} FCFA en attente (disponible après l'événement).`,
+          link: '/profile/ambassador-wallet',
+          metadata: { sourceId, level: 2, amount: n2_commission },
+          priority: NotificationPriority.INFO,
+          dedupeKey: `commission:${sourceId}:pending:2`,
+        })
+        .catch((err) =>
+          this.logger.warn(`[Sponsorship] Failed to send N2 commission notification: ${err.message}`),
         );
     }
   }
@@ -320,6 +356,28 @@ export class SponsorshipService {
           )
           .catch((err) =>
             this.logger.warn(`[Sponsorship] Failed to send unlocked SMS: ${err.message}`),
+          );
+
+        // In-app : une commission débloquée change le solde, l'ambassadeur
+        // doit le voir dans son fil. La clé porte l'ID de la commission,
+        // donc un rejeu du cron ne crédite pas deux fois l'information.
+        void this.notificationsService
+          .notify({
+            userId: sponsor.id,
+            type: NotificationType.COMMISSION_UNLOCKED,
+            title: 'Commission disponible',
+            message: `Votre commission de +${commission.amount} FCFA est désormais disponible dans votre solde EasyArena.`,
+            link: '/profile/ambassador-wallet',
+            metadata: {
+              commissionId: commission.id,
+              amount: Number(commission.amount),
+              level: commission.level,
+            },
+            priority: NotificationPriority.INFO,
+            dedupeKey: `commission:${commission.id}:unlocked`,
+          })
+          .catch((err) =>
+            this.logger.warn(`[Sponsorship] Failed to send unlock notification: ${err.message}`),
           );
       }
     }
@@ -423,6 +481,26 @@ export class SponsorshipService {
         this.logger.warn(`[Sponsorship] Withdrawal SMS notification failed: ${err.message}`),
       );
 
+    // In-app : la demande laisse une trace consultable, pas seulement un SMS.
+    void this.notificationsService
+      .notify({
+        userId: user.id,
+        type: NotificationType.WITHDRAWAL_REQUESTED,
+        title: 'Demande de retrait enregistrée',
+        message: `Votre demande de retrait de ${dto.amount} FCFA vers le ${dto.phone} (${dto.operator}) a été enregistrée.`,
+        link: '/profile/ambassador-wallet',
+        metadata: {
+          withdrawalId: withdrawal.id,
+          amount: Number(dto.amount),
+          operator: dto.operator,
+        },
+        priority: NotificationPriority.INFO,
+        dedupeKey: `sponsor_withdrawal:${withdrawal.id}:requested`,
+      })
+      .catch((err) =>
+        this.logger.warn(`[Sponsorship] Withdrawal notification failed: ${err.message}`),
+      );
+
     const updatedUser = await this.userRepo.findOne({ where: { id: userId } });
 
     return {
@@ -476,6 +554,24 @@ export class SponsorshipService {
             `Votre retrait de ${withdrawal.amount} FCFA vers le ${withdrawal.phone} (${withdrawal.operator}) a été validé et envoyé avec succès.`,
           )
           .catch((err) => this.logger.warn(`Failed to send approval SMS: ${err.message}`));
+
+        void this.notificationsService
+          .notify({
+            userId: withdrawal.user.id,
+            type: NotificationType.WITHDRAWAL_APPROVED,
+            title: 'Retrait approuvé',
+            message: `Votre retrait de ${withdrawal.amount} FCFA vers le ${withdrawal.phone} (${withdrawal.operator}) a été validé et envoyé.`,
+            link: '/profile/ambassador-wallet',
+            metadata: {
+              withdrawalId: withdrawal.id,
+              amount: Number(withdrawal.amount),
+            },
+            priority: NotificationPriority.INFO,
+            dedupeKey: `sponsor_withdrawal:${withdrawal.id}:approved`,
+          })
+          .catch((err) =>
+            this.logger.warn(`Failed to send approval notification: ${err.message}`),
+          );
       }
 
       return {
@@ -500,6 +596,26 @@ export class SponsorshipService {
             `Votre demande de retrait de ${withdrawal.amount} FCFA a été rejetée (${withdrawal.rejection_note}). Le montant a été intégralement recrédité sur votre solde EasyArena.`,
           )
           .catch((err) => this.logger.warn(`Failed to send rejection SMS: ${err.message}`));
+
+        // Rejet : action requise de l'utilisateur, donc priorité ACTION.
+        void this.notificationsService
+          .notify({
+            userId: withdrawal.user.id,
+            type: NotificationType.WITHDRAWAL_REJECTED,
+            title: 'Retrait refusé',
+            message: `Votre demande de retrait de ${withdrawal.amount} FCFA a été refusée (${withdrawal.rejection_note}). Le montant a été intégralement recrédité.`,
+            link: '/profile/ambassador-wallet',
+            metadata: {
+              withdrawalId: withdrawal.id,
+              amount: Number(withdrawal.amount),
+              reason: withdrawal.rejection_note,
+            },
+            priority: NotificationPriority.ACTION,
+            dedupeKey: `sponsor_withdrawal:${withdrawal.id}:rejected`,
+          })
+          .catch((err) =>
+            this.logger.warn(`Failed to send rejection notification: ${err.message}`),
+          );
       }
 
       return {

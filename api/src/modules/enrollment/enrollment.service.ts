@@ -10,6 +10,8 @@ import { CreateEnrollmentRequestDto } from './dto/create-enrollment-request.dto'
 import { UsersService } from '../users/users.service';
 import { User } from '../users/entities/user.entity';
 import { NotificationsService } from '../notifications/notifications.service';
+import { RecipientsResolver } from '../notifications/recipients.resolver';
+import { NotificationPriority, NotificationType } from '../../common/enums';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
@@ -21,6 +23,7 @@ export class EnrollmentService {
     private readonly userRepo: Repository<User>,
     private readonly usersService: UsersService,
     private readonly notificationsService: NotificationsService,
+    private readonly recipientsResolver: RecipientsResolver,
     private readonly configService: ConfigService,
   ) {}
 
@@ -52,6 +55,10 @@ export class EnrollmentService {
 
       this.notificationsService.sendRawSms(superAdminPhone, smsMessage).catch(() => {});
     }
+
+    // In-app : première notification réelle de ce flux — auparavant seul un
+    // SMS au super-admin existait, sans aucune trace consultable.
+    await this.notifyAdminsEnrollmentNew(saved);
 
     return saved;
   }
@@ -118,5 +125,36 @@ export class EnrollmentService {
     request.rejection_note = rejection_note;
     request.reviewed_at = new Date();
     return this.repo.save(request);
+  }
+
+  /**
+   * Une demande d'enrôlement attend un arbitrage : priorité ACTION pour
+   * que le badge tombe en rouge tant qu'elle n'est pas traitée.
+   * Le lien pointe vers la file de relecture plutôt que vers la liste
+   * générale des utilisateurs.
+   */
+  private async notifyAdminsEnrollmentNew(
+    request: EnrollmentRequest,
+  ): Promise<void> {
+    const admins = await this.recipientsResolver.admins();
+    if (admins.length === 0) return;
+
+    const roleLabel = request.role === 'owner' ? 'Administrateur Terrain' : 'Vendeur';
+
+    await this.notificationsService.notifyMany(admins, {
+      type: NotificationType.ENROLLMENT_NEW,
+      title: "Demande d'inscription",
+      message:
+        `${request.first_name} ${request.last_name} demande un compte ` +
+        `${roleLabel} (${request.phone}). À valider ou rejeter.`,
+      link: '/admin/users',
+      metadata: {
+        enrollmentId: request.id,
+        role: request.role,
+        phone: request.phone,
+      },
+      priority: NotificationPriority.ACTION,
+      dedupeKey: `enrollment:${request.id}:new`,
+    });
   }
 }

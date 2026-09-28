@@ -10,8 +10,9 @@ import { VendorWithdrawal, VendorWithdrawalStatus } from '../vendor-earnings/ent
 import { Withdrawal } from '../withdrawals/entities/withdrawal.entity';
 import { UsersService } from '../users/users.service';
 import { WithdrawalsService } from '../withdrawals/withdrawals.service';
-import { Role, ArticleStatus, BookingStatus, FieldStatus, TransactionType, UserStatus, MobileOperator } from '../../common/enums';
+import { Role, ArticleStatus, BookingStatus, FieldStatus, NotificationPriority, NotificationType, TransactionType, UserStatus, MobileOperator } from '../../common/enums';
 import { NotificationsService } from '../notifications/notifications.service';
+import { RecipientsResolver } from '../notifications/recipients.resolver';
 import { CreateOwnerDto } from '../users/dto/create-owner.dto';
 import { CreateVendorDto } from '../users/dto/create-vendor.dto';
 import { UpdateUserStatusDto } from '../users/dto/update-user-status.dto';
@@ -36,6 +37,7 @@ export class AdminService implements OnModuleInit {
     private readonly usersService: UsersService,
     private readonly withdrawalsService: WithdrawalsService,
     private readonly notificationsService: NotificationsService,
+    private readonly recipientsResolver: RecipientsResolver,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -282,6 +284,7 @@ export class AdminService implements OnModuleInit {
         field.owner.user.phone,
         `Le statut de votre terrain "${field.name}" a été mis à jour : ${status}.`,
       );
+      await this.notifyOwnerFieldStatus(field, status);
     }
     return saved;
   }
@@ -460,6 +463,23 @@ export class AdminService implements OnModuleInit {
       this.notificationsService
         .sendSms(adminUser.id, adminUser.phone, smsMessage)
         .catch((err) => console.warn(`[Treasury] Failed to send withdrawal SMS notification to Super Admin: ${err.message}`));
+
+      // In-app : cette opération doit rester consultable dans le fil, pas
+      // seulement sur le téléphone du super-admin.
+      await this.notificationsService.notify({
+        userId: adminUser.id,
+        type: NotificationType.SYSTEM_ALERT,
+        title: 'Décaissement exécuté',
+        message: `Retrait de trésorerie de ${dto.amount} FCFA versé via ${methodLabel} (Réf: ${payoutResult.external_ref || reference}).`,
+        link: '/admin/financial',
+        metadata: {
+          amount: dto.amount,
+          method: dto.method,
+          reference: payoutResult.external_ref || reference,
+        },
+        priority: NotificationPriority.INFO,
+        dedupeKey: `platform_withdrawal:${payoutResult.external_ref || reference}`,
+      });
     }
 
     return result;
@@ -477,5 +497,41 @@ export class AdminService implements OnModuleInit {
       success: true,
       withdrawals,
     };
+  }
+
+  // ── In-app (Phase 3) ──────────────────────────────────────────────────
+
+  /**
+   * Statut de terrain modifié par le super-admin : le propriétaire doit
+   * savoir immédiatement si son terrain est suspendu (cela bloque les
+   * réservations). Les `field_admin` de l'équipe sont mis à jour en même
+   * temps, les `controller` restent hors de ce canal.
+   */
+  private async notifyOwnerFieldStatus(
+    field: Field,
+    status: FieldStatus,
+  ): Promise<void> {
+    if (!field.owner?.user) return;
+
+    const recipients = await this.recipientsResolver.ownerTeamOf(
+      field.owner_id,
+      field.owner.user.id,
+    );
+    // `inactive` ferme la réservation, `maintenance` la restreint : les deux
+    // ont un impact commercial immédiat, `available` non.
+    const isBlocked =
+      status === FieldStatus.INACTIVE || status === FieldStatus.MAINTENANCE;
+
+    await this.notificationsService.notifyMany(recipients, {
+      type: NotificationType.FIELD_STATUS_CHANGED,
+      title: isBlocked ? 'Terrain indisponible' : 'Statut du terrain mis à jour',
+      message:
+        `Le statut de votre terrain « ${field.name} » est désormais « ${status} ».` +
+        (isBlocked ? " Les réservations sont bloquées jusqu'à réactivation." : ''),
+      link: '/owner/fields',
+      metadata: { fieldId: field.id, status },
+      priority: isBlocked ? NotificationPriority.ACTION : NotificationPriority.INFO,
+      dedupeKey: `field:${field.id}:status:${status}`,
+    });
   }
 }

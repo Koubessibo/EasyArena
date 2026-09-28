@@ -4,9 +4,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, LessThanOrEqual, Repository } from 'typeorm';
 import { PaymentInstallment } from './entities/payment-installment.entity';
 import { UserSubscription } from './entities/user-subscription.entity';
-import { InstallmentStatus, SubscriptionStatus } from '../../common/enums';
+import { InstallmentStatus, NotificationPriority, NotificationType, SubscriptionStatus } from '../../common/enums';
 import { IPaymentProvider, PAYMENT_PROVIDER } from '../payments/interfaces/payment-provider.interface';
 import { NotificationsService } from '../notifications/notifications.service';
+import { User } from '../users/entities/user.entity';
 
 const GRACE_PERIOD_DAYS = 3;
 
@@ -86,6 +87,7 @@ export class SubscriptionReconciliationService {
         const msg = `EasyArena: Votre échéance de ${installment.amount} FCFA est due aujourd'hui. Réglez pour maintenir votre accès.${linkPart}`;
 
         await this.notificationsService.sendSms(user.id, user.phone, msg);
+        await this.notifySubscriptionDue(user, installment, paymentUrl);
         relanced++;
 
         this.logger.log(
@@ -139,6 +141,7 @@ export class SubscriptionReconciliationService {
         if (user?.phone) {
           const msg = `EasyArena: Votre abonnement a été suspendu pour défaut de paiement. Réglez vos échéances pour réactiver votre accès.`;
           await this.notificationsService.sendSms(user.id, user.phone, msg);
+          await this.notifySubscriptionSuspended(user, sub);
         }
 
         suspended++;
@@ -151,5 +154,57 @@ export class SubscriptionReconciliationService {
     }
 
     return { suspended };
+  }
+
+  // ════════════════════════════════════════════════════════════════════
+  //  IN-APP (Phase 3) — même destinataire que le SMS, canal distinct
+  // ════════════════════════════════════════════════════════════════════
+
+  /**
+   * Relance d'échéance. La clé porte la date du jour : le cron tourne tous
+   * les matins sur la même échéance, il ne faut ni perdre les relances
+   * suivantes, ni double-déclencher si le job tourne deux fois.
+   */
+  private async notifySubscriptionDue(
+    user: User,
+    installment: PaymentInstallment,
+    paymentUrl: string,
+  ): Promise<void> {
+    await this.notificationsService.notify({
+      userId: user.id,
+      type: NotificationType.SUBSCRIPTION_DUE,
+      title: 'Échéance à régler',
+      message: `Votre échéance de ${installment.amount} FCFA est due aujourd'hui. Réglez pour maintenir votre accès.`,
+      link: '/subscriptions',
+      metadata: {
+        installmentId: installment.id,
+        subscriptionId: installment.subscription_id,
+        amount: Number(installment.amount),
+        ...(paymentUrl ? { paymentUrl } : {}),
+      },
+      priority: NotificationPriority.INFO,
+      dedupeKey: `subscription:${installment.id}:due:${new Date()
+        .toISOString()
+        .slice(0, 10)}`,
+    });
+  }
+
+  /** Abonnement suspendu : l'accès est coupé, l'utilisateur doit agir. */
+  private async notifySubscriptionSuspended(
+    user: User,
+    sub: UserSubscription,
+  ): Promise<void> {
+    await this.notificationsService.notify({
+      userId: user.id,
+      type: NotificationType.SUBSCRIPTION_SUSPENDED,
+      title: 'Abonnement suspendu',
+      message:
+        'Votre abonnement a été suspendu pour défaut de paiement. ' +
+        'Réglez vos échéances pour réactiver votre accès.',
+      link: '/subscriptions',
+      metadata: { subscriptionId: sub.id },
+      priority: NotificationPriority.ACTION,
+      dedupeKey: `subscription:${sub.id}:suspended`,
+    });
   }
 }

@@ -15,7 +15,7 @@ import { Client } from '../users/entities/client.entity';
 import { Staff } from '../users/entities/staff.entity';
 import { Owner } from '../users/entities/owner.entity';
 import { User } from '../users/entities/user.entity';
-import { MobileOperator, Role, TransactionDirection, TransactionSourceType, TransactionType, UserStatus } from '../../common/enums';
+import { MobileOperator, NotificationPriority, NotificationType, Role, TransactionDirection, TransactionSourceType, TransactionType, UserStatus } from '../../common/enums';
 import { IPaymentProvider, PAYMENT_PROVIDER } from '../payments/interfaces/payment-provider.interface';
 import { v4 as uuidv4 } from 'uuid';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -221,10 +221,31 @@ export class TicketsService {
       }
     }
 
+    // In-app : même dedupe_key que le webhook, donc aucun doublon si les
+    // deux voies confirment le même billet. Aucune notification par scan.
+    await this.notifyTicketPaid(ticket);
+
     return {
       ...ticket,
       totp_secret: ticket.totp_secret,
     };
+  }
+
+  /** Billet payé : le QR Pass est disponible. Ne touche jamais au scanner. */
+  private async notifyTicketPaid(ticket: EventTicket): Promise<void> {
+    const u = ticket.client?.user;
+    if (!u) return;
+
+    await this.notificationsService.notify({
+      userId: u.id,
+      type: NotificationType.TICKET_PURCHASED,
+      title: 'Billet validé',
+      message: `Votre pass pour ${ticket.event?.name || "l'événement"} est disponible dans « Mes billets ».`,
+      link: '/my-tickets',
+      metadata: { ticketId: ticket.id, eventId: ticket.event?.id },
+      priority: NotificationPriority.INFO,
+      dedupeKey: `ticket:${ticket.id}:paid`,
+    });
   }
 
   /**

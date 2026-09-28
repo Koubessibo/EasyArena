@@ -19,6 +19,8 @@ import { StorageService } from '../storage/storage.service';
 import { RequestWithdrawalDto } from './dto/request-withdrawal.dto';
 import { ValidateWithdrawalDto, ValidationAction } from './dto/validate-withdrawal.dto';
 import {
+  NotificationPriority,
+  NotificationType,
   Role,
   TransactionDirection,
   TransactionSourceType,
@@ -27,6 +29,7 @@ import {
   WithdrawalStatus,
 } from '../../common/enums';
 import { User } from '../users/entities/user.entity';
+import { RecipientsResolver } from '../notifications/recipients.resolver';
 import { IPaymentProvider, PAYMENT_PROVIDER } from '../payments/interfaces/payment-provider.interface';
 
 const WITHDRAWAL_FEE_PERCENT = 0.01; // 1% frais Mobile Money
@@ -45,6 +48,7 @@ export class WithdrawalsService {
     @Inject(PAYMENT_PROVIDER) private readonly paymentProvider: IPaymentProvider,
     private readonly transactionsService: TransactionsService,
     private readonly notificationsService: NotificationsService,
+    private readonly recipientsResolver: RecipientsResolver,
     private readonly otpService: OtpService,
     private readonly storageService: StorageService,
     private readonly dataSource: DataSource,
@@ -189,6 +193,9 @@ export class WithdrawalsService {
           `Votre demande de retrait de ${dto.amount} FCFA par virement bancaire est en attente de validation.`,
         );
 
+        // In-app : c'est aux super-admins de trancher, pas au partenaire.
+        await this.notifyAdminsWithdrawalPending(withdrawal, owner);
+
         return withdrawal;
       }
     } catch (err) {
@@ -220,6 +227,7 @@ export class WithdrawalsService {
           user.phone,
           `Votre retrait de ${dto.amount} FCFA a été effectué vers ${dto.destination}.`,
         );
+        await this.notifyOwnerWithdrawalOutcome(owner, withdrawal, 'paid');
       } catch (cashOutError: any) {
         // Compensation: re-credit the owner's balance
         this.logger.error(`CashOut échoué, compensation en cours: ${cashOutError.message}`);
@@ -253,6 +261,12 @@ export class WithdrawalsService {
           user.id,
           user.phone,
           `Votre retrait de ${dto.amount} FCFA a échoué. Le montant a été recrédité sur votre solde.`,
+        );
+        await this.notifyOwnerWithdrawalOutcome(
+          owner,
+          withdrawal,
+          'failed',
+          `Échec cashout : ${cashOutError.message}`,
         );
 
         return this.withdrawalRepo.findOne({ where: { id: withdrawal.id } });
@@ -330,6 +344,14 @@ export class WithdrawalsService {
         );
       }
 
+      // In-app : décision attendue par le partenaire (hors transaction).
+      await this.notifyOwnerWithdrawalOutcome(
+        owner,
+        withdrawal,
+        dto.action === ValidationAction.APPROVE ? 'approved' : 'rejected',
+        dto.rejection_note,
+      );
+
       return saved;
     } catch (err) {
       await qr.rollbackTransaction();
@@ -399,5 +421,95 @@ export class WithdrawalsService {
       relations: ['owner', 'owner.user'],
     });
     return { data, total };
+  }
+
+  // ── In-app (Phase 3) ───────────────────────────────────────────────
+
+  /**
+   * Un retrait par virement bancaire attend une décision d'humain :
+   * c'est aux super-admins de le voir en priorité (ACTION).
+   * Le partenaire a déjà son propre historique, il n'a pas besoin d'être
+   * relancé au moment où il soumet sa demande.
+   */
+  private async notifyAdminsWithdrawalPending(
+    withdrawal: Withdrawal,
+    owner: Owner,
+  ): Promise<void> {
+    const admins = await this.recipientsResolver.admins();
+    if (admins.length === 0) return;
+
+    const requester = owner.user
+      ? `${owner.user.first_name} ${owner.user.last_name}`.trim()
+      : 'Un partenaire';
+
+    await this.notificationsService.notifyMany(admins, {
+      type: NotificationType.WITHDRAWAL_REQUESTED,
+      title: 'Retrait à valider',
+      message:
+        `${requester} demande un retrait de ${withdrawal.amount} FCFA ` +
+        `par virement vers ${withdrawal.destination}.`,
+      link: '/admin/financial',
+      metadata: {
+        withdrawalId: withdrawal.id,
+        ownerId: withdrawal.owner_id,
+        amount: Number(withdrawal.amount),
+      },
+      priority: NotificationPriority.ACTION,
+      dedupeKey: `withdrawal:${withdrawal.id}:requested`,
+    });
+  }
+
+  /** Issue d'un retrait côté partenaire : approuvé, rejeté, versé, échoué. */
+  private async notifyOwnerWithdrawalOutcome(
+    owner: Owner,
+    withdrawal: Withdrawal,
+    outcome: 'approved' | 'rejected' | 'paid' | 'failed',
+    detail?: string,
+  ): Promise<void> {
+    if (!owner.user) return;
+
+    const amount = Number(withdrawal.amount);
+    const copy: Record<typeof outcome, { title: string; message: string }> = {
+      approved: {
+        title: 'Retrait approuvé',
+        message: `Votre retrait de ${amount} FCFA a été approuvé et sera traité sous peu.`,
+      },
+      rejected: {
+        title: 'Retrait rejeté',
+        message:
+          `Votre demande de retrait de ${amount} FCFA a été rejetée.` +
+          (detail ? ` Raison : ${detail}` : ''),
+      },
+      paid: {
+        title: 'Retrait effectué',
+        message: `Votre retrait de ${amount} FCFA a été versé sur ${withdrawal.destination}.`,
+      },
+      failed: {
+        title: 'Retrait échoué',
+        message: `Votre retrait de ${amount} FCFA a échoué. Le montant a été recrédité sur votre solde.`,
+      },
+    };
+    const types: Record<typeof outcome, NotificationType> = {
+      approved: NotificationType.WITHDRAWAL_APPROVED,
+      rejected: NotificationType.WITHDRAWAL_REJECTED,
+      paid: NotificationType.WITHDRAWAL_PAID,
+      failed: NotificationType.WITHDRAWAL_FAILED,
+    };
+    const isUrgent = outcome === 'rejected' || outcome === 'failed';
+
+    await this.notificationsService.notify({
+      userId: owner.user.id,
+      type: types[outcome],
+      title: copy[outcome].title,
+      message: copy[outcome].message,
+      link: '/owner/withdrawals',
+      metadata: {
+        withdrawalId: withdrawal.id,
+        amount,
+        outcome,
+      },
+      priority: isUrgent ? NotificationPriority.ACTION : NotificationPriority.INFO,
+      dedupeKey: `withdrawal:${withdrawal.id}:${outcome}`,
+    });
   }
 }

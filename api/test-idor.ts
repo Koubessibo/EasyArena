@@ -75,6 +75,7 @@ async function runIdorCrashTest() {
     null as any,
     null as any,
     null as any,
+    null as any,
   );
 
   const fieldsService = new FieldsService(
