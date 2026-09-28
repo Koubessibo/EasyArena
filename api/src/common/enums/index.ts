@@ -118,11 +118,102 @@ export enum CancellationRequestStatus {
 export enum NotificationChannel {
   SMS = 'sms',
   EMAIL = 'email',
+  IN_APP = 'in_app',
 }
 
 export enum NotificationStatus {
   SENT = 'sent',
   FAILED = 'failed',
+}
+
+/**
+ * Niveau d'urgence d'une notification in-app.
+ * - ACTION  : une décision est attendue de l'utilisateur (badge rouge, toast persistant).
+ * - INFO    : simple information, badge classique.
+ * - DIGEST  : agrégé, jamais de badge urgent (ex: résumé quotidien super-admin).
+ */
+export enum NotificationPriority {
+  ACTION = 'action',
+  INFO = 'info',
+  DIGEST = 'digest',
+}
+
+/**
+ * Typologie métier des notifications. Sert à l'icône, au filtre, au lien
+ * de navigation et aux préférences utilisateur (opt-out par type).
+ * Ne jamais réutiliser une valeur existante pour un autre événement.
+ */
+export enum NotificationType {
+  // ── Réservations ────────────────────────────────────────────────
+  BOOKING_NEW = 'booking_new',
+  BOOKING_CONFIRMED = 'booking_confirmed',
+  BOOKING_CANCELLED = 'booking_cancelled',
+  BOOKING_REFUND_OK = 'booking_refund_ok',
+  BOOKING_REFUND_FAILED = 'booking_refund_failed',
+  BOOKING_RATED = 'booking_rated',
+
+  // ── Annulations (cycle de vie de la demande) ────────────────────
+  CANCELLATION_REQUESTED = 'cancellation_requested',
+  CANCELLATION_APPROVED = 'cancellation_approved',
+  CANCELLATION_REJECTED = 'cancellation_rejected',
+
+  // ── Paiements ───────────────────────────────────────────────────
+  PAYMENT_OK = 'payment_ok',
+  PAYMENT_FAILED = 'payment_failed',
+
+  // ── Boutique / commandes ────────────────────────────────────────
+  ORDER_NEW = 'order_new',
+  ORDER_PAID = 'order_paid',
+  ORDER_SHIPPED = 'order_shipped',
+  ORDER_DELIVERED = 'order_delivered',
+  ORDER_CANCELLED = 'order_cancelled',
+  STOCK_LOW = 'stock_low',
+
+  // ── Événements & billetterie ────────────────────────────────────
+  TICKET_PURCHASED = 'ticket_purchased',
+  TICKET_VALIDATED = 'ticket_validated',
+  EVENT_REMINDED = 'event_reminded',
+  EVENT_CANCELLED = 'event_cancelled',
+  SCAN_SUCCESS = 'scan_success',
+  SCAN_FAILED = 'scan_failed',
+  SHIFT_SUMMARY = 'shift_summary',
+
+  // ── Abonnements ─────────────────────────────────────────────────
+  SUBSCRIPTION_REMINDER = 'subscription_reminder',
+  SUBSCRIPTION_DUE = 'subscription_due',
+  SUBSCRIPTION_SUSPENDED = 'subscription_suspended',
+  SUBSCRIPTION_REACTIVATED = 'subscription_reactivated',
+  SUBSCRIPTION_EXPIRED = 'subscription_expired',
+
+  // ── Argent : retraits & commissions ─────────────────────────────
+  COMMISSION_EARNED = 'commission_earned',
+  COMMISSION_UNLOCKED = 'commission_unlocked',
+  WITHDRAWAL_REQUESTED = 'withdrawal_requested',
+  WITHDRAWAL_APPROVED = 'withdrawal_approved',
+  WITHDRAWAL_REJECTED = 'withdrawal_rejected',
+  WITHDRAWAL_PAID = 'withdrawal_paid',
+  WITHDRAWAL_FAILED = 'withdrawal_failed',
+
+  // ── Partenaire : terrain, staff, opérations ─────────────────────
+  FIELD_STATUS_CHANGED = 'field_status_changed',
+  FIELD_CREATED = 'field_created',
+  STAFF_INVITED = 'staff_invited',
+  STAFF_PERMISSIONS_CHANGED = 'staff_permissions_changed',
+  SCHEDULE_ASSIGNED = 'schedule_assigned',
+
+  // ── Compte & sécurité ───────────────────────────────────────────
+  ACCOUNT_SUSPENDED = 'account_suspended',
+  ACCOUNT_PIN_CHANGED = 'account_pin_changed',
+  ACCOUNT_CREATED = 'account_created',
+
+  // ── Back-office super-admin ─────────────────────────────────────
+  ENROLLMENT_NEW = 'enrollment_new',
+  SECURITY_ALERT = 'security_alert',
+  SYSTEM_ALERT = 'system_alert',
+  KPI_DIGEST = 'kpi_digest',
+
+  // ── Marketing (opt-in, jamais prioritaire) ──────────────────────
+  PROMO = 'promo',
 }
 
 export enum SubscriptionStatus {
