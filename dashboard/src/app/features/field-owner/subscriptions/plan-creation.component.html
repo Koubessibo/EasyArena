@@ -37,6 +37,15 @@
             Minimum 1 réservation.
           </span>
         </div>
+
+        <!-- BLOC 1 — la validité suit la formule (au lieu d'un « +1 an » figé) -->
+        <div class="form__group">
+          <label class="form__label">Durée de validité (jours) *</label>
+          <input class="form__input" type="number" formControlName="duration_days" placeholder="Ex: 30">
+          <span class="form__error" *ngIf="planForm.get('duration_days')?.touched && planForm.get('duration_days')?.invalid">
+            Minimum 1 jour.
+          </span>
+        </div>
       </div>
     </div>
 
@@ -125,6 +134,7 @@
             <th>Nom de la formule</th>
             <th>Prix Total</th>
             <th>Réservations incluses</th>
+            <th>Durée</th>
             <th>Paiement échelonné</th>
             <th class="text-right">Actions</th>
           </tr>

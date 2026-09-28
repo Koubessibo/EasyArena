@@ -53,6 +53,8 @@ export class PlanCreationComponent implements OnInit {
       name: ['', Validators.required],
       price: [null, [Validators.required, Validators.min(0)]],
       reservations_count: [null, [Validators.required, Validators.min(1)]],
+      // BLOC 1 — durée réelle du pass ; remplace le « +1 an » codé en dur côté API
+      duration_days: [30, [Validators.required, Validators.min(1)]],
       allows_moratorium: [false],
       moratorium_config: this.fb.array([], moratoriumSumValidator()),
     });
@@ -104,6 +106,7 @@ export class PlanCreationComponent implements OnInit {
       name: plan.name,
       price: plan.price,
       reservations_count: plan.reservations_count,
+      duration_days: plan.duration_days ?? 30,
       allows_moratorium: !!plan.allows_moratorium,
     });
 
@@ -155,6 +158,7 @@ export class PlanCreationComponent implements OnInit {
       name: rawValue.name,
       price: Number(rawValue.price),
       reservations_count: Number(rawValue.reservations_count),
+      duration_days: Number(rawValue.duration_days ?? 30),
       allows_moratorium: rawValue.allows_moratorium,
       moratorium_config: rawValue.allows_moratorium ? rawValue.moratorium_config : undefined,
     };
