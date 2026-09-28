@@ -449,3 +449,39 @@
   0%   { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
+
+/* ── BLOC 1 — Séance couverte par un pass d'abonnement ──────────────────── */
+.pass-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  border-radius: 16px;
+  padding: 1rem 1.1rem;
+
+  > .material-symbols-outlined {
+    font-size: 1.75rem;
+    color: #047857;
+    flex-shrink: 0;
+  }
+
+  &__text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    min-width: 0;
+
+    strong {
+      color: #047857;
+      font-size: 0.98rem;
+      font-weight: 800;
+    }
+
+    span {
+      color: #065f46;
+      font-size: 0.85rem;
+      line-height: 1.4;
+    }
+  }
+}

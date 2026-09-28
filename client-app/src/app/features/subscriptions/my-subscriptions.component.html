@@ -1,0 +1,158 @@
+<div class="mysubs-page">
+
+  <header class="mysubs-header">
+    <a routerLink="/profile" class="mysubs-back">
+      <span class="material-symbols-outlined">arrow_back</span>
+    </a>
+    <div class="mysubs-header__text">
+      <span class="mysubs-badge">
+        <span class="material-symbols-outlined">card_membership</span>
+        Mes Abonnements
+      </span>
+      <h1>Vos passes &amp; séances</h1>
+      <p>Suivez la validité, le quota consommé et l'échéancier de chacun de vos abonnements</p>
+    </div>
+    <a routerLink="/subscriptions" class="btn btn--outline">
+      <span class="material-symbols-outlined">add_card</span>
+      Nouvelle formule
+    </a>
+  </header>
+
+  <div class="mysubs-container">
+
+    <div class="alert alert--info" *ngIf="infoMessage()">
+      <span class="material-symbols-outlined">info</span>
+      {{ infoMessage() }}
+    </div>
+
+    <div class="alert alert--success" *ngIf="successMessage()">
+      <span class="material-symbols-outlined">check_circle</span>
+      {{ successMessage() }}
+    </div>
+
+    <div class="alert alert--error" *ngIf="errorMessage()">
+      <span class="material-symbols-outlined">error</span>
+      {{ errorMessage() }}
+    </div>
+
+    <!-- Loading -->
+    <div class="loading-state" *ngIf="isLoading()">
+      <div *ngFor="let i of [1,2]" class="sub-card skeleton-card">
+        <div class="skeleton sk-title"></div>
+        <div class="skeleton sk-bar"></div>
+        <div class="skeleton sk-text"></div>
+      </div>
+    </div>
+
+    <!-- Empty -->
+    <div class="empty-state" *ngIf="!isLoading() && subs().length === 0 && !errorMessage()">
+      <div class="empty-icon-box">
+        <span class="material-symbols-outlined">card_membership</span>
+      </div>
+      <h2>Aucun abonnement</h2>
+      <p>Vous n'avez encore souscrit à aucune formule. Découvrez les passes disponibles.</p>
+      <a routerLink="/subscriptions" class="btn btn--primary">
+        <span class="material-symbols-outlined">card_membership</span>
+        Voir les formules
+      </a>
+    </div>
+
+    <!-- Liste -->
+    <div class="subs-list" *ngIf="subs().length > 0">
+      <article class="sub-card" *ngFor="let sub of subs()">
+
+        <div class="sub-card__head">
+          <div class="sub-card__titles">
+            <span class="sub-card__owner">
+              <span class="material-symbols-outlined">stadium</span>
+              {{ ownerName(sub) }}
+            </span>
+            <h2>{{ planName(sub) }}</h2>
+          </div>
+          <span class="status-pill" [ngClass]="statusOf(sub).cls">
+            <span class="material-symbols-outlined">{{ statusOf(sub).icon }}</span>
+            {{ statusOf(sub).label }}
+          </span>
+        </div>
+
+        <!-- Validité -->
+        <div class="sub-meta">
+          <div class="sub-meta__item">
+            <span class="material-symbols-outlined">event_available</span>
+            <div>
+              <span class="sub-meta__label">Validité</span>
+              <span class="sub-meta__value">{{ startDate(sub) }} → {{ endDate(sub) }}</span>
+            </div>
+          </div>
+          <div class="sub-meta__item">
+            <span class="material-symbols-outlined">schedule</span>
+            <div>
+              <span class="sub-meta__label">Durée</span>
+              <span class="sub-meta__value">{{ durationLabel(sub) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Jauge de quota -->
+        <div class="quota" *ngIf="quotaTotal(sub) > 0">
+          <div class="quota__head">
+            <span class="quota__title">
+              <span class="material-symbols-outlined">sports_soccer</span>
+              Séances
+            </span>
+            <span class="quota__count">
+              <strong>{{ quotaRemaining(sub) }}</strong> restantes sur {{ quotaTotal(sub) }}
+            </span>
+          </div>
+          <div class="quota__track">
+            <div class="quota__fill" [style.width.%]="quotaPercent(sub)"
+                 [class.quota__fill--full]="quotaPercent(sub) >= 100"></div>
+          </div>
+          <div class="quota__foot">
+            {{ quotaUsed(sub) }} séance(s) déjà consommée(s)
+            <span *ngIf="sub.status === 'completed'"> — formule épuisée</span>
+          </div>
+        </div>
+
+        <!-- Échéancier -->
+        <div class="installments" *ngIf="(sub.installments?.length ?? 0) > 0">
+          <span class="installments__title">
+            <span class="material-symbols-outlined">payments</span>
+            Échéancier
+          </span>
+
+          <div class="installment"
+               *ngFor="let inst of sub.installments"
+               [ngClass]="installmentStatusOf(inst.status).cls">
+            <span class="material-symbols-outlined">{{ installmentStatusOf(inst.status).icon }}</span>
+            <span class="installment__date">{{ dueDate(inst) }}</span>
+            <span class="installment__amount">{{ inst.amount | number }} FCFA</span>
+            <span class="installment__status">{{ installmentStatusOf(inst.status).label }}</span>
+          </div>
+        </div>
+
+        <!-- Encours à régler -->
+        <div class="due-box" *ngIf="hasDueInstallment(sub)">
+          <span class="material-symbols-outlined">warning</span>
+          <div class="due-box__text">
+            <strong>{{ totalDue(sub) | number }} FCFA</strong>
+            <span>à régler pour maintenir votre accès</span>
+          </div>
+          <a routerLink="/subscriptions" class="btn btn--primary btn--sm">
+            Régler
+          </a>
+        </div>
+
+        <div class="sub-card__foot">
+          <span class="sub-card__id">Réf. {{ sub.id.slice(0, 8) }}</span>
+          <a routerLink="/subscriptions" class="link" *ngIf="sub.status !== 'active'">
+            Gérer / renouveler
+            <span class="material-symbols-outlined">chevron_right</span>
+          </a>
+        </div>
+
+      </article>
+    </div>
+
+  </div>
+</div>

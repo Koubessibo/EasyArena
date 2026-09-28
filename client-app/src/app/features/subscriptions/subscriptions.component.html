@@ -12,15 +12,20 @@
         <p>Accédez à vos terrains préférés avec des séances incluses et des tarifs privilégiés</p>
       </div>
 
-      <a routerLink="/profile" class="subs-link">
-        <span class="material-symbols-outlined">person</span>
-        Mes abonnements active
+      <a routerLink="/my-subscriptions" class="subs-link">
+        <span class="material-symbols-outlined">card_membership</span>
+        Mes abonnements
       </a>
     </div>
   </div>
 
   <div class="subs-container">
     <!-- Alerts -->
+    <div class="alert alert--info" *ngIf="infoMessage() && !successMessage()">
+      <span class="material-symbols-outlined">info</span>
+      {{ infoMessage() }}
+    </div>
+
     <div class="alert alert--success" *ngIf="successMessage()">
       <span class="material-symbols-outlined">check_circle</span>
       {{ successMessage() }}
@@ -37,10 +42,18 @@
       <div class="awaiting-text">
         <h3>En attente de la validation du paiement...</h3>
         <p>Veuillez confirmer la transaction sur votre application Mobile Money.</p>
+        <!-- BLOC 2 — Si le WebSocket ne remonte pas l'événement, l'état est
+             revérifié côté API toutes les 3 s (30 s max) : sans ce secours,
+             le bandeau restait affiché indéfiniment. -->
+        <p class="awaiting-fallback">Vérification automatique toutes les quelques secondes…</p>
       </div>
       <a *ngIf="paymentGatewayUrls()?.redirect_url" [href]="paymentGatewayUrls().redirect_url" target="_blank" class="btn btn--outline">
         <span class="material-symbols-outlined">open_in_new</span>
         Ouvrir le lien de paiement
+      </a>
+      <a routerLink="/my-subscriptions" class="btn btn--outline">
+        <span class="material-symbols-outlined">card_membership</span>
+        Mes abonnements
       </a>
     </div>
 
@@ -94,6 +107,12 @@
           <span><strong>{{ plan.reservations_count }}</strong> réservations de terrain incluses</span>
         </div>
 
+        <!-- Durée de validité (BLOC 1 : portée par la formule, plus "+1 an") -->
+        <div class="plan-feature">
+          <span class="material-symbols-outlined">event_available</span>
+          <span>Valable <strong>{{ formatDuration(plan) }}</strong></span>
+        </div>
+
         <!-- Moratorium steps -->
         <div class="plan-moratorium" *ngIf="plan.allows_moratorium && plan.moratorium_config">
           <span class="moratorium-title">Échéancier de paiement disponible :</span>
@@ -109,6 +128,14 @@
           Souscription Active ✓
         </div>
 
+        <!-- Paiement non encore confirmé : le serveur refuse un second
+             encaissement tant que la session est fraîche, et recycle seul
+             une session abandonnée (> 30 min) — donc on laisse réessayer. -->
+        <div class="subscribed-badge subscribed-badge--pending" *ngIf="!subscribedIds().includes(plan.id) && isPending(plan.id)">
+          <span class="material-symbols-outlined">hourglass_top</span>
+          Paiement en attente de confirmation
+        </div>
+
         <!-- CTA button -->
         <button
           class="btn btn--subscribe btn--full"
@@ -118,7 +145,7 @@
           *ngIf="!subscribedIds().includes(plan.id)">
           <span *ngIf="subscribingId() !== plan.id">
             <span class="material-symbols-outlined">card_membership</span>
-            Souscrire à cette formule
+            {{ isPending(plan.id) ? 'Réessayer le paiement' : 'Souscrire à cette formule' }}
           </span>
           <span class="spinner" *ngIf="subscribingId() === plan.id"></span>
         </button>

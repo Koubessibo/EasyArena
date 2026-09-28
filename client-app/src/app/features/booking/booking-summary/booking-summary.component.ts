@@ -23,6 +23,17 @@ export class BookingSummaryComponent implements OnInit {
   paymentChoice = signal<'full' | 'deposit'>('full');
   depositInput = signal(0);
 
+  /**
+   * BLOC 1 — Réservation couverte par un pass d'abonnement : l'API confirme
+   * la réservation sans paiement et fixe le tarif à 0. Sans cette branche,
+   * la page affichait quand même « Procéder au paiement », qui renvoyait
+   * ensuite « Booking is not awaiting payment ».
+   */
+  get passCovered(): boolean {
+    const b = this.booking();
+    return !!b && b.status === 'confirmed' && Number(b.pricing?.total ?? 0) === 0;
+  }
+
   ngOnInit(): void {
     const bookingId = this.route.snapshot.queryParamMap.get('bookingId');
 

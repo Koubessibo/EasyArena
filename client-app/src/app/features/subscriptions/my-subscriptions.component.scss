@@ -1,0 +1,498 @@
+/* ── Mes Abonnements (BLOC 2) ─────────────────────────────────────────────── */
+
+.mysubs-page {
+  min-height: 100vh;
+  background: #f8fafc;
+  padding-bottom: 5rem;
+}
+
+/* ── Header ── */
+.mysubs-header {
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 2.25rem 1.25rem;
+  max-width: 1120px;
+  margin: 0 auto;
+  display: flex;
+  align-items: flex-end;
+  gap: 1.5rem;
+
+  @media (max-width: 720px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  &__text {
+    flex: 1;
+
+    h1 {
+      font-size: 1.85rem;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0 0 0.3rem;
+      letter-spacing: -0.02em;
+    }
+
+    p {
+      color: #64748b;
+      font-size: 0.9rem;
+      margin: 0;
+    }
+  }
+}
+
+.mysubs-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: #f1f5f9;
+  color: #334155;
+  flex-shrink: 0;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: #e2e8f0;
+  }
+}
+
+.mysubs-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.75rem;
+  background: #ecfdf5;
+  color: #047857;
+  border-radius: 30px;
+  font-size: 0.775rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+
+  .material-symbols-outlined {
+    font-size: 0.95rem;
+  }
+}
+
+/* ── Container ── */
+.mysubs-container {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 1.75rem 1.25rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* ── Alerts ── */
+.alert {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.9rem 1.1rem;
+  border-radius: 14px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+
+  .material-symbols-outlined {
+    font-size: 1.15rem;
+  }
+
+  &--info {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+    color: #1d4ed8;
+  }
+
+  &--success {
+    background: #ecfdf5;
+    border-color: #a7f3d0;
+    color: #047857;
+  }
+
+  &--error {
+    background: #fef2f2;
+    border-color: #fecaca;
+    color: #b91c1c;
+  }
+}
+
+/* ── Loading / Empty ── */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.skeleton-card {
+  padding: 1.5rem;
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 37%, #e2e8f0 63%);
+  background-size: 400% 100%;
+  animation: mysubs-shimmer 1.4s ease infinite;
+  border-radius: 8px;
+}
+
+.sk-title { height: 1.4rem; width: 45%; margin-bottom: 1rem; }
+.sk-bar   { height: 0.9rem; width: 100%;  margin-bottom: 0.75rem; }
+.sk-text  { height: 0.8rem; width: 65%; }
+
+@keyframes mysubs-shimmer {
+  0%   { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}
+
+.empty-state {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  padding: 3rem 1.5rem;
+  text-align: center;
+
+  .empty-icon-box {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 64px;
+    height: 64px;
+    border-radius: 18px;
+    background: #ecfdf5;
+    color: #047857;
+    margin-bottom: 1rem;
+
+    .material-symbols-outlined { font-size: 2rem; }
+  }
+
+  h2 { margin: 0 0 0.4rem; font-size: 1.2rem; font-weight: 800; color: #0f172a; }
+  p  { margin: 0 0 1.25rem; color: #64748b; font-size: 0.9rem; }
+}
+
+/* ── Boutons ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  border-radius: 14px;
+  padding: 0.8rem 1.25rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.18s ease;
+
+  &--primary {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+
+    &:hover { transform: translateY(-2px); }
+  }
+
+  &--outline {
+    background: #ffffff;
+    border-color: #a7f3d0;
+    color: #047857;
+
+    &:hover { background: #ecfdf5; }
+  }
+
+  &--sm {
+    padding: 0.5rem 1rem;
+    font-size: 0.82rem;
+    border-radius: 10px;
+  }
+}
+
+/* ── Cartes d'abonnement ── */
+.subs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.sub-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+
+  &__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  &__owner {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: #64748b;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+
+    .material-symbols-outlined { font-size: 0.95rem; }
+  }
+
+  &__titles h2 {
+    margin: 0.25rem 0 0;
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: -0.01em;
+  }
+
+  &__foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    border-top: 1px dashed #e2e8f0;
+    padding-top: 1rem;
+    flex-wrap: wrap;
+  }
+
+  &__id {
+    font-size: 0.78rem;
+    color: #94a3b8;
+    font-weight: 600;
+  }
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 30px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+
+  .material-symbols-outlined { font-size: 1rem; }
+
+  &.is-active    { background: #ecfdf5; color: #047857; }
+  &.is-pending   { background: #fffbeb; color: #b45309; }
+  &.is-suspended { background: #fef2f2; color: #b91c1c; }
+  &.is-expired   { background: #f1f5f9; color: #475569; }
+  &.is-completed { background: #eff6ff; color: #1d4ed8; }
+  &.is-cancelled { background: #f1f5f9; color: #64748b; }
+}
+
+/* ── Métadonnées ── */
+.sub-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.75rem;
+
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 0.75rem 0.9rem;
+
+    .material-symbols-outlined {
+      font-size: 1.3rem;
+      color: #047857;
+    }
+
+    div { display: flex; flex-direction: column; min-width: 0; }
+  }
+
+  &__label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #94a3b8;
+    letter-spacing: 0.04em;
+  }
+
+  &__value {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #0f172a;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+/* ── Jauge de quota ── */
+.quota {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 1rem 1.1rem;
+
+  &__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.6rem;
+  }
+
+  &__title {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #334155;
+
+    .material-symbols-outlined { font-size: 1.1rem; color: #047857; }
+  }
+
+  &__count {
+    font-size: 0.85rem;
+    color: #64748b;
+
+    strong { color: #0f172a; font-size: 1rem; }
+  }
+
+  &__track {
+    height: 10px;
+    background: #e2e8f0;
+    border-radius: 30px;
+    overflow: hidden;
+  }
+
+  &__fill {
+    height: 100%;
+    background: linear-gradient(90deg, #34d399, #059669);
+    border-radius: 30px;
+    transition: width 0.4s ease;
+
+    &--full { background: linear-gradient(90deg, #fbbf24, #f59e0b); }
+  }
+
+  &__foot {
+    margin-top: 0.5rem;
+    font-size: 0.78rem;
+    color: #64748b;
+  }
+}
+
+/* ── Échéancier ── */
+.installments {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+  &__title {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #334155;
+
+    .material-symbols-outlined { font-size: 1.1rem; color: #047857; }
+  }
+}
+
+.installment {
+  display: grid;
+  grid-template-columns: auto auto 1fr auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  font-size: 0.85rem;
+
+  @media (max-width: 560px) {
+    grid-template-columns: auto 1fr auto;
+    row-gap: 0.25rem;
+  }
+
+  .material-symbols-outlined { font-size: 1.1rem; }
+
+  &.is-active    { border-color: #a7f3d0; background: #ecfdf5; .material-symbols-outlined { color: #047857; } }
+  &.is-pending   { border-color: #fde68a; background: #fffbeb; .material-symbols-outlined { color: #b45309; } }
+  &.is-suspended { border-color: #fecaca; background: #fef2f2; .material-symbols-outlined { color: #b91c1c; } }
+  &.is-cancelled { border-color: #e2e8f0; background: #f1f5f9; .material-symbols-outlined { color: #64748b; } }
+
+  &__date {
+    color: #64748b;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  &__amount {
+    font-weight: 800;
+    color: #0f172a;
+    white-space: nowrap;
+    text-align: right;
+  }
+
+  &__status {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #475569;
+    justify-self: end;
+    white-space: nowrap;
+  }
+}
+
+/* ── Encours à régler ── */
+.due-box {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 16px;
+  padding: 0.9rem 1.1rem;
+
+  > .material-symbols-outlined {
+    font-size: 1.5rem;
+    color: #b45309;
+  }
+
+  &__text {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+
+    strong { color: #92400e; font-size: 1rem; }
+    span   { color: #b45309; font-size: 0.8rem; }
+  }
+}
+
+/* ── Lien ── */
+.link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  color: #047857;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-decoration: none;
+
+  &:hover { text-decoration: underline; }
+  .material-symbols-outlined { font-size: 1.1rem; }
+}

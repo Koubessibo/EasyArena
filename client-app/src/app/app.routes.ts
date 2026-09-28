@@ -129,6 +129,13 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/subscriptions/subscriptions.component').then(m => m.SubscriptionsComponent),
       },
+      // BLOC 2 — page de suivi (retour de passerelle returnUrl)
+      {
+        path: 'my-subscriptions',
+        canActivate: [authGuard],
+        loadComponent: () =>
+          import('./features/subscriptions/my-subscriptions.component').then(m => m.MySubscriptionsComponent),
+      },
       {
         path: 'search',
         loadComponent: () =>

@@ -27,17 +27,28 @@ export class WebSocketService {
 
   onPaymentConfirmed(): Observable<{ bookingId: string }> {
     return new Observable(obs => {
-      this.socket?.on('payment:confirmed', (d: { bookingId: string }) => obs.next(d));
+      // On capture l'instance : si le composant est détruit (ngOnDestroy) ou
+      // que `disconnect()` remplace le socket, il faut bien retirer le handler
+      // de l'émetteur d'origine — sinon le listener reste accroché au cycle
+      // de vie du socket et le composant suivant reçoit un doublon.
+      const socket = this.socket;
+      const handler = (d: { bookingId: string }) => obs.next(d);
+      socket?.on('payment:confirmed', handler);
+      return () => socket?.off('payment:confirmed', handler);
     });
   }
 
   onPaymentFailed(): Observable<{ bookingId: string }> {
     return new Observable(obs => {
-      this.socket?.on('payment:failed', (d: { bookingId: string }) => obs.next(d));
+      const socket = this.socket;
+      const handler = (d: { bookingId: string }) => obs.next(d);
+      socket?.on('payment:failed', handler);
+      return () => socket?.off('payment:failed', handler);
     });
   }
 
   disconnect(): void {
+    this.socket?.removeAllListeners();
     this.socket?.disconnect();
     this.socket = null;
   }

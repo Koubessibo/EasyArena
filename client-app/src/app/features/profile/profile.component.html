@@ -95,13 +95,27 @@
           <span class="material-symbols-outlined prof-hub__row-chevron">chevron_right</span>
         </a>
 
-        <a routerLink="/subscriptions" class="prof-hub__row">
+        <!-- BLOC 2 — « Mes Abonnements » pointait vers /subscriptions, qui est
+             le catalogue public : le lien renvoyait donc l'utilisateur là où
+             il venait de partir. On sépare la vitrine et le suivi. -->
+        <a routerLink="/my-subscriptions" class="prof-hub__row">
           <div class="prof-hub__row-icon" style="background:#e0e7ff;color:#4338ca">
             <span class="material-symbols-outlined">card_membership</span>
           </div>
           <div class="prof-hub__row-content">
             <span class="prof-hub__row-label">Mes Abonnements</span>
-            <span class="prof-hub__row-sub">Passes &amp; forfaits illimités</span>
+            <span class="prof-hub__row-sub">Vos passes actifs &amp; séances restantes</span>
+          </div>
+          <span class="material-symbols-outlined prof-hub__row-chevron">chevron_right</span>
+        </a>
+
+        <a routerLink="/subscriptions" class="prof-hub__row">
+          <div class="prof-hub__row-icon" style="background:#e0e7ff;color:#4338ca">
+            <span class="material-symbols-outlined">add_card</span>
+          </div>
+          <div class="prof-hub__row-content">
+            <span class="prof-hub__row-label">Formules disponibles</span>
+            <span class="prof-hub__row-sub">Souscrire à un nouveau pass</span>
           </div>
           <span class="material-symbols-outlined prof-hub__row-chevron">chevron_right</span>
         </a>
