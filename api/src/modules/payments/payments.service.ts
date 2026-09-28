@@ -446,9 +446,10 @@ export class PaymentsService {
           const u = ticket.client.user;
           const eventName = ticket.event?.name || 'Événement Sportif';
           const msg = `Félicitations ${u.first_name || ''}, votre paiement pour l'événement ${eventName} a été validé ! Votre QR Pass dynamique est maintenant disponible dans l'application EasyArena.`;
-          await this.notificationsService.sendRawSms(u.phone, msg);
           if (u.id) {
             await this.notificationsService.sendSms(u.id, u.phone, msg);
+          } else {
+            await this.notificationsService.sendRawSms(u.phone, msg);
           }
           await this.notifyTicketPurchased(ticket);
         }
@@ -531,7 +532,6 @@ export class PaymentsService {
 
           if (owner.user) {
             const ownerMsg = this.buildOwnerSms(booking, payment);
-            await this.notificationsService.sendRawSms(owner.user.phone, ownerMsg);
             await this.notificationsService.sendSms(
               owner.user.id,
               owner.user.phone,
@@ -571,7 +571,6 @@ export class PaymentsService {
             ...(remaining > 0 ? [`Reste à payer : ${remaining} FCFA`] : []),
           ];
           const clientMsg = clientLines.join('\n');
-          await this.notificationsService.sendRawSms(u.phone, clientMsg);
           await this.notificationsService.sendSms(u.id, u.phone, clientMsg);
         }
 

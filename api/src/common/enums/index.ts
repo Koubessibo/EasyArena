@@ -241,4 +241,3 @@ export enum SponsorshipCommissionStatus {
   CANCELLED = 'CANCELLED',
   CREDITED = 'CREDITED',
 }
-

@@ -252,7 +252,6 @@ export class UsersService {
 
     // ── Envoi instantané du SMS avec le PIN de parrainage ─────────────────────────
     const inviteMessage = `Bienvenue sur EasyArena ! Vous avez été invité(e) par parrainage. Votre code PIN temporaire est : ${tempPin}. Connectez-vous sur https://easyarena221.com/ pour l'activer.`;
-    await this.notificationsService.sendRawSms(savedUser.phone, inviteMessage);
     await this.notificationsService.sendSms(
       savedUser.id,
       savedUser.phone,

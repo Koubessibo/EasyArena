@@ -215,9 +215,10 @@ export class TicketsService {
 
     if (targetPhone) {
       const msg = `Félicitations ${u?.first_name || ''}, votre paiement pour l'événement ${eventName} a été validé ! Votre QR Pass dynamique est disponible sur EasyArena.`;
-      await this.notificationsService.sendRawSms(targetPhone, msg);
       if (u?.id) {
         await this.notificationsService.sendSms(u.id, targetPhone, msg);
+      } else {
+        await this.notificationsService.sendRawSms(targetPhone, msg);
       }
     }
 

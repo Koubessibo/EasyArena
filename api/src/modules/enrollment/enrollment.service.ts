@@ -108,7 +108,6 @@ export class EnrollmentService {
       `Identifiant : ${request.phone}\n` +
       `Connectez-vous sur https://easyarena221.com/ pour accéder à votre espace.`;
 
-    await this.notificationsService.sendRawSms(request.phone, message);
     await this.notificationsService.sendSms(created.user.id, request.phone, message);
 
     return { temp_pin: created.temp_pin };

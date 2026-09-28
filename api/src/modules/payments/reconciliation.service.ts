@@ -145,7 +145,6 @@ export class ReconciliationService {
 
         if (owner.user) {
           const ownerMsg = `Nouvelle réservation confirmée via réconciliation.\nTerrain : ${booking.field?.name ?? ''}\nDate : ${booking.booking_date} | ${booking.slot_start} - ${booking.slot_end}\nMontant : ${ownerCredit} FCFA`;
-          await this.notificationsService.sendRawSms(owner.user.phone, ownerMsg).catch(() => {});
           await this.notificationsService.sendSms(owner.user.id, owner.user.phone, ownerMsg).catch(() => {});
         }
       }
@@ -166,7 +165,6 @@ export class ReconciliationService {
       if (booking.client?.user) {
         const u = booking.client.user;
         const clientMsg = `Bonjour ${u.first_name}, votre réservation pour le terrain ${booking.field?.name ?? ''} le ${booking.booking_date} de ${booking.slot_start} à ${booking.slot_end} est validée avec succès.`;
-        await this.notificationsService.sendRawSms(u.phone, clientMsg).catch(() => {});
         await this.notificationsService.sendSms(u.id, u.phone, clientMsg).catch(() => {});
       }
 

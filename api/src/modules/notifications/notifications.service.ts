@@ -270,26 +270,6 @@ export class NotificationsService {
     }
   }
 
-  async sendEmail(
-    userId: string,
-    subject: string,
-    message: string,
-  ): Promise<void> {
-    this.logger.log(
-      `[EMAIL STUB] To user ${userId} | Subject: ${subject} | ${message}`,
-    );
-    await this.notificationRepo.save(
-      this.notificationRepo.create({
-        user_id: userId,
-        channel: NotificationChannel.EMAIL,
-        type: NotificationType.SYSTEM_ALERT,
-        subject,
-        message,
-        status: NotificationStatus.SENT,
-      }),
-    );
-  }
-
   // ══════════════════════════════════════════════════════════════════════
   //  Privées
   // ══════════════════════════════════════════════════════════════════════
