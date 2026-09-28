@@ -42,6 +42,7 @@ import { WebhookPayloadDto } from './dto/webhook-payload.dto';
 import { User } from '../users/entities/user.entity';
 import { SponsorshipService } from '../sponsorship/sponsorship.service';
 import { RecipientsResolver } from '../notifications/recipients.resolver';
+import { splitPayment } from '../../common/utils/finance.utils';
 
 const SERVICE_FEE_PERCENT = 0.05;
 
@@ -347,19 +348,90 @@ export class PaymentsService {
           this.logger.warn(`[Webhook] Installment ${installment.id} not PENDING (${installment.status}) — ignoring`);
           return { received: true, message: 'Already processed' };
        }
-       if (payload.status === 'success') {
-          await this.dataSource.manager.update(PaymentInstallment, installment.id, { status: InstallmentStatus.PAID, paid_at: new Date() });
 
-          // If first installment, activate subscription
-          const subscription = await this.dataSource.manager.findOne(UserSubscription, { where: { id: installment.subscription_id } });
-          if (subscription && subscription.status === SubscriptionStatus.PENDING) {
-             await this.dataSource.manager.update(UserSubscription, subscription.id, { status: SubscriptionStatus.ACTIVE });
-          }
-          this.paymentGateway.notifyPaymentConfirmed(installment.id);
-       } else {
+       if (payload.status !== 'success') {
           await this.dataSource.manager.update(PaymentInstallment, installment.id, { status: InstallmentStatus.FAILED });
           this.paymentGateway.notifyPaymentFailed(installment.id);
+          return { received: true };
        }
+
+       const subscription = await this.dataSource.manager.findOne(UserSubscription, {
+          where: { id: installment.subscription_id },
+          relations: ['plan', 'plan.owner', 'plan.owner.user', 'client', 'client.user'],
+       });
+       const firstActivation =
+          !!subscription && subscription.status === SubscriptionStatus.PENDING;
+
+       // PAID + activation + encaissement owner = une seule unité atomique :
+       // on ne peut pas activer un pass si l'écriture comptable du
+       // propriétaire a échoué (sinon trou dans le solde).
+       const qr = this.dataSource.createQueryRunner();
+       await qr.connect();
+       await qr.startTransaction();
+       try {
+          await qr.manager.update(PaymentInstallment, installment.id, { status: InstallmentStatus.PAID, paid_at: new Date() });
+
+          // If first installment, activate subscription
+          if (firstActivation && subscription) {
+             await qr.manager.update(UserSubscription, subscription.id, { status: SubscriptionStatus.ACTIVE });
+          }
+
+          // BLOC 1 — Encaissement de l'échéance côté propriétaire.
+          // Aucune écriture comptable n'existait pour les abonnements : le
+          // prix du pass restait chez la passerelle et, une fois les séances
+          // rendues gratuites par le pass, le propriétaire aurait perdu tout
+          // le revenu. On reprend la ventilation standard (finance.utils).
+          const owner = subscription?.plan?.owner;
+          if (subscription && owner) {
+             const paid = Number(installment.amount);
+             const { ownerCredit, commission } = splitPayment(paid);
+             const balanceBefore = await this.transactionsService.computeOwnerBalance(owner.id, qr.manager);
+             await this.transactionsService.createTransaction(
+                {
+                   owner_id: owner.id,
+                   type: TransactionType.BOOKING_CREDIT,
+                   direction: TransactionDirection.CREDIT,
+                   amount: ownerCredit,
+                   balance_before: balanceBefore,
+                   source_id: installment.id,
+                   source_type: TransactionSourceType.PAYMENT,
+                   description:
+                      `Abonnement « ${subscription.plan?.name ?? subscription.plan_id} » — ` +
+                      `échéance de ${paid} FCFA encaissée ` +
+                      `(commission plateforme ${commission} FCFA)`,
+                },
+                qr.manager,
+             );
+          }
+
+          await qr.commitTransaction();
+       } catch (err) {
+          await qr.rollbackTransaction();
+          this.logger.error(`[Webhook] Installment ${installment.id} failed: ${err}`);
+          throw err;
+       } finally {
+          await qr.release();
+       }
+
+       // Notifications post-commit (règle Phase 3 : jamais dans la transaction)
+       if (firstActivation && subscription && subscription.client?.user) {
+          await this.notificationsService.notify({
+             userId: subscription.client.user.id,
+             type: NotificationType.SUBSCRIPTION_CONFIRMED,
+             title: 'Abonnement activé',
+             message: `Votre formule « ${subscription.plan?.name ?? ''} » est maintenant active.`,
+             link: '/my-subscriptions',
+             metadata: {
+                subscriptionId: subscription.id,
+                planId: subscription.plan_id,
+                amount: Number(installment.amount),
+             },
+             priority: NotificationPriority.ACTION,
+             dedupeKey: `subscription:${subscription.id}:confirmed`,
+          });
+       }
+
+       this.paymentGateway.notifyPaymentConfirmed(installment.id);
        return { received: true };
     }
 

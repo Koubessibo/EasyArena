@@ -1,7 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, LessThanOrEqual, Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { PaymentInstallment } from './entities/payment-installment.entity';
 import { UserSubscription } from './entities/user-subscription.entity';
 import { InstallmentStatus, NotificationPriority, NotificationType, SubscriptionStatus } from '../../common/enums';
@@ -10,6 +10,12 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { User } from '../users/entities/user.entity';
 
 const GRACE_PERIOD_DAYS = 3;
+
+/**
+ * BLOC 3 — Délai au-delà duquel une souscription `pending` est considérée
+ * comme abandonnée (session Mobile Money expirée) et purge.
+ */
+const STALE_PENDING_MS = 30 * 60 * 1000;
 
 @Injectable()
 export class SubscriptionReconciliationService {
@@ -29,14 +35,85 @@ export class SubscriptionReconciliationService {
   async processInstallments() {
     this.logger.log('[SubscriptionCron] Démarrage du recouvrement quotidien...');
 
+    // Ordre : purge des abandonnés (libère le quota de souscriptions),
+    // puis relance des actifs, puis suspension des défaillants.
+    const purgeResult = await this.phase0Purge();
     const relanceResult = await this.phase1Relance();
     const suspendResult = await this.phase2Suspension();
 
     this.logger.log(
-      `[SubscriptionCron] Bilan — Relances: ${relanceResult.relanced}, Suspensions: ${suspendResult.suspended}`,
+      `[SubscriptionCron] Bilan — Purgés: ${purgeResult.cancelled}, ` +
+        `Relances: ${relanceResult.relanced}, Suspensions: ${suspendResult.suspended}`,
     );
 
-    return { ...relanceResult, ...suspendResult };
+    return { ...purgeResult, ...relanceResult, ...suspendResult };
+  }
+
+  /**
+   * BLOC 3 — Purge des souscriptions `pending` abandonnées.
+   *
+   * `subscribeClient()` persiste la souscription **avant** d'ouvrir la session
+   * de paiement : si le client abandonne, elle reste `pending` à vie.
+   * `phase1Relance()` et `phase2Suspension()` n'agissent que sur `active`,
+   * donc ces orphelines n'étaient jamais traitées — et sans le garde
+   * anti-doublon de `subscribeClient()`, elles bloquaient une nouvelle
+   * tentative sur le même plan.
+   *
+   * On les passe en `cancelled` et on stérilise leurs échéances (`failed`)
+   * pour qu'aucun webhook tardif ne les rallume.
+   *
+   * Fenêtre de sécurité : le cron ne tourne qu'à minuit, une souscription
+   * n'est donc purgée qu'après plusieurs heures d'inactivité — très au-delà
+   * de la durée de vie d'une session Mobile Money. En complément, le même
+   * contrôle est fait en ligne dans `subscribeClient()` (30 min) pour ne pas
+   * obliger le client à attendre le lendemain.
+   */
+  async phase0Purge(): Promise<{ cancelled: number }> {
+    this.logger.log('[Phase 0] Purge des souscriptions pending abandonnées...');
+
+    // Horloge de la base plutôt que celle du process Node : `created_at` est un
+    // `timestamp without time zone` écrit en UTC, et le lier à un `Date`
+    // JavaScript dépend du fuseau horaire du process (un décalage de fuseau
+    // rendait la fenêtre inopérante et la purge ne trouvait rien). `now()` et
+    // `make_interval` comparent dans exactement le même référentiel que la
+    // colonne, quel que soit le TZ de la machine.
+    const { entities: stale, raw } = await this.subscriptionRepo
+      .createQueryBuilder('s')
+      .where('s.status = :status', { status: SubscriptionStatus.PENDING })
+      .andWhere('s.created_at < now() - make_interval(mins => :mins)', {
+        mins: STALE_PENDING_MS / 60000,
+      })
+      .addSelect("EXTRACT(EPOCH FROM (now() - s.created_at)) / 60", 's_age_minutes')
+      .getRawAndEntities();
+
+    this.logger.log(`[Phase 0] ${stale.length} souscription(s) pending orpheline(s).`);
+
+    let cancelled = 0;
+
+    for (const sub of stale) {
+      try {
+        await this.subscriptionRepo.update(sub.id, {
+          status: SubscriptionStatus.CANCELLED,
+        });
+        // Échéance vivante = session de paiement encore ouverte : on la ferme
+        // pour que le webhook renvoie « Already processed » au lieu d'activer
+        // une souscription que l'on vient d'abandonner.
+        await this.installmentRepo.update(
+          { subscription_id: sub.id, status: InstallmentStatus.PENDING },
+          { status: InstallmentStatus.FAILED },
+        );
+
+        cancelled++;
+        const age = Math.round(Number(raw.find(r => r.s_id === sub.id)?.s_age_minutes ?? 0));
+        this.logger.log(
+          `  🗑 Souscription ${sub.id.slice(0, 8)} annulée (pending depuis ${age} min)`,
+        );
+      } catch (err: any) {
+        this.logger.error(`[Phase 0] Erreur sur souscription ${sub.id}: ${err.message}`);
+      }
+    }
+
+    return { cancelled };
   }
 
   async phase1Relance(): Promise<{ relanced: number }> {
@@ -175,7 +252,7 @@ export class SubscriptionReconciliationService {
       type: NotificationType.SUBSCRIPTION_DUE,
       title: 'Échéance à régler',
       message: `Votre échéance de ${installment.amount} FCFA est due aujourd'hui. Réglez pour maintenir votre accès.`,
-      link: '/subscriptions',
+      link: '/my-subscriptions',
       metadata: {
         installmentId: installment.id,
         subscriptionId: installment.subscription_id,
@@ -201,7 +278,7 @@ export class SubscriptionReconciliationService {
       message:
         'Votre abonnement a été suspendu pour défaut de paiement. ' +
         'Réglez vos échéances pour réactiver votre accès.',
-      link: '/subscriptions',
+      link: '/my-subscriptions',
       metadata: { subscriptionId: sub.id },
       priority: NotificationPriority.ACTION,
       dedupeKey: `subscription:${sub.id}:suspended`,
