@@ -186,3 +186,56 @@
     color: var(--error);
   }
 }
+
+/* ── Chargement & pagination ─────────────────────────────────────── */
+.notifications-load-more {
+  display: block;
+  width: 100%;
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 12px;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 0.875rem;
+  font-weight: 650;
+  cursor: pointer;
+  transition: background 0.15s ease;
+
+  &:hover:not(:disabled) {
+    background: #f1f5f9;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+.notif-retry {
+  margin-top: 0.75rem;
+  padding: 0.65rem 1.35rem;
+  border: 0;
+  border-radius: 10px;
+  background: #10b981;
+  color: #ffffff;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.notif-spinner {
+  animation: notif-spin 0.9s linear infinite;
+}
+
+@keyframes notif-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .notif-spinner {
+    animation: none;
+  }
+}

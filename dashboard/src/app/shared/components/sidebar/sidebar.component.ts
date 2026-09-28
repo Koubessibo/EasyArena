@@ -2,6 +2,7 @@ import { Component, Input, Output, EventEmitter, inject, computed } from '@angul
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { NgFor, NgIf } from '@angular/common';
 import { AuthService } from '../../../core/services/auth.service';
+import { NotificationService } from '../../../core/services/notification.service';
 
 interface NavItem {
   icon: string;
@@ -23,7 +24,9 @@ export class SidebarComponent {
   @Output() closeMobile = new EventEmitter<void>();
 
   private auth = inject(AuthService);
+  private notif = inject(NotificationService);
   user = this.auth.currentUser;
+  readonly unreadCount = this.notif.unreadCount;
 
   navItems = computed<NavItem[]>(() => {
     const role = this.auth.role();
@@ -31,6 +34,7 @@ export class SidebarComponent {
       { icon: 'dashboard', label: 'Vue d\'ensemble', path: '/admin/dashboard' },
       { icon: 'group', label: 'Utilisateurs', path: '/admin/users' },
       { icon: 'payments', label: 'Finances', path: '/admin/financial' },
+      { icon: 'notifications', label: 'Notifications', path: '/notifications' },
       { icon: 'description', label: 'CGU & Légales', path: '/cgu' },
       { icon: 'download_for_offline', label: 'Installer App PWA', path: '/pwa' },
     ];
@@ -46,6 +50,7 @@ export class SidebarComponent {
       { icon: 'account_balance_wallet', label: 'Retraits', path: '/owner/withdrawals' },
       { icon: 'receipt_long', label: 'Transactions', path: '/owner/transactions' },
       { icon: 'group', label: 'Équipe', path: '/owner/staff' },
+      { icon: 'notifications', label: 'Notifications', path: '/notifications' },
       { icon: 'description', label: 'CGU & Légales', path: '/cgu' },
       { icon: 'download_for_offline', label: 'Installer App PWA', path: '/pwa' },
     ];
@@ -58,12 +63,14 @@ export class SidebarComponent {
       { icon: 'payments', label: 'Revenus', path: '/owner/earnings' },
       { icon: 'account_balance_wallet', label: 'Retraits', path: '/owner/withdrawals' },
       { icon: 'receipt_long', label: 'Transactions', path: '/owner/transactions' },
+      { icon: 'notifications', label: 'Notifications', path: '/notifications' },
       { icon: 'description', label: 'CGU & Légales', path: '/cgu' },
       { icon: 'download_for_offline', label: 'Installer App PWA', path: '/pwa' },
     ];
     if (role === 'controller') return [
       { icon: 'qr_code_scanner', label: 'Scanner un billet', path: '/owner/scanner' },
       { icon: 'calendar_month', label: 'Planning des terrains', path: '/owner/schedule' },
+      { icon: 'notifications', label: 'Notifications', path: '/notifications' },
       { icon: 'description', label: 'CGU & Légales', path: '/cgu' },
       { icon: 'download_for_offline', label: 'Installer App PWA', path: '/pwa' },
     ];
@@ -71,6 +78,7 @@ export class SidebarComponent {
       { icon: 'shopping_bag', label: 'Boutique', path: '/client/shop' },
       { icon: 'event', label: 'Événements', path: '/client/events' },
       { icon: 'card_membership', label: 'Abonnements', path: '/client/fields/2b2a629b-8736-488d-8f57-4abe1251644c/subscriptions' },
+      { icon: 'notifications', label: 'Notifications', path: '/notifications' },
       { icon: 'description', label: 'CGU & Légales', path: '/cgu' },
       { icon: 'download_for_offline', label: 'Installer App PWA', path: '/pwa' },
     ];
@@ -79,6 +87,7 @@ export class SidebarComponent {
       { icon: 'inventory_2', label: 'Produits', path: '/vendor/products' },
       { icon: 'shopping_cart', label: 'Commandes', path: '/vendor/orders' },
       { icon: 'payments', label: 'Revenus', path: '/vendor/earnings' },
+      { icon: 'notifications', label: 'Notifications', path: '/notifications' },
       { icon: 'description', label: 'CGU & Légales', path: '/cgu' },
       { icon: 'download_for_offline', label: 'Installer App PWA', path: '/pwa' },
     ];

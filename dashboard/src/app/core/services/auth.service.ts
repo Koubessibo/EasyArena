@@ -165,4 +165,8 @@ export class AuthService {
     localStorage.removeItem('xeweul_dash_user');
     this.router.navigate(['/login']);
   }
+
+  getToken(): string | null {
+    return localStorage.getItem('xeweul_access_token');
+  }
 }

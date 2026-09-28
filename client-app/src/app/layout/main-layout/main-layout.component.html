@@ -85,6 +85,9 @@
       <ng-container *ngIf="isAuthenticated(); else guestActions">
         <a routerLink="/notifications" class="top-nav__icon-btn top-nav__notif-btn" aria-label="Notifications">
           <span class="material-symbols-outlined">notifications</span>
+          <span class="notif-badge" *ngIf="notifService.unreadCount() > 0">
+            {{ notifService.unreadCount() > 99 ? '99+' : notifService.unreadCount() }}
+          </span>
         </a>
         <a routerLink="/profile" class="top-nav__avatar" aria-label="Profil">
           <img *ngIf="currentUser()?.avatarUrl" [src]="currentUser()?.avatarUrl" [alt]="currentUser()?.fullName"
@@ -325,6 +328,9 @@
           <span class="material-symbols-outlined">notifications</span>
         </div>
         <span class="mnd-link__label">Notifications</span>
+        <span class="mnd-link__count" *ngIf="notifService.unreadCount() > 0">
+          {{ notifService.unreadCount() > 99 ? '99+' : notifService.unreadCount() }}
+        </span>
         <span class="material-symbols-outlined mnd-link__arrow">chevron_right</span>
       </a>
     </div>
@@ -364,6 +370,9 @@
 
 <!-- Native-style PWA Store App Sheet Prompt (Connected users only) -->
 <app-install-prompt *ngIf="authService.isAuthenticated()" />
+
+<!-- Interactive in-app notification toasts (WS push) -->
+<app-notification-toast *ngIf="authService.isAuthenticated()" />
 
 <!-- Logout Confirmation Modal -->
 <div class="logout-modal-backdrop" *ngIf="authService.showLogoutModal()" (click)="authService.cancelLogout()">

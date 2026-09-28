@@ -3,13 +3,24 @@ import { RouterOutlet, RouterLink, RouterLinkActive, Router, NavigationStart, Na
 import { NgIf, DecimalPipe } from '@angular/common';
 import { BottomNavComponent } from '../../shared/components/bottom-nav/bottom-nav.component';
 import { InstallPromptComponent } from '../../shared/components/install-prompt/install-prompt.component';
+import { NotificationToastComponent } from '../../shared/components/notification-toast/notification-toast.component';
 import { AuthService } from '../../core/services/auth.service';
 import { CartService } from '../../core/services/cart.service';
+import { NotificationService } from '../../core/services/notification.service';
 
 @Component({
   selector: 'app-main-layout',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, NgIf, DecimalPipe, BottomNavComponent, InstallPromptComponent],
+  imports: [
+    RouterOutlet,
+    RouterLink,
+    RouterLinkActive,
+    NgIf,
+    DecimalPipe,
+    BottomNavComponent,
+    InstallPromptComponent,
+    NotificationToastComponent,
+  ],
   templateUrl: './main-layout.component.html',
   styleUrl: './main-layout.component.scss',
 })
@@ -17,6 +28,8 @@ export class MainLayoutComponent {
   private router = inject(Router);
   public authService = inject(AuthService);
   public cartService = inject(CartService);
+  /** Point d'ancrage unique : ouvre le canal WS et héberge les toasts. */
+  public notifService = inject(NotificationService);
   readonly currentUser = this.authService.currentUser;
   readonly isAuthenticated = this.authService.isAuthenticated;
   readonly isNavigating = signal(false);

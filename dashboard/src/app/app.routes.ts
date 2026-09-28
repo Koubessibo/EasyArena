@@ -17,6 +17,8 @@ export const routes: Routes = [
     loadComponent: () => import('./layout/dashboard-layout/dashboard-layout.component').then(m => m.DashboardLayoutComponent),
     canActivate: [authGuard],
     children: [
+      // Tous rôles : chacun ne voit que ses propres notifications (scope user_id)
+      { path: 'notifications', loadComponent: () => import('./features/notifications/notifications.component').then(m => m.NotificationsComponent) },
       // Super Admin
       { path: 'admin/dashboard', canActivate: [adminGuard], loadComponent: () => import('./features/super-admin/dashboard/global-dashboard.component').then(m => m.GlobalDashboardComponent) },
       { path: 'admin/users', canActivate: [adminGuard], loadComponent: () => import('./features/super-admin/user-management/user-management.component').then(m => m.UserManagementComponent) },

@@ -19,6 +19,12 @@
       (click)="closeMobile.emit()">
       <span class="material-symbols-outlined sidebar__nav-icon">{{ item.icon }}</span>
       <span class="sidebar__nav-label" *ngIf="!collapsed">{{ item.label }}</span>
+      <span
+        class="sidebar__nav-badge"
+        *ngIf="item.path === '/notifications' && unreadCount() > 0"
+        [class.sidebar__nav-badge--collapsed]="collapsed">
+        {{ collapsed ? '' : (unreadCount() > 99 ? '99+' : unreadCount()) }}
+      </span>
     </a>
   </nav>
 

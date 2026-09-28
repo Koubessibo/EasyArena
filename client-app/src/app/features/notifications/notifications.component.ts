@@ -1,195 +1,181 @@
-import { Component, signal, computed } from '@angular/core';
+import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { NgIf, NgFor, NgClass } from '@angular/common';
+import { NgIf, NgFor, NgClass, DatePipe } from '@angular/common';
+import {
+  NotificationService,
+  AppNotification,
+} from '../../core/services/notification.service';
 
-type NotifFilter = 'all' | 'bookings' | 'payments' | 'promotions';
-type NotifType = 'booking_confirmed' | 'payment' | 'reminder' | 'promotion' | 'cancellation';
+type NotifFilter = 'all' | 'bookings' | 'payments' | 'orders' | 'promotions';
+type DayGroup = 'today' | 'yesterday' | 'week' | 'earlier';
 
-interface Notification {
-  id: string;
-  type: NotifType;
-  title: string;
-  message: string;
-  time: string;
-  day: 'today' | 'yesterday' | 'week';
-  isRead: boolean;
+interface FilterChip {
+  label: string;
+  value: NotifFilter;
+  /** Critère `type` envoyé à l'API (préfixes thématiques, cf. DTO). */
+  type: string;
 }
 
+const DAY = 86_400_000;
+
+/**
+ * Boîte à lettres du client.
+ *
+ * Plus aucune donnée en dur : tout est lu depuis `NotificationService`
+ * (HTTP au chargement + push WebSocket). Le service reste la source unique
+ * pour que le badge du header et la liste ne puissent jamais diverger.
+ */
 @Component({
   selector: 'app-notifications',
   standalone: true,
-  imports: [RouterLink, NgIf, NgFor, NgClass],
+  imports: [RouterLink, NgIf, NgFor, NgClass, DatePipe],
   templateUrl: './notifications.component.html',
   styleUrl: './notifications.component.scss',
 })
-export class NotificationsComponent {
-  activeFilter = signal<NotifFilter>('all');
+export class NotificationsComponent implements OnInit {
+  private notifService = inject(NotificationService);
 
-  readonly allNotifications = signal<Notification[]>([
-    {
-      id: 'n1',
-      type: 'booking_confirmed',
-      title: 'Réservation confirmée',
-      message: 'Votre réservation au Green Valley Stadium a été confirmée',
-      time: 'Il y a 5 min',
-      day: 'today',
-      isRead: false,
-    },
-    {
-      id: 'n2',
-      type: 'payment',
-      title: 'Paiement reçu',
-      message: 'Paiement de 27 500 FCFA traité avec succès',
-      time: 'Il y a 1h',
-      day: 'today',
-      isRead: false,
-    },
-    {
-      id: 'n3',
-      type: 'reminder',
-      title: 'Rappel de match',
-      message: 'Votre match commence dans 1 heure !',
-      time: 'Il y a 2h',
-      day: 'today',
-      isRead: true,
-    },
-    {
-      id: 'n4',
-      type: 'promotion',
-      title: 'Offre spéciale',
-      message: '20% de réduction sur les terrains ce weekend',
-      time: 'Il y a 4h',
-      day: 'today',
-      isRead: true,
-    },
-    {
-      id: 'n5',
-      type: 'booking_confirmed',
-      title: 'Réservation confirmée',
-      message: 'Votre réservation à la Salle Basketball Parcelles a été confirmée',
-      time: 'Hier 14:30',
-      day: 'yesterday',
-      isRead: true,
-    },
-    {
-      id: 'n6',
-      type: 'cancellation',
-      title: 'Réservation annulée',
-      message: 'Réservation annulée — remboursement en cours',
-      time: 'Hier 10:15',
-      day: 'yesterday',
-      isRead: true,
-    },
-    {
-      id: 'n7',
-      type: 'payment',
-      title: 'Paiement confirmé',
-      message: 'Paiement de 41 500 FCFA pour Salle Basketball Parcelles',
-      time: 'Hier 09:00',
-      day: 'yesterday',
-      isRead: true,
-    },
-    {
-      id: 'n8',
-      type: 'promotion',
-      title: 'Nouveaux terrains',
-      message: '3 nouveaux terrains disponibles dans votre zone',
-      time: 'Lundi',
-      day: 'week',
-      isRead: true,
-    },
-    {
-      id: 'n9',
-      type: 'reminder',
-      title: 'Rappel de match',
-      message: 'N\'oubliez pas votre session de tennis demain à 9h',
-      time: 'Lundi',
-      day: 'week',
-      isRead: true,
-    },
-    {
-      id: 'n10',
-      type: 'booking_confirmed',
-      title: 'Réservation confirmée',
-      message: 'Votre réservation au Court Tennis Club Plateau a été confirmée',
-      time: 'Dimanche',
-      day: 'week',
-      isRead: true,
-    },
-  ]);
+  readonly activeFilter = signal<NotifFilter>('all');
+  readonly errorMessage = signal<string | null>(null);
+  readonly pageLoaded = signal(false);
 
-  readonly filteredNotifications = computed(() => {
-    const filter = this.activeFilter();
-    if (filter === 'all') return this.allNotifications();
+  readonly notifications = this.notifService.items;
+  readonly loading = this.notifService.loading;
+  readonly unreadCount = this.notifService.unreadCount;
 
-    const typeMap: Record<NotifFilter, NotifType[]> = {
-      all: [],
-      bookings: ['booking_confirmed', 'cancellation', 'reminder'],
-      payments: ['payment'],
-      promotions: ['promotion'],
-    };
-
-    return this.allNotifications().filter(n => typeMap[filter].includes(n.type));
-  });
-
-  readonly todayNotifs = computed(() =>
-    this.filteredNotifications().filter(n => n.day === 'today')
-  );
-
-  readonly yesterdayNotifs = computed(() =>
-    this.filteredNotifications().filter(n => n.day === 'yesterday')
-  );
-
-  readonly weekNotifs = computed(() =>
-    this.filteredNotifications().filter(n => n.day === 'week')
-  );
-
-  readonly unreadCount = computed(() =>
-    this.allNotifications().filter(n => !n.isRead).length
-  );
-
-  readonly filters: { label: string; value: NotifFilter }[] = [
-    { label: 'Toutes', value: 'all' },
-    { label: 'Réservations', value: 'bookings' },
-    { label: 'Paiements', value: 'payments' },
-    { label: 'Promotions', value: 'promotions' },
+  readonly filters: FilterChip[] = [
+    { label: 'Toutes', value: 'all', type: '' },
+    { label: 'Réservations', value: 'bookings', type: 'booking_,cancellation_' },
+    { label: 'Paiements', value: 'payments', type: 'payment_,withdrawal_,commission_' },
+    { label: 'Commandes', value: 'orders', type: 'order_,stock_' },
+    { label: 'Promotions', value: 'promotions', type: 'promo' },
   ];
 
+  readonly hasMore = computed(
+    () => this.notifications().length < this.notifService.total(),
+  );
+
+  readonly todayNotifs = computed(() => this.groupBy('today'));
+  readonly yesterdayNotifs = computed(() => this.groupBy('yesterday'));
+  readonly weekNotifs = computed(() => this.groupBy('week'));
+  readonly earlierNotifs = computed(() => this.groupBy('earlier'));
+
+  /** Groupes chronologiques, groupes vides retirés. */
+  readonly groups = computed(() =>
+    [
+      { label: 'Aujourd\u2019hui', items: this.todayNotifs(), today: true },
+      { label: 'Hier', items: this.yesterdayNotifs(), today: false },
+      { label: 'Cette semaine', items: this.weekNotifs(), today: false },
+      { label: 'Plus t\u00f4t', items: this.earlierNotifs(), today: false },
+    ].filter((g) => g.items.length > 0),
+  );
+
+  ngOnInit(): void {
+    this.load();
+  }
+
   setFilter(filter: NotifFilter): void {
+    if (this.activeFilter() === filter) return;
     this.activeFilter.set(filter);
+    this.load();
   }
 
   markAllRead(): void {
-    this.allNotifications.update(list =>
-      list.map(n => ({ ...n, isRead: true }))
-    );
+    this.notifService.markAllAsRead().subscribe();
   }
 
-  markRead(id: string): void {
-    this.allNotifications.update(list =>
-      list.map(n => n.id === id ? { ...n, isRead: true } : n)
-    );
+  /** Clic sur une entrée : bascule en lu puis ouvre la route du `link`. */
+  open(notif: AppNotification): void {
+    this.notifService.open(notif);
   }
 
-  getNotifIcon(type: NotifType): string {
-    const icons: Record<NotifType, string> = {
-      booking_confirmed: 'check_circle',
-      payment: 'payments',
-      reminder: 'alarm',
-      promotion: 'local_offer',
-      cancellation: 'cancel',
-    };
-    return icons[type];
+  loadMore(): void {
+    if (this.loading()) return;
+    this.errorMessage.set(null);
+    this.notifService
+      .loadMore({ perPage: 20, type: this.currentType() })
+      .subscribe({ error: () => this.setError() });
   }
 
-  getNotifIconClass(type: NotifType): string {
-    const classes: Record<NotifType, string> = {
-      booking_confirmed: 'notif-icon--green',
-      payment: 'notif-icon--blue',
-      reminder: 'notif-icon--orange',
-      promotion: 'notif-icon--purple',
-      cancellation: 'notif-icon--red',
-    };
-    return classes[type];
+  getNotifIcon(type: string): string {
+    if (type.startsWith('booking') || type.startsWith('cancellation')) return 'event_available';
+    if (type.startsWith('payment') || type.startsWith('withdrawal')) return 'payments';
+    if (type.startsWith('commission')) return 'savings';
+    if (type.startsWith('order') || type === 'stock_low') return 'shopping_bag';
+    if (type.startsWith('subscription')) return 'card_membership';
+    if (type.startsWith('field') || type.startsWith('schedule')) return 'sports_soccer';
+    if (type.startsWith('enrollment') || type.startsWith('staff')) return 'shield_person';
+    if (type.startsWith('ticket')) return 'confirmation_number';
+    if (type.startsWith('event')) return 'celebration';
+    if (type.startsWith('account') || type.startsWith('security')) return 'lock';
+    if (type === 'promo') return 'local_offer';
+    return 'notifications';
+  }
+
+  getNotifIconClass(type: string): string {
+    if (type.startsWith('cancellation') || type.endsWith('failed') || type.endsWith('cancelled')) {
+      return 'notif-icon--red';
+    }
+    if (type.startsWith('booking') || type.startsWith('event') || type.startsWith('ticket')) {
+      return 'notif-icon--green';
+    }
+    if (type.startsWith('payment') || type.startsWith('order') || type.startsWith('withdrawal')) {
+      return 'notif-icon--blue';
+    }
+    if (type.startsWith('subscription') || type.startsWith('schedule')) {
+      return 'notif-icon--orange';
+    }
+    if (type === 'promo') return 'notif-icon--purple';
+    return 'notif-icon--blue';
+  }
+
+  /** Durée relative en français : « il y a 5 min », « hier », « 12 mars ». */
+  relativeTime(iso: string): string {
+    const ts = Date.parse(iso);
+    if (Number.isNaN(ts)) return '';
+    const diff = Date.now() - ts;
+
+    if (diff < 60_000) return 'À l\'instant';
+    if (diff < 3_600_000) return `Il y a ${Math.floor(diff / 60_000)} min`;
+    if (diff < 86_400_000) return `Il y a ${Math.floor(diff / 3_600_000)} h`;
+
+    const days = Math.floor(diff / 86_400_000);
+    if (days === 1) return 'Hier';
+    if (days < 7) return `Il y a ${days} jours`;
+    return new Date(ts).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+  }
+
+  private load(): void {
+    this.errorMessage.set(null);
+    this.notifService
+      .fetch({ page: 1, perPage: 20, type: this.currentType() })
+      .subscribe({
+        next: () => this.pageLoaded.set(true),
+        error: () => this.setError(),
+      });
+  }
+
+  private setError(): void {
+    this.pageLoaded.set(true);
+    this.errorMessage.set('Impossible de charger vos notifications.');
+  }
+
+  private currentType(): string | undefined {
+    return this.filters.find((f) => f.value === this.activeFilter())?.type || undefined;
+  }
+
+  private groupBy(group: DayGroup): AppNotification[] {
+    return this.notifications().filter((n) => this.dayOf(n.sent_at) === group);
+  }
+
+  private dayOf(iso: string): DayGroup {
+    const ts = Date.parse(iso);
+    if (Number.isNaN(ts)) return 'earlier';
+
+    const startOfToday = new Date().setHours(0, 0, 0, 0);
+    if (ts >= startOfToday) return 'today';
+    if (ts >= startOfToday - DAY) return 'yesterday';
+    if (ts >= startOfToday - 7 * DAY) return 'week';
+    return 'earlier';
   }
 }

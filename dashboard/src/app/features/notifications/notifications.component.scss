@@ -1,0 +1,292 @@
+.notif-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* ── Filtres ─────────────────────────────────────────────────────── */
+.notif-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1rem;
+  padding: 1rem;
+  background: var(--bg-card, #fff);
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: var(--radius-md, 0.75rem);
+}
+
+.notif-filters__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 15rem;
+  flex: 1;
+}
+
+.notif-filters__label {
+  font-size: var(--font-size-xs, 0.75rem);
+  font-weight: var(--font-weight-medium, 500);
+  color: var(--text-muted, #6b7280);
+}
+
+.notif-filters__select {
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: var(--radius-sm, 0.5rem);
+  background: var(--bg-card, #fff);
+  color: var(--text-primary, #111827);
+  font-size: var(--font-size-sm, 0.875rem);
+  font-family: inherit;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--primary, #10b981);
+    outline-offset: 1px;
+  }
+}
+
+.notif-filters__check {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-bottom: 0.55rem;
+  font-size: var(--font-size-sm, 0.875rem);
+  color: var(--text-secondary, #374151);
+  cursor: pointer;
+
+  input {
+    width: 1rem;
+    height: 1rem;
+    accent-color: var(--primary, #10b981);
+    cursor: pointer;
+  }
+}
+
+.notif-filters__count {
+  padding-bottom: 0.6rem;
+  font-size: var(--font-size-xs, 0.75rem);
+  color: var(--text-muted, #6b7280);
+  white-space: nowrap;
+}
+
+/* ── États ───────────────────────────────────────────────────────── */
+.notif-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 3.5rem 1.5rem;
+  text-align: center;
+  background: var(--bg-card, #fff);
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: var(--radius-md, 0.75rem);
+}
+
+.notif-state__icon {
+  font-size: 2.5rem;
+  color: var(--text-muted, #9ca3af);
+
+  &--spin {
+    animation: notif-page-spin 0.9s linear infinite;
+  }
+}
+
+.notif-state__title {
+  margin: 0;
+  font-size: var(--font-size-base, 1rem);
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--text-primary, #111827);
+}
+
+.notif-state__text {
+  margin: 0;
+  font-size: var(--font-size-sm, 0.875rem);
+  color: var(--text-secondary, #6b7280);
+}
+
+@keyframes notif-page-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── Liste ───────────────────────────────────────────────────────── */
+.notif-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-card, #fff);
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: var(--radius-md, 0.75rem);
+  overflow: hidden;
+}
+
+.notif-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.875rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border-color, #e5e7eb);
+  border-left: 3px solid transparent;
+  cursor: pointer;
+  transition: background var(--transition-fast, 0.15s ease);
+
+  &:hover {
+    background: var(--gray-50, #f9fafb);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--primary, #10b981);
+    outline-offset: -2px;
+  }
+
+  &:last-of-type {
+    border-bottom: none;
+  }
+}
+
+.notif-row--unread {
+  background: var(--gray-50, #f9fafb);
+}
+
+.notif-row--action {
+  border-left-color: var(--warning, #f59e0b);
+}
+
+.notif-row__icon {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  flex: 0 0 2.25rem;
+  border-radius: var(--radius-sm, 0.5rem);
+  background: var(--gray-100, #f3f4f6);
+  color: var(--text-secondary, #374151);
+
+  .material-symbols-outlined {
+    font-size: 1.2rem;
+  }
+
+  &--action {
+    background: var(--warning-muted, rgba(245, 158, 11, 0.15));
+    color: var(--warning, #f59e0b);
+  }
+}
+
+.notif-row__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.notif-row__title {
+  font-size: var(--font-size-sm, 0.875rem);
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--text-primary, #111827);
+}
+
+.notif-row--unread .notif-row__title {
+  font-weight: var(--font-weight-bold, 700);
+}
+
+.notif-row__msg {
+  font-size: var(--font-size-sm, 0.875rem);
+  line-height: 1.5;
+  color: var(--text-secondary, #374151);
+}
+
+.notif-row__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.2rem;
+  font-size: var(--font-size-xs, 0.75rem);
+  color: var(--text-muted, #6b7280);
+}
+
+.notif-row__type {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.notif-row__dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  flex: 0 0 0.5rem;
+  margin-top: 0.55rem;
+  border-radius: 50%;
+  background: var(--primary, #10b981);
+}
+
+.notif-card__footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 1.25rem;
+  border-top: 1px solid var(--border-color, #e5e7eb);
+}
+
+.notif-card__progress {
+  font-size: var(--font-size-xs, 0.75rem);
+  color: var(--text-muted, #6b7280);
+}
+
+/* ── Boutons ─────────────────────────────────────────────────────── */
+.btn-readall {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 0.9rem;
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: var(--radius-sm, 0.5rem);
+  background: var(--bg-card, #fff);
+  color: var(--text-primary, #111827);
+  font-size: var(--font-size-sm, 0.875rem);
+  font-weight: var(--font-weight-medium, 500);
+  font-family: inherit;
+  cursor: pointer;
+  transition: background var(--transition-fast, 0.15s ease);
+
+  .material-symbols-outlined {
+    font-size: 1.1rem;
+  }
+
+  &:hover:not(:disabled) {
+    background: var(--gray-50, #f9fafb);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+}
+
+.btn-more {
+  padding: 0.55rem 1.5rem;
+  border: 0;
+  border-radius: var(--radius-sm, 0.5rem);
+  background: var(--primary, #10b981);
+  color: #fff;
+  font-size: var(--font-size-sm, 0.875rem);
+  font-weight: var(--font-weight-semibold, 600);
+  font-family: inherit;
+  cursor: pointer;
+  transition: filter var(--transition-fast, 0.15s ease);
+
+  &:hover:not(:disabled) {
+    filter: brightness(0.95);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .notif-state__icon--spin {
+    animation: none;
+  }
+}

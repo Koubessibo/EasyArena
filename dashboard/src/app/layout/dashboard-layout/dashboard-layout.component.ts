@@ -3,12 +3,14 @@ import { RouterOutlet, Router, NavigationStart, NavigationEnd, NavigationCancel,
 import { NgIf } from '@angular/common';
 import { SidebarComponent } from '../../shared/components/sidebar/sidebar.component';
 import { TopbarComponent } from '../../shared/components/topbar/topbar.component';
+import { NotificationToastComponent } from '../../shared/components/notification-toast/notification-toast.component';
 import { AuthService } from '../../core/services/auth.service';
+import { NotificationService } from '../../core/services/notification.service';
 
 @Component({
   selector: 'app-dashboard-layout',
   standalone: true,
-  imports: [RouterOutlet, NgIf, SidebarComponent, TopbarComponent],
+  imports: [RouterOutlet, NgIf, SidebarComponent, TopbarComponent, NotificationToastComponent],
   template: `
     <!-- Top Route Navigation Progress Bar -->
     <div class="dash-nav-progress" [class.dash-nav-progress--active]="isNavigating()">
@@ -59,11 +61,16 @@ import { AuthService } from '../../core/services/auth.service';
         </div>
       </div>
     </div>
+
+    <!-- Interactive in-app notification toasts (WS push) -->
+    <app-notification-toast />
   `,
   styleUrl: './dashboard-layout.component.scss',
 })
 export class DashboardLayoutComponent {
   public auth = inject(AuthService);
+  /** Point d'ancrage unique : ouvre le canal WS et héberge les toasts. */
+  public notifService = inject(NotificationService);
   private router = inject(Router);
   sidebarCollapsed = signal(false);
   mobileSidebarOpen = signal(false);
