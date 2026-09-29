@@ -4,13 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { AdminService, ContentItem, CreateOwnerData, CreateVendorData, EnrollmentRequestItem } from '../../../core/services/admin.service';
 import { ApiService } from '../../../core/services/api.service';
 import { DashboardUser } from '../../../core/models/auth.model';
-import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 
 @Component({
   selector: 'app-user-management',
   standalone: true,
-  imports: [CommonModule, FormsModule, PageHeaderComponent, StatusBadgeComponent],
+  imports: [CommonModule, FormsModule, StatusBadgeComponent],
   templateUrl: './user-management.component.html',
   styleUrl: './user-management.component.scss',
 })

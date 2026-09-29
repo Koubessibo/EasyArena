@@ -6,7 +6,7 @@ export interface OrderItem {
   id: string;
   quantity: number;
   unit_price: number;
-  product: Product;
+  product?: Product | null;
 }
 
 export interface Order {

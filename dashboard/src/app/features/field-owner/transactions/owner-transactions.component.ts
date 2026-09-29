@@ -2,7 +2,6 @@ import { Component, inject, signal } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FieldOwnerService } from '../../../core/services/field-owner.service';
-import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 import { FcfaPipe } from '../../../shared/pipes/fcfa.pipe';
 import { ExportService } from '../../../core/services/export.service';
@@ -11,7 +10,7 @@ import { Transaction } from '../../../core/models/transaction.model';
 @Component({
   selector: 'app-owner-transactions',
   standalone: true,
-  imports: [CommonModule, FormsModule, PageHeaderComponent, StatusBadgeComponent, FcfaPipe],
+  imports: [CommonModule, FormsModule, StatusBadgeComponent, FcfaPipe],
   templateUrl: './owner-transactions.component.html',
   styleUrl: './owner-transactions.component.scss',
 })

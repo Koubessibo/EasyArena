@@ -2,7 +2,6 @@ import { Component, inject, signal } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FieldOwnerService } from '../../../core/services/field-owner.service';
-import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { PhoneInputComponent } from '../../../shared/components/phone-input/phone-input.component';
 
 interface StaffMember {
@@ -21,7 +20,7 @@ interface StaffMember {
 @Component({
   selector: 'app-owner-staff',
   standalone: true,
-  imports: [CommonModule, FormsModule, PageHeaderComponent, PhoneInputComponent],
+  imports: [CommonModule, FormsModule, PhoneInputComponent],
   templateUrl: './owner-staff.component.html',
   styleUrl: './owner-staff.component.scss',
 })

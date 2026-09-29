@@ -3,7 +3,6 @@ import { NgFor, NgIf, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { switchMap, forkJoin, of } from 'rxjs';
 import { FieldOwnerService } from '../../../core/services/field-owner.service';
-import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 import { FcfaPipe } from '../../../shared/pipes/fcfa.pipe';
 import { Field, FieldPhoto, FieldType, FieldStatus } from '../../../core/models/field.model';
@@ -46,7 +45,7 @@ const SPORT_SURFACES_MAP: Record<FieldType, { value: string; label: string }[]> 
 @Component({
   selector: 'app-fields-management',
   standalone: true,
-  imports: [NgFor, NgIf, FormsModule, PageHeaderComponent, StatusBadgeComponent, FcfaPipe],
+  imports: [NgFor, NgIf, FormsModule, StatusBadgeComponent, FcfaPipe],
   templateUrl: './fields-management.component.html',
   styleUrl: './fields-management.component.scss',
 })

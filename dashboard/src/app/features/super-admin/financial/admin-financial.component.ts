@@ -2,14 +2,13 @@ import { Component, inject, signal } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminService } from '../../../core/services/admin.service';
-import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 import { FcfaPipe } from '../../../shared/pipes/fcfa.pipe';
 
 @Component({
   selector: 'app-admin-financial',
   standalone: true,
-  imports: [CommonModule, FormsModule, PageHeaderComponent, StatusBadgeComponent, FcfaPipe],
+  imports: [CommonModule, FormsModule, StatusBadgeComponent, FcfaPipe],
   templateUrl: './admin-financial.component.html',
   styleUrl: './admin-financial.component.scss',
 })

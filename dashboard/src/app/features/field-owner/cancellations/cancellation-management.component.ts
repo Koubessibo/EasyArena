@@ -4,13 +4,13 @@ import { ApiService } from '../../../core/services/api.service';
 
 export interface CancellationRequest {
   id: string;
-  client: {
+  client?: {
     first_name: string;
     last_name: string;
-  };
-  field: {
+  } | null;
+  field?: {
     name: string;
-  };
+  } | null;
   booking_date: string;
   slot_start: string;
   slot_end: string;
