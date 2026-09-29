@@ -468,7 +468,10 @@ export class BookingsService {
           balance_before: balanceBefore,
           source_id: payment?.id ?? booking.id,
           source_type: TransactionSourceType.REFUND,
-          description: `Remboursement annulation réservation ${booking.id}`,
+          description: this.transactionsService.bookingDescription(
+            booking,
+            'Remboursement suite à annulation',
+          ),
         },
         qr.manager,
       );
@@ -532,7 +535,10 @@ export class BookingsService {
             balance_before: balanceAfterDebit,
             source_id: payment?.id ?? booking.id,
             source_type: TransactionSourceType.REFUND,
-            description: `Compensation: échec remboursement réservation ${booking.id}`,
+            description: this.transactionsService.bookingDescription(
+              booking,
+              'Compensation : échec de remboursement',
+            ),
           },
           mgr,
         );

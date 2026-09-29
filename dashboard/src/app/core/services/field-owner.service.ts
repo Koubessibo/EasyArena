@@ -47,6 +47,9 @@ const TX_TYPE_MAP: Record<string, Transaction['type']> = {
   TICKET_CREDIT: 'booking_payment',
   WITHDRAWAL_DEBIT: 'withdrawal',
   REFUND_CREDIT: 'refund',
+  // Était absent : `mapTransaction` basculait sur le `?? 'booking_payment'`
+  // et un DEBIT de remboursement s'affichait « Paiement réservation ».
+  REFUND_DEBIT: 'refund',
   FEE_DEBIT: 'platform_fee',
 };
 

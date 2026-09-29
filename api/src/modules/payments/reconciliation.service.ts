@@ -138,7 +138,10 @@ export class ReconciliationService {
             balance_before: balanceBefore,
             source_id: booking.payment?.id || booking.id,
             source_type: TransactionSourceType.PAYMENT,
-            description: `Réservation ${booking.id} repêchée et confirmée via Réconciliation Cron`,
+            description: this.transactionsService.bookingDescription(
+              booking,
+              'Repêchée et confirmée par la réconciliation',
+            ),
           },
           qr.manager,
         );

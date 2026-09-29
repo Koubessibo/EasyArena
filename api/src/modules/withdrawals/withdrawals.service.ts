@@ -139,22 +139,9 @@ export class WithdrawalsService {
         // ── MOBILE MONEY: debit first, then cashout ──────────────────────
         const balanceBefore = await this.transactionsService.computeOwnerBalance(owner.id, qr.manager);
 
-        // Create debit transaction (amount + fee)
-        await this.transactionsService.createTransaction(
-          {
-            owner_id: owner.id,
-            type: TransactionType.WITHDRAWAL_DEBIT,
-            direction: TransactionDirection.DEBIT,
-            amount: totalDebit,
-            balance_before: balanceBefore,
-            source_id: owner.id,
-            source_type: TransactionSourceType.WITHDRAWAL,
-            description: `Retrait Mobile Money vers ${dto.destination} (frais : ${fee} FCFA)`,
-          },
-          qr.manager,
-        );
-
         // Create withdrawal record (amount = what is sent, fee = platform fee)
+        // AVANT l'écriture de débit : `source_id` doit pointer sur le retrait,
+        // pas sur le partenaire (cf. IDX_unique_transaction_source_type).
         withdrawal = await qr.manager.save(
           qr.manager.create(Withdrawal, {
             owner_id: owner.id,
@@ -166,6 +153,21 @@ export class WithdrawalsService {
             status: WithdrawalStatus.PROCESSED,
             processed_at: new Date(),
           }),
+        );
+
+        // Create debit transaction (amount + fee)
+        await this.transactionsService.createTransaction(
+          {
+            owner_id: owner.id,
+            type: TransactionType.WITHDRAWAL_DEBIT,
+            direction: TransactionDirection.DEBIT,
+            amount: totalDebit,
+            balance_before: balanceBefore,
+            source_id: withdrawal.id,
+            source_type: TransactionSourceType.WITHDRAWAL,
+            description: `Retrait Mobile Money vers ${dto.destination} (frais : ${fee} FCFA)`,
+          },
+          qr.manager,
         );
 
         // COMMIT — balance is now debited, withdrawal is recorded

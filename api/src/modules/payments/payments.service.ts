@@ -241,7 +241,10 @@ export class PaymentsService {
               balance_before: balanceBefore,
               source_id: payment.id,
               source_type: TransactionSourceType.PAYMENT,
-              description: `Booking ${booking.id} confirmed (dev auto)`,
+              description: this.transactionsService.bookingDescription(
+                booking,
+                'Confirmation paiement (auto)',
+              ),
             },
             qr.manager,
           );
@@ -597,7 +600,10 @@ export class PaymentsService {
               balance_before: balanceBefore,
               source_id: payment.id,
               source_type: TransactionSourceType.PAYMENT,
-              description: `Booking ${booking.id} confirmed`,
+              description: this.transactionsService.bookingDescription(
+                booking,
+                'Confirmation paiement',
+              ),
             },
             qr.manager,
           );
