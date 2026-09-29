@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { Booking } from '../bookings/entities/booking.entity';
 import { BookingStatus, TransactionType, TransactionDirection, TransactionSourceType } from '../../common/enums';
-import { Transaction } from '../transactions/entities/transaction.entity';
+import { TransactionsService } from '../transactions/transactions.service';
 
 import { SponsorshipService } from '../sponsorship/sponsorship.service';
 
@@ -14,6 +14,7 @@ export class CancellationsService {
     private readonly bookingRepo: Repository<Booking>,
     private readonly dataSource: DataSource,
     private readonly sponsorshipService: SponsorshipService,
+    private readonly transactionsService: TransactionsService,
   ) {}
 
   /**
@@ -110,20 +111,37 @@ export class CancellationsService {
       // Montant final remboursé au client
       const finalRefund = remainingAmount - withdrawalFee;
 
-      // Logique transactionnelle (Optionnelle si on n'a pas de table Refund, mais tracée ici)
-      const refundRecord = manager.create(Transaction, {
-        owner_id: ownerId, // Le propriétaire est amputé de ce montant ou on trace pour le système
-        type: TransactionType.REFUND_DEBIT,
-        direction: TransactionDirection.DEBIT,
-        amount: finalRefund,
-        balance_before: 0, // Fallback (géré dans le vrai système de wallet)
-        balance_after: 0,
-        reference: `REFUND-${booking.id.substring(0,8).toUpperCase()}`,
-        source_id: booking.id,
-        source_type: TransactionSourceType.REFUND,
-        description: `Remboursement suite à annulation. Brut: ${initialAmount}, Frais service: ${platformFee}, Frais retrait: ${withdrawalFee}, Net remboursé: ${finalRefund}`,
-      });
-      await manager.save(refundRecord);
+      // Écriture comptable via la méthode standard du TransactionsService.
+      //
+      // Avant : `manager.create/save` à la volée, avec
+      //   - `reference: REFUND-{8 premiers caractères de l'id}` : FIGÉE par
+      //     réservation → deux remboursements sur la même réservation donnaient
+      //     la même référence, collision sur `UNIQUE(reference)`.
+      //   - `balance_before: 0` / `balance_after: 0` en dur → colonnes fausses
+      //     et chaîne balance_before → balance_after rompue à cet endroit.
+      //
+      // Maintenant : solde initial lu par `computeOwnerBalance()` dans la
+      // transaction courante, référence déléguée à `generateReference()` (le
+      // seul générateur, appelé par `createTransaction`), `balance_after`
+      // dérivé automatiquement (DEBIT → −amount).
+      const balanceBefore = await this.transactionsService.computeOwnerBalance(
+        ownerId,
+        manager,
+      );
+
+      await this.transactionsService.createTransaction(
+        {
+          owner_id: ownerId, // Le propriétaire est amputé de ce montant
+          type: TransactionType.REFUND_DEBIT,
+          direction: TransactionDirection.DEBIT,
+          amount: finalRefund,
+          balance_before: balanceBefore,
+          source_id: booking.id,
+          source_type: TransactionSourceType.REFUND,
+          description: `Remboursement suite à annulation. Brut: ${initialAmount}, Frais service: ${platformFee}, Frais retrait: ${withdrawalFee}, Net remboursé: ${finalRefund}`,
+        },
+        manager,
+      );
 
       // Mise à jour de la réservation
       booking.status = BookingStatus.CANCELLED;

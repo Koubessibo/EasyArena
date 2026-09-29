@@ -5,6 +5,7 @@ import { CancellationsService } from './cancellations.service';
 import { Booking } from '../bookings/entities/booking.entity';
 import { UsersModule } from '../users/users.module';
 import { SponsorshipModule } from '../sponsorship/sponsorship.module';
+import { TransactionsModule } from '../transactions/transactions.module';
 
 
 @Module({
@@ -12,6 +13,8 @@ import { SponsorshipModule } from '../sponsorship/sponsorship.module';
     TypeOrmModule.forFeature([Booking]),
     UsersModule,
     SponsorshipModule,
+    // TransactionsService : référence centralisée + solde du partenaire
+    TransactionsModule,
   ],
   controllers: [CancellationsController],
   providers: [CancellationsService],
