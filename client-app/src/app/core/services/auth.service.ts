@@ -40,6 +40,11 @@ export class AuthService {
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
   readonly pendingPhone = signal<string | null>(null);
+  /**
+   * Preuve de possession du numéro, délivrée par /auth/verify-otp et exigée
+   * par /auth/set-pin. Sans elle, l'API refuse de définir un code PIN.
+   */
+  private readonly pinSetupToken = signal<string | null>(null);
 
   private loadStoredUser(): User | null {
     try {
@@ -113,8 +118,9 @@ export class AuthService {
     const phone = this.pendingPhone();
     return this.api.post<any>('/auth/verify-otp', { phone, code: otp }).pipe(
       tap({
-        next: () => {
+        next: (res) => {
           this.loading.set(false);
+          this.pinSetupToken.set(res?.setup_token ?? null);
           this.router.navigate(['/pin-setup']);
         },
         error: (err: Error) => {
@@ -134,10 +140,11 @@ export class AuthService {
     this.loading.set(true);
     this.error.set(null);
     const phone = this.pendingPhone();
-    return this.api.post<any>('/auth/set-pin', { phone, pin }).pipe(
+    return this.api.post<any>('/auth/set-pin', { phone, pin, setup_token: this.pinSetupToken() }).pipe(
       tap({
         next: () => {
           this.loading.set(false);
+          this.pinSetupToken.set(null);
           this.router.navigate(['/login']);
         },
         error: (err: Error) => {

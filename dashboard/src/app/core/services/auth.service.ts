@@ -1,5 +1,5 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, tap } from 'rxjs';
 import { Router } from '@angular/router';
 import { DashboardUser, UserRole } from '../models/auth.model';
 import { ApiService } from './api.service';
@@ -50,6 +50,11 @@ export class AuthService {
   readonly error = signal<string | null>(null);
   readonly mustChangePin = signal(false);
   readonly pendingPhone = signal('');
+  /**
+   * Preuve de possession du numéro, délivrée par /auth/verify-otp et exigée
+   * par /auth/set-pin. Sans elle, l'API refuse de définir un code PIN.
+   */
+  private readonly pinSetupToken = signal<string | null>(null);
 
   private loadFromStorage(): DashboardUser | null {
     try {
@@ -92,17 +97,24 @@ export class AuthService {
     return this.api.post<any>('/auth/reset-password', data);
   }
 
-  verifyOtpForPinChange(otp: string): Observable<unknown> {
-    return this.api.post<unknown>('/auth/verify-otp', { phone: this.pendingPhone(), code: otp });
+  verifyOtpForPinChange(otp: string): Observable<any> {
+    return this.api.post<any>('/auth/verify-otp', { phone: this.pendingPhone(), code: otp }).pipe(
+      tap((res) => this.pinSetupToken.set(res?.setup_token ?? null)),
+    );
   }
 
   setNewPin(pin: string): void {
     this.loading.set(true);
     this.error.set(null);
 
-    this.api.post<LoginResponse>('/auth/set-pin', { phone: this.pendingPhone(), pin }).subscribe({
+    this.api.post<LoginResponse>('/auth/set-pin', {
+      phone: this.pendingPhone(),
+      pin,
+      setup_token: this.pinSetupToken(),
+    }).subscribe({
       next: (res) => {
         this.loading.set(false);
+        this.pinSetupToken.set(null);
         this.mustChangePin.set(false);
         this.pendingPhone.set('');
         this.storeAndNavigate(res);

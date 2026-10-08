@@ -56,6 +56,7 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('set-pin')
   setPin(@Body() dto: SetPinDto) {
     return this.authService.setPin(dto);

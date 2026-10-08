@@ -28,6 +28,11 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       relations: ['client', 'owner', 'vendor'],
     });
     if (!user) throw new UnauthorizedException('User not found');
+    // Un jeton à usage restreint (configuration du PIN) n'est pas un jeton
+    // d'accès : on refuse explicitement plutôt que de s'en remettre au hasard.
+    if (payload.purpose) {
+      throw new UnauthorizedException('Token cannot be used for this resource');
+    }
     if (user.status !== UserStatus.ACTIVE) {
       throw new UnauthorizedException(`Account is ${user.status}`);
     }

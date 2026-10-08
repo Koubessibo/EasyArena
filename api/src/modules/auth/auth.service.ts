@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   Logger,
   NotFoundException,
@@ -27,10 +28,21 @@ import { ChangePinDto } from './dto/change-pin.dto';
 import { ForgotPinDto } from './dto/forgot-pin.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
-import { JwtPayload } from './interfaces/jwt-payload.interface';
+import {
+  JwtPayload,
+  PIN_SETUP_TOKEN_PURPOSE,
+} from './interfaces/jwt-payload.interface';
 
 const MAX_LOGIN_ATTEMPTS = 3;
 const SALT_ROUNDS = 10;
+/**
+ * Durée de vie du jeton de preuve délivré par verify-otp : il doit couvrir le
+ * temps que l'utilisateur met à saisir son nouveau code PIN, pas beaucoup plus.
+ */
+const PIN_SETUP_TOKEN_TTL = '10m';
+/** Message unique : ne révèle pas si le numéro existe ou si la session a expiré. */
+const PIN_SETUP_EXPIRED_MESSAGE =
+  'Session de vérification expirée. Recommencez la vérification du code reçu par SMS.';
 
 @Injectable()
 export class AuthService {
@@ -233,7 +245,9 @@ export class AuthService {
     return { message: 'OTP resent', expires_in: expiresIn };
   }
 
-  async verifyOtp(dto: VerifyOtpDto): Promise<{ message: string }> {
+  async verifyOtp(
+    dto: VerifyOtpDto,
+  ): Promise<{ message: string; setup_token?: string }> {
     const { formattedPhone, barePhone } = this.normalizePhone(dto.phone);
     const now = new Date();
     const otp = await this.otpRepo.findOne({
@@ -258,23 +272,71 @@ export class AuthService {
       await this.userRepo.update(user.id, { status: UserStatus.ACTIVE });
     }
 
-    return { message: 'Verified. Please set your PIN.' };
+    // Preuve délivrée à l'utilisateur : elle seule autorisera la définition de
+    // son code PIN. Aucun jeton d'accès n'est émis ici.
+    const setup_token = user ? this.signPinSetupToken(user) : undefined;
+
+    return { message: 'Verified. Please set your PIN.', setup_token };
   }
 
+  /**
+   * Définit le code PIN d'un compte.
+   *
+   * Deux conditions obligatoires, et aucune n'existait avant :
+   *  1. une preuve de possession du numéro, délivrée uniquement par
+   *     /auth/verify-otp après validation d'un OTP ;
+   *  2. un compte sans code PIN, ou en `must_change_pin` (code imposé à la
+   *     connexion).
+   *
+   * Un utilisateur qui a déjà un code PIN et veut le changer doit passer par
+   * /auth/change-pin, qui est authentifié et exige l'ancien code.
+   */
   async setPin(dto: SetPinDto) {
     const { formattedPhone, barePhone } = this.normalizePhone(dto.phone);
     const user = await this.userRepo.findOne({
       where: [
-        { phone: formattedPhone, status: UserStatus.ACTIVE },
-        { phone: barePhone, status: UserStatus.ACTIVE },
-        { phone: dto.phone, status: UserStatus.ACTIVE },
+        { phone: formattedPhone },
+        { phone: barePhone },
+        { phone: dto.phone },
       ],
       relations: ['client', 'owner', 'vendor'],
     });
-    if (!user) throw new NotFoundException('Active user not found for this phone');
+    if (!user) throw new UnauthorizedException(PIN_SETUP_EXPIRED_MESSAGE);
+
+    if (user.status === UserStatus.SUSPENDED) {
+      throw new UnauthorizedException(
+        'Ce compte est suspendu. Veuillez contacter le support.',
+      );
+    }
+
+    // 1. Preuve de possession du numéro. Sans elle, connaître un numéro
+    //    suffisait à définir le code PIN du compte et à en obtenir les jetons.
+    if (!this.isPinSetupToken(user, dto.setup_token)) {
+      throw new UnauthorizedException(PIN_SETUP_EXPIRED_MESSAGE);
+    }
+
+    // 2. Cas autorisés uniquement. `pin_hash` est `select: false` : il faut le
+    //    demander explicitement pour savoir si un code existe déjà.
+    const pinRow = await this.userRepo.findOne({
+      where: { id: user.id },
+      select: ['id', 'pin_hash'],
+    });
+    if (pinRow?.pin_hash && !user.must_change_pin) {
+      throw new ForbiddenException(
+        'Un code PIN est déjà défini. Utilisez le changement de code PIN.',
+      );
+    }
 
     const pin_hash = await bcrypt.hash(dto.pin, SALT_ROUNDS);
-    await this.userRepo.update(user.id, { pin_hash, must_change_pin: false });
+    await this.userRepo.update(user.id, {
+      pin_hash,
+      must_change_pin: false,
+      login_attempts: 0,
+      last_failed_login: undefined,
+      ...(user.status === UserStatus.PENDING
+        ? { status: UserStatus.ACTIVE }
+        : {}),
+    });
 
     user.pin_hash = pin_hash;
     return this.generateTokenResponse(user);
@@ -416,6 +478,38 @@ export class AuthService {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       expiresIn: this.configService.get<string>('jwt.refreshExpiresIn') as any,
     });
+  }
+
+  /**
+   * Jeton court prouvant que le porteur a validé un OTP pour ce numéro.
+   * C'est la SEULE preuve acceptée ensuite par set-pin : sans lui, connaître
+   * un numéro suffisait à définir le code PIN du compte et à en obtenir les
+   * jetons d'accès (prise de contrôle complète en un appel non authentifié).
+   */
+  private signPinSetupToken(user: User): string {
+    const payload: JwtPayload = {
+      sub: user.id,
+      phone: user.phone,
+      role: user.role,
+      purpose: PIN_SETUP_TOKEN_PURPOSE,
+    };
+    return this.jwtService.sign(payload, {
+      secret: this.configService.get<string>('jwt.accessSecret'),
+      expiresIn: PIN_SETUP_TOKEN_TTL,
+    });
+  }
+
+  private isPinSetupToken(user: User, token: string): boolean {
+    try {
+      const payload = this.jwtService.verify<JwtPayload>(token, {
+        secret: this.configService.get<string>('jwt.accessSecret'),
+      });
+      return (
+        payload.purpose === PIN_SETUP_TOKEN_PURPOSE && payload.sub === user.id
+      );
+    } catch {
+      return false;
+    }
   }
 
   async getMe(userId: string) {
