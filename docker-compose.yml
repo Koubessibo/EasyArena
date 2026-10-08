@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: easyarena_api
+    restart: always
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./api/.env
+    environment:
+      - NODE_ENV=production
+
+  client:
+    build:
+      context: ./client-app
+      dockerfile: Dockerfile
+    container_name: easyarena_client
+    restart: always
+    ports:
+      - "3001:8080"
+
+  dashboard:
+    build:
+      context: ./dashboard
+      dockerfile: Dockerfile
+    container_name: easyarena_dashboard
+    restart: always
+    ports:
+      - "3002:8080"
